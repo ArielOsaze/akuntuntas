@@ -1160,9 +1160,19 @@ class JendelaAplikasi(QMainWindow):
 
         # Lisensi diperiksa lebih dulu. Tanpa lisensi yang sah, halaman
         # masuk tidak ditampilkan sama sekali.
+        #
+        # Paket yang dibungkus untuk Microsoft Store memuat mode uji coba,
+        # karena peninjau tidak memiliki kunci lisensi berbayar. Mode itu
+        # hanya berlaku bila berkas penanda ikut disertakan saat membungkus
+        # paket, sehingga build installer biasa tidak terpengaruh.
+        from ..core import uji_coba
+
         sah, alasan, lisensi = LIS.lisensi_sah(config.DATA_DIR)
         if sah:
             self.lisensi = lisensi
+            self._siapkan_login()
+        elif uji_coba.aktif(config.DATA_DIR):
+            self.lisensi = uji_coba.lisensi_uji_coba(config.DATA_DIR)
             self._siapkan_login()
         else:
             self._tampilkan_aktivasi(alasan)

@@ -1,0 +1,2 @@
+Berkas ini menandai paket uji coba untuk peninjau Microsoft Store.
+Jangan sertakan berkas ini pada build yang dijual.

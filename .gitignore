@@ -2,7 +2,14 @@
 build/
 dist/
 installer_output/
+msix_output/
 *.spec.bak
+
+# Berkas MSIX yang dibangun ulang. Identitas penerbit memuat kode akun
+# Partner Center, jadi tidak perlu ikut tersimpan.
+msix/AppxManifest.xml
+msix/Assets/
+msix/identitas.json
 
 # Lingkungan Python
 __pycache__/
