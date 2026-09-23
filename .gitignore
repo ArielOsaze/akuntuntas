@@ -41,3 +41,8 @@ web/_tampilan/
 # Berkas sementara
 *.log
 *.tmp
+
+# Berkas kerja sementara
+_*.json
+_*.txt
+_*.log
