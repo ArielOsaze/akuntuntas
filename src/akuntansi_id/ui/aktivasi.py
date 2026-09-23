@@ -123,7 +123,30 @@ class HalamanAktivasi(QWidget):
             "font-size: 16px; letter-spacing: 1px; padding-left: 12px; }")
         self.inp_kunci.textChanged.connect(self._saat_mengetik)
         self.inp_kunci.returnPressed.connect(self._aktifkan)
-        fl.addWidget(self.inp_kunci)
+
+        # Tombol tempel: kunci lisensi panjang dan mudah salah ketik, jadi
+        # menempel dari email pembelian jauh lebih aman daripada mengetik.
+        baris_kunci = QHBoxLayout()
+        baris_kunci.setContentsMargins(0, 0, 0, 0)
+        baris_kunci.setSpacing(8)
+        baris_kunci.addWidget(self.inp_kunci, 1)
+
+        self.tombol_tempel = QPushButton("Tempel")
+        self.tombol_tempel.setMinimumHeight(46)
+        self.tombol_tempel.setFixedWidth(92)
+        self.tombol_tempel.setCursor(Qt.PointingHandCursor)
+        self.tombol_tempel.setToolTip(
+            "Tempel kunci lisensi yang Anda salin dari email pembelian")
+        self.tombol_tempel.setStyleSheet(
+            f"QPushButton {{ background: {C.SURFACE_ALT}; color: {C.TEXT}; "
+            f"border: 1px solid {C.BORDER}; border-radius: 8px; "
+            f"font-size: 13px; font-weight: 600; }}"
+            f"QPushButton:hover {{ background: {C.PRIMARY_TINT}; "
+            f"border-color: {C.PRIMARY}; color: {C.PRIMARY_DARK}; }}")
+        self.tombol_tempel.clicked.connect(self._tempel_kunci)
+        baris_kunci.addWidget(self.tombol_tempel)
+
+        fl.addLayout(baris_kunci)
         fl.addSpacing(18)
 
         # ---------------------------------------------------------- tombol
@@ -156,13 +179,27 @@ class HalamanAktivasi(QWidget):
         info = QLabel(
             f"Perangkat ini: {LIS.nama_perangkat()}\n"
             "Lisensi Standar untuk 1 perangkat. Lisensi Enterprise dapat "
-            "dipakai di beberapa perangkat.\n"
-            "Belum punya lisensi? Hubungi akuntuntas@gmail.com")
+            "dipakai di beberapa perangkat.")
         info.setWordWrap(True)
         info.setStyleSheet(
             f"font-size: {theme.FS_TINY}px; color: {C.TEXT_FAINT}; "
             "background: transparent;")
         fl.addWidget(info)
+        fl.addSpacing(6)
+
+        # Alamat email dibuat dapat diklik supaya pengguna yang belum punya
+        # lisensi bisa langsung menghubungi penjual.
+        self.lbl_bantuan = QLabel(
+            'Belum punya lisensi? Hubungi '
+            '<a href="mailto:akuntuntas@gmail.com" '
+            'style="color: #1B4F8A; text-decoration: none;">'
+            'akuntuntas@gmail.com</a>')
+        self.lbl_bantuan.setWordWrap(True)
+        self.lbl_bantuan.setOpenExternalLinks(True)
+        self.lbl_bantuan.setStyleSheet(
+            f"font-size: {theme.FS_TINY}px; color: {C.TEXT_FAINT}; "
+            "background: transparent;")
+        fl.addWidget(self.lbl_bantuan)
 
         kl.addWidget(form)
         kl.addStretch()
@@ -178,6 +215,27 @@ class HalamanAktivasi(QWidget):
         luar.addWidget(kanan, 1)
 
     # ------------------------------------------------------------------
+    def _tempel_kunci(self):
+        """Isi kolom kunci dari papan klip."""
+        from PySide6.QtGui import QGuiApplication
+
+        papan = QGuiApplication.clipboard()
+        teks = papan.text() if papan else ""
+        if not teks.strip():
+            self._tampilkan_kabar(
+                "Papan klip kosong. Salin kunci lisensi dari email pembelian "
+                "lebih dulu, lalu tekan Tempel.", "info")
+            return
+
+        self.inp_kunci.setText(rapikan_kunci(teks))
+        self.inp_kunci.setFocus()
+
+    def _buka_email(self, alamat: str):
+        """Buka aplikasi email untuk menghubungi penjual lisensi."""
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices
+        QDesktopServices.openUrl(QUrl(f"mailto:{alamat}"))
+
     def _saat_mengetik(self, teks: str):
         """Rapikan penulisan kunci sambil diperiksa kelengkapannya."""
         posisi = self.inp_kunci.cursorPosition()
