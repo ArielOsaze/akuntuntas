@@ -264,9 +264,19 @@ class PengaturanPage(QWidget):
             self.cmb_perusahaan.currentIndexChanged.connect(self._ganti_perusahaan)
             l2.addWidget(self.cmb_perusahaan)
 
-            b_tambah = w.tombol("Tambah Perusahaan Baru", ikon="+")
-            b_tambah.clicked.connect(lambda: self.pindah_halaman.emit("perusahaan"))
-            l2.addWidget(b_tambah, 0, Qt.AlignLeft)
+            # Menambah badan usaha kedua dan seterusnya hanya tersedia pada
+            # paket Enterprise. Bila dibuka, tombolnya diganti keterangan
+            # supaya pengguna paket Standar tahu alasannya.
+            from .. import batas_paket
+            if batas_paket.boleh_pakai(self.ctx.lisensi, "multi_entitas"):
+                b_tambah = w.tombol("Tambah Perusahaan Baru", ikon="+")
+                b_tambah.clicked.connect(lambda: self.pindah_halaman.emit("perusahaan"))
+                l2.addWidget(b_tambah, 0, Qt.AlignLeft)
+            else:
+                l2.addWidget(w.label(
+                    "Menambah badan usaha lain tersedia pada paket Enterprise. "
+                    "Paket Standar memakai satu badan usaha.",
+                    objek="Muted"))
         else:
             l2.addWidget(w.label("Belum ada perusahaan.", objek="Muted"))
             b = w.tombol("Buat Perusahaan", gaya="primary")

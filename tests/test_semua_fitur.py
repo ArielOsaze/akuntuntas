@@ -90,10 +90,17 @@ cek("Mode pengguna tersimpan", row["app_mode"] == "expert")
 
 # ==========================================================================
 bagian("PERUSAHAAN & BAGAN AKUN")
+
+# Uji ini memerlukan dua badan usaha sekaligus untuk membandingkan bagan
+# akun PT dan UMKM. Paket Enterprise dipakai agar batas multi badan usaha
+# tidak menghalangi pengujian.
+from akuntansi_id.core.license import Lisensi as _Lisensi  # noqa: E402
+_LISENSI_UJI = _Lisensi(kunci="ATNTUJI", paket="enterprise", fitur={})
+
 cid = services.create_company(
     "PT Uji Lengkap", "pt", npwp="01.234.567.8-901.000",
     nama_pemilik="Direktur Utama", kota="Jakarta", tahun_buku_awal="2026-01-01",
-    status_pkp=True, skema_pph="pasal31e")
+    status_pkp=True, skema_pph="pasal31e", lisensi=_LISENSI_UJI)
 
 jml_akun = db.scalar("SELECT COUNT(*) FROM accounts WHERE company_id=?", (cid,))
 cek("Perusahaan dibuat", cid > 0)
@@ -101,7 +108,8 @@ cek("Bagan akun PT terisi", jml_akun >= 90, f"jumlah={jml_akun}")
 
 cid_umkm = services.create_company("Toko Uji UMKM", "umkm_op",
                                    nama_pemilik="Pemilik UMKM",
-                                   tahun_buku_awal="2026-01-01")
+                                   tahun_buku_awal="2026-01-01",
+                                   lisensi=_LISENSI_UJI)
 akun_umkm = db.scalar("SELECT COUNT(*) FROM accounts WHERE company_id=?", (cid_umkm,))
 cek("Bagan akun UMKM lebih ringkas", 20 < akun_umkm < jml_akun,
     f"umkm={akun_umkm} pt={jml_akun}")

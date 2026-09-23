@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Admin AkunTuntas</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="logo-32.png" type="image/png">
+<link rel="stylesheet" href="styles.css">
+<style>
+    .admin-badan {
+        display: flex;
+        min-height: 100vh;
+        background: #F5F7FA;
+    }
+
+    /* ---------------------------------------------------------- samping */
+    .admin-samping {
+        width: 236px;
+        flex-shrink: 0;
+        background: #0F2438;
+        color: #C7D6E4;
+        display: flex;
+        flex-direction: column;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+    }
+
+    .admin-merek {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 20px 18px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+        color: #FFFFFF;
+        font-weight: 700;
+        font-size: 15.5px;
+    }
+
+    .admin-merek img {
+        width: 30px;
+        height: 30px;
+        border-radius: 7px;
+        background: #FFFFFF;
+        padding: 3px;
+        box-sizing: border-box;
+    }
+
+    .admin-menu {
+        flex: 1;
+        padding: 14px 10px;
+        overflow-y: auto;
+    }
+
+    .admin-menu button {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        width: 100%;
+        padding: 11px 13px;
+        margin-bottom: 3px;
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        color: #C7D6E4;
+        font-size: 14.5px;
+        font-family: inherit;
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .admin-menu button:hover { background: rgba(255, 255, 255, 0.07); color: #FFFFFF; }
+
+    .admin-menu button.aktif {
+        background: #1B4F8A;
+        color: #FFFFFF;
+        font-weight: 600;
+    }
+
+    .admin-menu svg {
+        width: 17px;
+        height: 17px;
+        stroke: currentColor;
+        flex-shrink: 0;
+    }
+
+    .admin-kaki {
+        padding: 14px 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.09);
+        font-size: 12.5px;
+        color: #7E97AE;
+    }
+
+    /* ---------------------------------------------------------- utama */
+    .admin-utama {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .admin-atas {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 26px;
+        background: #FFFFFF;
+        border-bottom: 1px solid #E2E8F0;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+    }
+
+    .admin-atas h1 { font-size: 19px; letter-spacing: -0.01em; }
+
+    .admin-atas-aksi { display: flex; align-items: center; gap: 10px; }
+
+    .admin-siapa { font-size: 13.5px; color: #5A6B7D; }
+
+    .admin-isi { padding: 24px 26px 60px; }
+
+    /* ---------------------------------------------------------- masuk */
+    .admin-masuk {
+        max-width: 420px;
+        margin: 80px auto;
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(15, 36, 56, 0.07);
+        padding: 34px;
+    }
+
+    .admin-masuk img {
+        width: 56px;
+        height: 56px;
+        border-radius: 13px;
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        padding: 5px;
+        box-sizing: border-box;
+        display: block;
+        margin: 0 auto 18px;
+    }
+
+    .admin-masuk h1 { font-size: 22px; text-align: center; margin-bottom: 7px; }
+    .admin-masuk p { font-size: 14px; color: #5A6B7D; text-align: center; margin-bottom: 24px; line-height: 1.6; }
+
+    .admin-bidang { margin-bottom: 15px; }
+    .admin-bidang label { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 6px; }
+
+    .admin-input {
+        width: 100%;
+        padding: 12px 13px;
+        border: 1.5px solid #D7DFE8;
+        border-radius: 9px;
+        font-size: 15px;
+        font-family: inherit;
+        color: #16222E;
+        box-sizing: border-box;
+        background: #FFFFFF;
+    }
+
+    .admin-input:focus {
+        outline: none;
+        border-color: #1B4F8A;
+        box-shadow: 0 0 0 3px rgba(27, 79, 138, 0.12);
+    }
+
+    .admin-tombol {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 20px;
+        background: #1B4F8A;
+        color: #FFFFFF;
+        border: none;
+        border-radius: 9px;
+        font-size: 15px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+    }
+
+    .admin-tombol:hover { background: #163F6E; }
+    .admin-tombol:disabled { background: #94A3B8; cursor: wait; }
+    .admin-tombol.penuh { width: 100%; }
+
+    .admin-tombol.garis {
+        background: #FFFFFF;
+        color: #1B4F8A;
+        border: 1.5px solid #D7DFE8;
+    }
+
+    .admin-tombol.garis:hover { background: #F5F7FA; border-color: #1B4F8A; }
+
+    .admin-tombol.bahaya { background: #B91C1C; }
+    .admin-tombol.bahaya:hover { background: #991B1B; }
+
+    .admin-tombol.kecil { padding: 8px 13px; font-size: 13px; }
+
+    .admin-pesan {
+        display: none;
+        padding: 12px 14px;
+        border-radius: 9px;
+        font-size: 14px;
+        line-height: 1.55;
+        margin-bottom: 16px;
+    }
+
+    .admin-pesan.tampil { display: block; }
+    .admin-pesan.galat { background: #FEF2F2; border: 1px solid #FCA5A5; color: #991B1B; }
+    .admin-pesan.sukses { background: #ECFDF5; border: 1px solid #6EE7B7; color: #065F46; }
+    .admin-pesan.info { background: #EFF6FF; border: 1px solid #93C5FD; color: #1E40AF; }
+
+    /* ---------------------------------------------------------- kartu angka */
+    .admin-angka-kisi {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+
+    .admin-angka {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 18px;
+    }
+
+    .admin-angka small {
+        display: block;
+        font-size: 13px;
+        color: #5A6B7D;
+        margin-bottom: 7px;
+    }
+
+    .admin-angka strong {
+        font-size: 25px;
+        color: #16222E;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+    }
+
+    .admin-angka.tegas strong { color: #1B4F8A; }
+    .admin-angka.hijau strong { color: #047857; }
+
+    /* ---------------------------------------------------------- panel */
+    .admin-panel {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .admin-panel-kepala {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 15px 18px;
+        border-bottom: 1px solid #EDF1F5;
+        flex-wrap: wrap;
+    }
+
+    .admin-panel-kepala h2 { font-size: 16px; }
+
+    .admin-panel-isi { padding: 18px; }
+
+    /* ---------------------------------------------------------- tabel */
+    .admin-tabel-wadah { overflow-x: auto; }
+
+    .admin-tabel {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+    }
+
+    .admin-tabel th {
+        text-align: left;
+        padding: 11px 14px;
+        background: #F8FAFC;
+        color: #45566A;
+        font-weight: 600;
+        font-size: 12.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .admin-tabel td {
+        padding: 11px 14px;
+        border-bottom: 1px solid #F1F5F9;
+        color: #2A3947;
+        vertical-align: middle;
+    }
+
+    .admin-tabel tr:last-child td { border-bottom: none; }
+    .admin-tabel tr:hover td { background: #FAFCFE; }
+
+    .admin-tabel .kunci {
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 13px;
+        letter-spacing: 0.4px;
+        font-weight: 600;
+        color: #1B4F8A;
+    }
+
+    .admin-tabel .kanan { text-align: right; font-variant-numeric: tabular-nums; }
+    .admin-tabel .kosong { text-align: center; color: #7E8FA3; padding: 34px 14px; }
+
+    .admin-pil {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .admin-pil.aktif { background: #D1FAE5; color: #065F46; }
+    .admin-pil.menunggu { background: #FEF3C7; color: #92400E; }
+    .admin-pil.ditangguhkan { background: #FFEDD5; color: #9A3412; }
+    .admin-pil.dicabut, .admin-pil.dibatalkan { background: #FEE2E2; color: #991B1B; }
+    .admin-pil.dibayar { background: #D1FAE5; color: #065F46; }
+    .admin-pil.mati { background: #F1F5F9; color: #64748B; }
+
+    .admin-cari {
+        display: flex;
+        gap: 9px;
+        flex-wrap: wrap;
+    }
+
+    .admin-cari input {
+        padding: 9px 13px;
+        border: 1.5px solid #D7DFE8;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        min-width: 230px;
+    }
+
+    .admin-cari input:focus {
+        outline: none;
+        border-color: #1B4F8A;
+        box-shadow: 0 0 0 3px rgba(27, 79, 138, 0.1);
+    }
+
+    .admin-baris-bidang {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .admin-pilih {
+        width: 100%;
+        padding: 11px 13px;
+        border: 1.5px solid #D7DFE8;
+        border-radius: 9px;
+        font-size: 14.5px;
+        font-family: inherit;
+        background: #FFFFFF;
+        color: #16222E;
+    }
+
+    .admin-hasil-kunci {
+        background: #ECFDF5;
+        border: 1.5px solid #6EE7B7;
+        border-radius: 10px;
+        padding: 18px;
+        text-align: center;
+        margin-top: 16px;
+    }
+
+    .admin-hasil-kunci p { font-size: 13.5px; color: #065F46; font-weight: 600; margin-bottom: 10px; }
+    .admin-hasil-kunci div {
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: #064E3B;
+        background: #FFFFFF;
+        border: 1px solid #A7F3D0;
+        border-radius: 8px;
+        padding: 13px 12px;
+        word-break: break-all;
+        user-select: all;
+    }
+
+    .admin-kosong {
+        text-align: center;
+        padding: 46px 20px;
+        color: #7E8FA3;
+        font-size: 14.5px;
+    }
+
+    .admin-muat {
+        display: inline-block;
+        width: 15px;
+        height: 15px;
+        border: 2.5px solid #1B4F8A;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: adminPutar 0.8s linear infinite;
+        margin-right: 9px;
+        vertical-align: -3px;
+    }
+
+    @keyframes adminPutar { to { transform: rotate(360deg); } }
+
+    @media (max-width: 860px) {
+        .admin-badan { flex-direction: column; }
+        .admin-samping { width: 100%; height: auto; position: static; }
+        .admin-menu { display: flex; overflow-x: auto; gap: 5px; }
+        .admin-menu button { width: auto; white-space: nowrap; margin-bottom: 0; }
+        .admin-isi { padding: 18px 16px 50px; }
+        .admin-atas { padding: 14px 16px; }
+    }
+</style>
+</head>
+<body>
+
+<!-- ==================================================== masuk -->
+<div id="layar-masuk" style="display: none;">
+    <div class="admin-masuk">
+        <img src="logo.png" alt="">
+        <h1>Dashboard Admin</h1>
+        <p>Kelola lisensi, pantau pemakaian, dan lihat pembelian AkunTuntas.</p>
+
+        <div class="admin-pesan" id="pesan-masuk"></div>
+
+        <div class="admin-bidang">
+            <label for="masuk-email">Email</label>
+            <input class="admin-input" id="masuk-email" type="email" placeholder="akuntuntas@gmail.com" autocomplete="username">
+        </div>
+
+        <div class="admin-bidang">
+            <label for="masuk-sandi">Kata sandi</label>
+            <input class="admin-input" id="masuk-sandi" type="password" placeholder="Kata sandi dashboard" autocomplete="current-password">
+        </div>
+
+        <button class="admin-tombol penuh" id="tombol-masuk" type="button">Masuk</button>
+
+        <p style="margin-top: 18px; font-size: 13px;">
+            Belum mengatur kata sandi? <a href="#" id="ke-daftar" style="color: #1B4F8A; font-weight: 600;">Buat kata sandi</a>
+        </p>
+    </div>
+</div>
+
+<!-- ==================================================== daftar sandi -->
+<div id="layar-daftar" style="display: none;">
+    <div class="admin-masuk">
+        <img src="logo.png" alt="">
+        <h1>Buat Kata Sandi</h1>
+        <p>
+            Langkah ini hanya sekali. Setelah kata sandi dibuat, halaman ini
+            tidak dapat dipakai lagi.
+        </p>
+
+        <div class="admin-pesan" id="pesan-daftar"></div>
+
+        <div class="admin-bidang">
+            <label for="daftar-email">Email pengelola</label>
+            <input class="admin-input" id="daftar-email" type="email" value="akuntuntas@gmail.com">
+        </div>
+
+        <div class="admin-bidang">
+            <label for="daftar-sandi">Kata sandi baru <span style="color: #5A6B7D; font-weight: 400;">(minimal 10 huruf)</span></label>
+            <input class="admin-input" id="daftar-sandi" type="password" placeholder="Kata sandi yang kuat">
+        </div>
+
+        <div class="admin-bidang">
+            <label for="daftar-ulang">Ulangi kata sandi</label>
+            <input class="admin-input" id="daftar-ulang" type="password" placeholder="Ketik ulang kata sandi">
+        </div>
+
+        <button class="admin-tombol penuh" id="tombol-daftar" type="button">Simpan Kata Sandi</button>
+
+        <p style="margin-top: 18px; font-size: 13px;">
+            <a href="#" id="ke-masuk" style="color: #1B4F8A; font-weight: 600;">Kembali ke halaman masuk</a>
+        </p>
+    </div>
+</div>
+
+<!-- ==================================================== dashboard -->
+<div class="admin-badan" id="layar-admin" style="display: none;">
+    <aside class="admin-samping">
+        <div class="admin-merek">
+            <img src="logo.png" alt="">
+            AkunTuntas
+        </div>
+        <nav class="admin-menu">
+            <button data-hal="ikhtisar" class="aktif" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+                Ikhtisar
+            </button>
+            <button data-hal="lisensi" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Lisensi
+            </button>
+            <button data-hal="buat" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+                Buat Lisensi
+            </button>
+            <button data-hal="pesanan" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12l2 6H4z"/><path d="M4 8v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M9 13h6"/></svg>
+                Pembelian
+            </button>
+            <button data-hal="perangkat" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                Perangkat
+            </button>
+            <button data-hal="jejak" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>
+                Jejak Admin
+            </button>
+            <button data-hal="sandi" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 1-7.1 7.1 5 5 0 0 1 7.1-7.1zm0 0L15 7m0 0l3 3 3-3-3-3"/></svg>
+                Ganti Sandi
+            </button>
+        </nav>
+        <div class="admin-kaki">Xinet Group</div>
+    </aside>
+
+    <div class="admin-utama">
+        <header class="admin-atas">
+            <h1 id="judul-hal">Ikhtisar</h1>
+            <div class="admin-atas-aksi">
+                <span class="admin-siapa" id="siapa">-</span>
+                <button class="admin-tombol garis kecil" id="tombol-keluar" type="button">Keluar</button>
+            </div>
+        </header>
+        <main class="admin-isi" id="isi-admin"></main>
+    </div>
+</div>
+
+<script>
+(function () {
+    var ALAMAT = "https://cumirppxywzkbrzlvknr.supabase.co/functions/v1/license";
+    var KUNCI_SIMPAN = "akuntuntas_admin";
+
+    var layarMasuk = document.getElementById("layar-masuk");
+    var layarDaftar = document.getElementById("layar-daftar");
+    var layarAdmin = document.getElementById("layar-admin");
+    var isi = document.getElementById("isi-admin");
+    var judulHal = document.getElementById("judul-hal");
+    var siapa = document.getElementById("siapa");
+
+    var token = "";
+    var namaAdmin = "";
+    var halaman = "ikhtisar";
+
+    function panggil(data) {
+        return fetch(ALAMAT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }).then(function (r) { return r.json(); });
+    }
+
+    function rupiah(n) {
+        return "Rp" + Number(n || 0).toLocaleString("id-ID");
+    }
+
+    function tanggal(iso) {
+        if (!iso) return "-";
+        var d = new Date(iso);
+        if (isNaN(d)) return "-";
+        return d.toLocaleDateString("id-ID", {
+            day: "2-digit", month: "short", year: "numeric",
+            hour: "2-digit", minute: "2-digit"
+        });
+    }
+
+    function aman(teks) {
+        return String(teks == null ? "" : teks)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function pesan(el, teks, jenis) {
+        el.textContent = teks;
+        el.className = "admin-pesan tampil " + (jenis || "info");
+    }
+
+    // ------------------------------------------------------------ masuk
+    function tampilkanLayar(nama) {
+        layarMasuk.style.display = nama === "masuk" ? "block" : "none";
+        layarDaftar.style.display = nama === "daftar" ? "block" : "none";
+        layarAdmin.style.display = nama === "admin" ? "flex" : "none";
+    }
+
+    document.getElementById("ke-daftar").addEventListener("click", function (e) {
+        e.preventDefault();
+        tampilkanLayar("daftar");
+    });
+    document.getElementById("ke-masuk").addEventListener("click", function (e) {
+        e.preventDefault();
+        tampilkanLayar("masuk");
+    });
+
+    document.getElementById("tombol-masuk").addEventListener("click", function () {
+        var email = document.getElementById("masuk-email").value.trim();
+        var sandi = document.getElementById("masuk-sandi").value;
+        var kotak = document.getElementById("pesan-masuk");
+        var tombol = this;
+
+        if (!email || !sandi) {
+            pesan(kotak, "Email dan kata sandi wajib diisi.", "galat");
+            return;
+        }
+
+        tombol.disabled = true;
+        tombol.textContent = "Memeriksa...";
+
+        panggil({ aksi: "admin-masuk", email: email, sandi: sandi })
+            .then(function (d) {
+                if (!d.ok) {
+                    pesan(kotak, d.pesan || "Tidak dapat masuk.", "galat");
+                    return;
+                }
+                token = d.token;
+                namaAdmin = d.nama || email;
+                try { sessionStorage.setItem(KUNCI_SIMPAN, token); } catch (e) {}
+                mulaiAdmin();
+            })
+            .catch(function () {
+                pesan(kotak, "Tidak dapat menghubungi server. Periksa sambungan internet.", "galat");
+            })
+            .finally(function () {
+                tombol.disabled = false;
+                tombol.textContent = "Masuk";
+            });
+    });
+
+    document.getElementById("masuk-sandi").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") document.getElementById("tombol-masuk").click();
+    });
+
+    document.getElementById("tombol-daftar").addEventListener("click", function () {
+        var email = document.getElementById("daftar-email").value.trim();
+        var sandi = document.getElementById("daftar-sandi").value;
+        var ulang = document.getElementById("daftar-ulang").value;
+        var kotak = document.getElementById("pesan-daftar");
+        var tombol = this;
+
+        if (sandi.length < 10) {
+            pesan(kotak, "Kata sandi minimal 10 huruf.", "galat");
+            return;
+        }
+        if (sandi !== ulang) {
+            pesan(kotak, "Kedua kata sandi belum sama.", "galat");
+            return;
+        }
+
+        tombol.disabled = true;
+        tombol.textContent = "Menyimpan...";
+
+        panggil({ aksi: "admin-daftar", email: email, sandi: sandi })
+            .then(function (d) {
+                if (!d.ok) {
+                    pesan(kotak, d.pesan || "Tidak dapat menyimpan kata sandi.", "galat");
+                    return;
+                }
+                pesan(kotak, "Kata sandi tersimpan. Silakan masuk.", "sukses");
+                setTimeout(function () { tampilkanLayar("masuk"); }, 1200);
+            })
+            .catch(function () {
+                pesan(kotak, "Tidak dapat menghubungi server.", "galat");
+            })
+            .finally(function () {
+                tombol.disabled = false;
+                tombol.textContent = "Simpan Kata Sandi";
+            });
+    });
+
+    document.getElementById("tombol-keluar").addEventListener("click", function () {
+        panggil({ aksi: "admin-keluar", token: token }).finally(function () {
+            token = "";
+            try { sessionStorage.removeItem(KUNCI_SIMPAN); } catch (e) {}
+            tampilkanLayar("masuk");
+        });
+    });
+
+    // ------------------------------------------------------------ menu
+    var JUDUL = {
+        ikhtisar: "Ikhtisar",
+        lisensi: "Daftar Lisensi",
+        buat: "Buat Lisensi Baru",
+        pesanan: "Pembelian",
+        perangkat: "Perangkat Terpasang",
+        jejak: "Jejak Admin",
+        sandi: "Ganti Kata Sandi"
+    };
+
+    document.querySelectorAll(".admin-menu button").forEach(function (b) {
+        b.addEventListener("click", function () {
+            document.querySelectorAll(".admin-menu button").forEach(function (x) {
+                x.classList.remove("aktif");
+            });
+            b.classList.add("aktif");
+            halaman = b.dataset.hal;
+            judulHal.textContent = JUDUL[halaman] || halaman;
+            muat();
+        });
+    });
+
+    function mulaiAdmin() {
+        siapa.textContent = namaAdmin;
+        tampilkanLayar("admin");
+        halaman = "ikhtisar";
+        judulHal.textContent = JUDUL.ikhtisar;
+        muat();
+    }
+
+    function gagalSesi(d) {
+        if (d && d.pesan && d.pesan.indexOf("Sesi") >= 0) {
+            token = "";
+            try { sessionStorage.removeItem(KUNCI_SIMPAN); } catch (e) {}
+            tampilkanLayar("masuk");
+            pesan(document.getElementById("pesan-masuk"), "Sesi berakhir. Silakan masuk lagi.", "info");
+            return true;
+        }
+        return false;
+    }
+
+    function muat() {
+        isi.innerHTML = '<div class="admin-kosong"><span class="admin-muat"></span> Memuat data...</div>';
+        if (halaman === "ikhtisar") return muatIkhtisar();
+        if (halaman === "lisensi") return muatLisensi();
+        if (halaman === "buat") return muatBuat();
+        if (halaman === "pesanan") return muatPesanan();
+        if (halaman === "perangkat") return muatPerangkat();
+        if (halaman === "jejak") return muatJejak();
+        if (halaman === "sandi") return muatSandi();
+    }
+
+    // ------------------------------------------------------------ ikhtisar
+    function muatIkhtisar() {
+        panggil({ aksi: "admin-ikhtisar", token: token }).then(function (d) {
+            if (!d.ok) { if (!gagalSesi(d)) isi.innerHTML = '<div class="admin-kosong">' + aman(d.pesan) + '</div>'; return; }
+
+            var k = d.ikhtisar || {};
+            var html = '<div class="admin-angka-kisi">' +
+                '<div class="admin-angka tegas"><small>Lisensi Aktif</small><strong>' + (k.lisensi_aktif || 0) + '</strong></div>' +
+                '<div class="admin-angka"><small>Total Lisensi</small><strong>' + (k.jumlah_lisensi || 0) + '</strong></div>' +
+                '<div class="admin-angka"><small>Perangkat Aktif</small><strong>' + (k.perangkat_aktif || 0) + '</strong></div>' +
+                '<div class="admin-angka hijau"><small>Pesanan Lunas</small><strong>' + (k.pesanan_lunas || 0) + '</strong></div>' +
+                '<div class="admin-angka"><small>Menunggu Bayar</small><strong>' + (k.pesanan_menunggu || 0) + '</strong></div>' +
+                '<div class="admin-angka hijau"><small>Pendapatan</small><strong>' + rupiah(k.pendapatan) + '</strong></div>' +
+                '</div>';
+
+            html += '<div class="admin-panel"><div class="admin-panel-kepala"><h2>Pemakaian Terakhir</h2>' +
+                    '<button class="admin-tombol garis kecil" onclick="location.reload()" type="button">Muat Ulang</button></div>';
+
+            var akt = d.aktivitas || [];
+            if (!akt.length) {
+                html += '<div class="admin-kosong">Belum ada pemakaian tercatat.</div>';
+            } else {
+                html += '<div class="admin-tabel-wadah"><table class="admin-tabel"><thead><tr>' +
+                    '<th>Waktu</th><th>Perangkat</th><th>Hasil</th><th>Keterangan</th></tr></thead><tbody>';
+                akt.forEach(function (a) {
+                    var kelas = a.hasil === "ditolak" ? "dicabut" : (a.hasil === "gagal" ? "ditangguhkan" : "aktif");
+                    html += '<tr><td>' + tanggal(a.dibuat_pada) + '</td>' +
+                        '<td>' + aman(a.device_name || "-") + '</td>' +
+                        '<td><span class="admin-pil ' + kelas + '">' + aman(a.hasil) + '</span></td>' +
+                        '<td>' + aman(a.keterangan || "-") + '</td></tr>';
+                });
+                html += '</tbody></table></div>';
+            }
+            html += '</div>';
+            isi.innerHTML = html;
+        }).catch(function () {
+            isi.innerHTML = '<div class="admin-kosong">Tidak dapat memuat data.</div>';
+        });
+    }
+
+    // ------------------------------------------------------------ lisensi
+    function muatLisensi(cari) {
+        panggil({ aksi: "admin-lisensi", token: token, cari: cari || "" }).then(function (d) {
+            if (!d.ok) { if (!gagalSesi(d)) isi.innerHTML = '<div class="admin-kosong">' + aman(d.pesan) + '</div>'; return; }
+
+            var html = '<div class="admin-panel"><div class="admin-panel-kepala">' +
+                '<h2>Daftar Lisensi</h2>' +
+                '<div class="admin-cari"><input id="cari-lisensi" type="text" placeholder="Cari kunci, nama, atau email" value="' + aman(cari) + '">' +
+                '<button class="admin-tombol kecil" id="tombol-cari" type="button">Cari</button></div></div>';
+
+            var daftar = d.lisensi || [];
+            if (!daftar.length) {
+                html += '<div class="admin-kosong">Tidak ada lisensi yang cocok.</div>';
+            } else {
+                html += '<div class="admin-tabel-wadah"><table class="admin-tabel"><thead><tr>' +
+                    '<th>Kunci</th><th>Paket</th><th>Pemilik</th><th>Perangkat</th>' +
+                    '<th>Status</th><th>Diterbitkan</th><th></th></tr></thead><tbody>';
+                daftar.forEach(function (l) {
+                    var kelas = l.status === "aktif" ? "aktif" : (l.status === "dicabut" ? "dicabut" : "ditangguhkan");
+                    html += '<tr><td class="kunci">' + aman(l.kunci) + '</td>' +
+                        '<td>' + aman(l.product_code) + '</td>' +
+                        '<td>' + aman(l.pemilik_nama || "-") + '<br><span style="color:#7E8FA3;font-size:12.5px;">' + aman(l.pemilik_email || "") + '</span></td>' +
+                        '<td class="kanan">' + (l.perangkat_terpakai || 0) + '</td>' +
+                        '<td><span class="admin-pil ' + kelas + '">' + aman(l.status) + '</span></td>' +
+                        '<td>' + tanggal(l.diterbitkan_pada) + '</td>' +
+                        '<td><button class="admin-tombol garis kecil" data-ubah="' + aman(l.kunci) + '" data-status="' + aman(l.status) + '" type="button">Ubah</button></td></tr>';
+                });
+                html += '</tbody></table></div>';
+            }
+            html += '</div>';
+            isi.innerHTML = html;
+
+            var inp = document.getElementById("cari-lisensi");
+            var cariTombol = document.getElementById("tombol-cari");
+            if (cariTombol) cariTombol.addEventListener("click", function () { muatLisensi(inp.value.trim()); });
+            if (inp) inp.addEventListener("keydown", function (e) {
+                if (e.key === "Enter") muatLisensi(inp.value.trim());
+            });
+
+            isi.querySelectorAll("[data-ubah]").forEach(function (b) {
+                b.addEventListener("click", function () {
+                    ubahLisensi(b.dataset.ubah, b.dataset.status);
+                });
+            });
+        }).catch(function () {
+            isi.innerHTML = '<div class="admin-kosong">Tidak dapat memuat daftar lisensi.</div>';
+        });
+    }
+
+    function ubahLisensi(kunci, statusSekarang) {
+        var pilihan = statusSekarang === "aktif"
+            ? "dicabut|dicabut (perangkat dilepas)"
+            : "aktif|aktifkan kembali";
+        var jawab = window.prompt(
+            "Ubah status lisensi " + kunci + "\n\nKetik salah satu:\n" +
+            "  aktif          - lisensi berlaku\n" +
+            "  ditangguhkan   - sementara tidak berlaku\n" +
+            "  dicabut        - tidak berlaku selamanya\n\n" +
+            "Status sekarang: " + statusSekarang,
+            statusSekarang
+        );
+        if (!jawab) return;
+        jawab = jawab.trim().toLowerCase();
+        if (["aktif", "ditangguhkan", "dicabut"].indexOf(jawab) < 0) {
+            alert("Status harus salah satu dari: aktif, ditangguhkan, dicabut.");
+            return;
+        }
+        panggil({ aksi: "admin-ubah-lisensi", token: token, kunci: kunci, status: jawab })
+            .then(function (d) {
+                if (!d.ok) { if (!gagalSesi(d)) alert(d.pesan || "Gagal mengubah status."); return; }
+                muatLisensi();
+            });
+    }
+
+    // ------------------------------------------------------------ buat
+    function muatBuat() {
+        isi.innerHTML = '<div class="admin-panel"><div class="admin-panel-kepala"><h2>Buat Lisensi Baru</h2></div>' +
+            '<div class="admin-panel-isi">' +
+            '<div class="admin-baris-bidang">' +
+            '<div><label style="display:block;font-size:13.5px;font-weight:600;margin-bottom:6px;">Paket</label>' +
+            '<select class="admin-pilih" id="buat-paket"><option value="standar">Standar (1 perangkat)</option>' +
+            '<option value="enterprise">Enterprise (10 perangkat)</option></select></div>' +
+            '<div><label style="display:block;font-size:13.5px;font-weight:600;margin-bottom:6px;">Nama pemilik</label>' +
+            '<input class="admin-input" id="buat-nama" type="text" placeholder="Nama pembeli atau perusahaan"></div>' +
+            '<div><label style="display:block;font-size:13.5px;font-weight:600;margin-bottom:6px;">Email (boleh kosong)</label>' +
+            '<input class="admin-input" id="buat-email" type="email" placeholder="nama@email.com"></div>' +
+            '<div><label style="display:block;font-size:13.5px;font-weight:600;margin-bottom:6px;">WhatsApp (boleh kosong)</label>' +
+            '<input class="admin-input" id="buat-wa" type="tel" placeholder="08xxxxxxxxxx"></div>' +
+            '</div>' +
+            '<div style="margin-bottom:16px;"><label style="display:block;font-size:13.5px;font-weight:600;margin-bottom:6px;">Catatan (boleh kosong)</label>' +
+            '<input class="admin-input" id="buat-catatan" type="text" placeholder="Misalnya: pembelian lewat WhatsApp"></div>' +
+            '<button class="admin-tombol" id="tombol-buat" type="button">Buat Lisensi</button>' +
+            '<div id="hasil-buat"></div>' +
+            '</div></div>';
+
+        document.getElementById("tombol-buat").addEventListener("click", function () {
+            var tombol = this;
+            var nama = document.getElementById("buat-nama").value.trim();
+            var kotak = document.getElementById("hasil-buat");
+
+            if (!nama) {
+                kotak.innerHTML = '<div class="admin-pesan tampil galat">Nama pemilik wajib diisi.</div>';
+                return;
+            }
+
+            tombol.disabled = true;
+            tombol.textContent = "Membuat...";
+
+            panggil({
+                aksi: "admin-buat-lisensi", token: token,
+                paket: document.getElementById("buat-paket").value,
+                nama: nama,
+                email: document.getElementById("buat-email").value.trim(),
+                whatsapp: document.getElementById("buat-wa").value.trim(),
+                catatan: document.getElementById("buat-catatan").value.trim()
+            }).then(function (d) {
+                if (!d.ok) {
+                    if (gagalSesi(d)) return;
+                    kotak.innerHTML = '<div class="admin-pesan tampil galat">' + aman(d.pesan) + '</div>';
+                    return;
+                }
+                kotak.innerHTML = '<div class="admin-hasil-kunci"><p>Lisensi ' + aman(d.nama_paket) +
+                    ' berhasil dibuat (' + d.max_device + ' perangkat)</p><div>' + aman(d.kunci) + '</div>' +
+                    '<p style="margin:12px 0 0;font-weight:400;">Kirimkan kunci ini kepada pembeli.</p></div>';
+                document.getElementById("buat-nama").value = "";
+                document.getElementById("buat-email").value = "";
+                document.getElementById("buat-wa").value = "";
+                document.getElementById("buat-catatan").value = "";
+            }).catch(function () {
+                kotak.innerHTML = '<div class="admin-pesan tampil galat">Tidak dapat menghubungi server.</div>';
+            }).finally(function () {
+                tombol.disabled = false;
+                tombol.textContent = "Buat Lisensi";
+            });
+        });
+    }
+
+    // ------------------------------------------------------------ pesanan
+    function muatPesanan() {
+        panggil({ aksi: "admin-pesanan", token: token }).then(function (d) {
+            if (!d.ok) { if (!gagalSesi(d)) isi.innerHTML = '<div class="admin-kosong">' + aman(d.pesan) + '</div>'; return; }
+
+            var html = '<div class="admin-panel"><div class="admin-panel-kepala"><h2>Pembelian Lisensi</h2></div>';
+            var daftar = d.pesanan || [];
+            if (!daftar.length) {
+                html += '<div class="admin-kosong">Belum ada pembelian lewat situs.</div>';
+            } else {
+                html += '<div class="admin-tabel-wadah"><table class="admin-tabel"><thead><tr>' +
+                    '<th>Kode</th><th>Pembeli</th><th>Paket</th><th>Jumlah</th>' +
+                    '<th>Status</th><th>Dibuat</th><th>Dibayar</th></tr></thead><tbody>';
+                daftar.forEach(function (p) {
+                    var kelas = p.status === "dibayar" ? "dibayar" : (p.status === "dibatalkan" ? "dibatalkan" : "menunggu");
+                    html += '<tr><td class="kunci">' + aman(p.order_code) + '</td>' +
+                        '<td>' + aman(p.nama_pembeli) + '<br><span style="color:#7E8FA3;font-size:12.5px;">' + aman(p.email_pembeli || "") + '</span></td>' +
+                        '<td>' + aman(p.product_code) + '</td>' +
+                        '<td class="kanan">' + rupiah(p.jumlah) + '</td>' +
+                        '<td><span class="admin-pil ' + kelas + '">' + aman(p.status) + '</span></td>' +
+                        '<td>' + tanggal(p.dibuat_pada) + '</td>' +
+                        '<td>' + tanggal(p.dibayar_pada) + '</td></tr>';
+                });
+                html += '</tbody></table></div>';
+            }
+            html += '</div>';
+            isi.innerHTML = html;
+        }).catch(function () {
+            isi.innerHTML = '<div class="admin-kosong">Tidak dapat memuat data pembelian.</div>';
+        });
+    }
+
+    // ------------------------------------------------------------ perangkat
+    function muatPerangkat() {
+        panggil({ aksi: "admin-perangkat", token: token }).then(function (d) {
+            if (!d.ok) { if (!gagalSesi(d)) isi.innerHTML = '<div class="admin-kosong">' + aman(d.pesan) + '</div>'; return; }
+
+            var html = '<div class="admin-panel"><div class="admin-panel-kepala"><h2>Perangkat Terpasang</h2></div>';
+            var daftar = d.perangkat || [];
+            if (!daftar.length) {
+                html += '<div class="admin-kosong">Belum ada perangkat terpasang.</div>';
+            } else {
+                html += '<div class="admin-tabel-wadah"><table class="admin-tabel"><thead><tr>' +
+                    '<th>Kunci</th><th>Pemilik</th><th>Perangkat</th><th>Sistem</th>' +
+                    '<th>Versi</th><th>Terakhir Dilihat</th><th>Status</th><th></th></tr></thead><tbody>';
+                daftar.forEach(function (p) {
+                    html += '<tr><td class="kunci">' + aman(p.kunci) + '</td>' +
+                        '<td>' + aman(p.pemilik) + '</td>' +
+                        '<td>' + aman(p.device_name || "-") + '</td>' +
+                        '<td>' + aman(p.os_info || "-") + '</td>' +
+                        '<td>' + aman(p.app_version || "-") + '</td>' +
+                        '<td>' + tanggal(p.terakhir_dilihat) + '</td>' +
+                        '<td><span class="admin-pil ' + (p.aktif ? "aktif" : "mati") + '">' + (p.aktif ? "aktif" : "dilepas") + '</span></td>' +
+                        '<td>' + (p.aktif ? '<button class="admin-tombol garis kecil" data-lepas="' + aman(p.id) + '" type="button">Lepas</button>' : "") + '</td></tr>';
+                });
+                html += '</tbody></table></div>';
+            }
+            html += '</div>';
+            isi.innerHTML = html;
+
+            isi.querySelectorAll("[data-lepas]").forEach(function (b) {
+                b.addEventListener("click", function () {
+                    if (!confirm("Lepas perangkat ini? Lisensi tetap aktif dan dapat dipasang di perangkat lain.")) return;
+                    panggil({ aksi: "admin-lepas-perangkat", token: token, perangkat: b.dataset.lepas })
+                        .then(function (d) {
+                            if (!d.ok) { if (!gagalSesi(d)) alert(d.pesan || "Gagal melepas perangkat."); return; }
+                            muatPerangkat();
+                        });
+                });
+            });
+        }).catch(function () {
+            isi.innerHTML = '<div class="admin-kosong">Tidak dapat memuat data perangkat.</div>';
+        });
+    }
+
+    // ------------------------------------------------------------ jejak
+    function muatJejak() {
+        panggil({ aksi: "admin-jejak", token: token }).then(function (d) {
+            if (!d.ok) { if (!gagalSesi(d)) isi.innerHTML = '<div class="admin-kosong">' + aman(d.pesan) + '</div>'; return; }
+
+            var html = '<div class="admin-panel"><div class="admin-panel-kepala"><h2>Jejak Tindakan Admin</h2></div>';
+            var daftar = d.jejak || [];
+            if (!daftar.length) {
+                html += '<div class="admin-kosong">Belum ada tindakan tercatat.</div>';
+            } else {
+                html += '<div class="admin-tabel-wadah"><table class="admin-tabel"><thead><tr>' +
+                    '<th>Waktu</th><th>Email</th><th>Tindakan</th><th>Keterangan</th></tr></thead><tbody>';
+                daftar.forEach(function (j) {
+                    html += '<tr><td>' + tanggal(j.dibuat_pada) + '</td>' +
+                        '<td>' + aman(j.email) + '</td>' +
+                        '<td>' + aman(j.tindakan) + '</td>' +
+                        '<td>' + aman(j.keterangan || "-") + '</td></tr>';
+                });
+                html += '</tbody></table></div>';
+            }
+            html += '</div>';
+            isi.innerHTML = html;
+        }).catch(function () {
+            isi.innerHTML = '<div class="admin-kosong">Tidak dapat memuat jejak.</div>';
+        });
+    }
+
+    // ------------------------------------------------------------ ganti sandi
+    function muatSandi() {
+        isi.innerHTML = '<div class="admin-panel" style="max-width:520px;"><div class="admin-panel-kepala"><h2>Ganti Kata Sandi</h2></div>' +
+            '<div class="admin-panel-isi">' +
+            '<p style="font-size:14px;color:#5A6B7D;line-height:1.6;margin-bottom:18px;">' +
+            'Setelah diganti, seluruh sesi lain langsung diputus dan harus masuk ulang.</p>' +
+            '<div id="hasil-sandi"></div>' +
+            '<div style="margin-bottom:15px;"><label style="display:block;font-size:13.5px;font-weight:600;margin-bottom:6px;">Kata sandi baru</label>' +
+            '<input class="admin-input" id="sandi-baru" type="password" placeholder="Minimal 10 huruf"></div>' +
+            '<div style="margin-bottom:18px;"><label style="display:block;font-size:13.5px;font-weight:600;margin-bottom:6px;">Ulangi kata sandi</label>' +
+            '<input class="admin-input" id="sandi-ulang" type="password" placeholder="Ketik ulang"></div>' +
+            '<button class="admin-tombol" id="tombol-sandi" type="button">Simpan Kata Sandi</button>' +
+            '</div></div>';
+
+        document.getElementById("tombol-sandi").addEventListener("click", function () {
+            var kotak = document.getElementById("hasil-sandi");
+            var baru = document.getElementById("sandi-baru").value;
+            var ulang = document.getElementById("sandi-ulang").value;
+            var tombol = this;
+
+            if (baru.length < 10) {
+                kotak.innerHTML = '<div class="admin-pesan tampil galat">Kata sandi minimal 10 huruf.</div>';
+                return;
+            }
+            if (baru !== ulang) {
+                kotak.innerHTML = '<div class="admin-pesan tampil galat">Kedua kata sandi belum sama.</div>';
+                return;
+            }
+
+            tombol.disabled = true;
+            tombol.textContent = "Menyimpan...";
+
+            panggil({ aksi: "admin-ganti-sandi", token: token, sandi: baru })
+                .then(function (d) {
+                    if (!d.ok) {
+                        if (gagalSesi(d)) return;
+                        kotak.innerHTML = '<div class="admin-pesan tampil galat">' + aman(d.pesan) + '</div>';
+                        return;
+                    }
+                    kotak.innerHTML = '<div class="admin-pesan tampil sukses">Kata sandi berhasil diganti.</div>';
+                    document.getElementById("sandi-baru").value = "";
+                    document.getElementById("sandi-ulang").value = "";
+                })
+                .catch(function () {
+                    kotak.innerHTML = '<div class="admin-pesan tampil galat">Tidak dapat menghubungi server.</div>';
+                })
+                .finally(function () {
+                    tombol.disabled = false;
+                    tombol.textContent = "Simpan Kata Sandi";
+                });
+        });
+    }
+
+    // ------------------------------------------------------------ awal
+    try {
+        var simpan = sessionStorage.getItem(KUNCI_SIMPAN);
+        if (simpan) {
+            token = simpan;
+            panggil({ aksi: "admin-ikhtisar", token: token }).then(function (d) {
+                if (d.ok) { namaAdmin = "Pengelola"; mulaiAdmin(); }
+                else tampilkanLayar("masuk");
+            }).catch(function () { tampilkanLayar("masuk"); });
+        } else {
+            tampilkanLayar("masuk");
+        }
+    } catch (e) {
+        tampilkanLayar("masuk");
+    }
+})();
+</script>
+
+</body>
+</html>

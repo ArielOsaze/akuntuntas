@@ -36,11 +36,25 @@ def create_company(nama: str, bentuk: str = "umkm_op", **kwargs) -> int:
     """
     Buat perusahaan baru beserta bagan akun sesuai bentuk badan.
     Ini langkah pertama yang harus dilakukan pengguna.
+
+    Badan usaha kedua dan seterusnya hanya tersedia pada paket Enterprise.
+    Pemeriksaan dilakukan di sini, bukan hanya di tombol, supaya tidak bisa
+    dilewati lewat jalan lain.
     """
     if not nama.strip():
         raise ValueError("Nama perusahaan wajib diisi.")
     if bentuk not in config.ENTITY_TYPES:
         raise ValueError(f"Bentuk badan '{bentuk}' tidak dikenal.")
+
+    # Perusahaan pertama selalu boleh dibuat; yang dibatasi adalah
+    # penambahan badan usaha berikutnya.
+    jumlah = db.q1("SELECT COUNT(*) AS n FROM companies")
+    if jumlah and jumlah["n"] > 0:
+        from .ui import batas_paket
+        if not batas_paket.boleh_pakai(kwargs.get("lisensi"), "multi_entitas"):
+            raise ValueError(
+                "Menambah badan usaha lain tersedia pada paket Enterprise. "
+                "Paket Standar memakai satu badan usaha.")
 
     tahun = kwargs.get("tahun_buku_awal") or f"{config.DEFAULT_TAX_YEAR}-01-01"
 

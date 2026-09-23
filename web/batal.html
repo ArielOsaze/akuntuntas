@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pembayaran dibatalkan</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="logo-32.png" type="image/png">
+<link rel="stylesheet" href="styles.css">
+<style>
+    .batal-wadah {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 70px 0 80px;
+        text-align: center;
+    }
+
+    .batal-ikon {
+        width: 66px;
+        height: 66px;
+        border-radius: 50%;
+        background: #FEF3C7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 22px;
+    }
+
+    .batal-ikon svg { width: 32px; height: 32px; stroke: #B45309; }
+
+    .batal-wadah h1 {
+        font-size: 27px;
+        margin-bottom: 12px;
+        letter-spacing: -0.01em;
+    }
+
+    .batal-wadah p {
+        color: var(--teks-abu);
+        font-size: 16px;
+        line-height: 1.68;
+        margin-bottom: 26px;
+    }
+
+    .batal-tombol {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        padding: 15px 30px;
+        background: var(--biru);
+        color: #FFFFFF;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        margin: 0 5px 11px;
+    }
+
+    .batal-tombol:hover { background: var(--biru-tua); }
+
+    .batal-tombol.garis {
+        background: transparent;
+        color: var(--biru);
+        border: 1.5px solid var(--garis);
+    }
+
+    .batal-tombol.garis:hover { background: var(--latar-lembut); border-color: var(--biru); }
+</style>
+</head>
+<body>
+
+<header class="kepala">
+    <div class="wadah kepala-isi">
+        <a class="merek" href="index.html">
+            <img src="logo.png" alt="">
+            AkunTuntas
+        </a>
+        <div class="kepala-tombol">
+            <a class="tombol tombol-garis" href="index.html">Beranda</a>
+        </div>
+    </div>
+</header>
+
+<main>
+    <div class="wadah">
+        <div class="batal-wadah">
+            <div class="batal-ikon">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>
+                </svg>
+            </div>
+
+            <h1>Pembayaran dibatalkan</h1>
+            <p>
+                Pesanan Anda belum dibayar dan tidak ada biaya yang dikenakan.
+                Bila ini terjadi karena kekeliruan, Anda dapat memesan ulang
+                kapan saja.
+            </p>
+
+            <a class="batal-tombol" href="index.html#harga">Lihat pilihan lisensi</a>
+            <a class="batal-tombol garis" href="mailto:akuntuntas@gmail.com?subject=Bantuan%20Pembelian%20AkunTuntas">Hubungi kami</a>
+        </div>
+    </div>
+</main>
+
+<footer class="kaki">
+    <div class="wadah">
+        <div class="kaki-bawah">
+            <span>&copy; 2026 Xinet Group. Seluruh hak cipta dilindungi.</span>
+            <span><a href="index.html" style="color: #8FA7BE;">Kembali ke beranda</a></span>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>

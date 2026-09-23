@@ -576,7 +576,14 @@ class AuditPage(QWidget):
         self.tabs.addTab(self.tab_keamanan, "Log Keamanan")
         self.tabs.addTab(self.tab_data, "Log Perubahan Data")
         self.tabs.addTab(self.tab_admin, "Log Administrasi")
-        self.tabs.addTab(self.tab_riwayat, "Riwayat Perubahan Data")
+
+        # Riwayat perubahan data menyertakan penelusuran lanjutan, sehingga
+        # hanya tersedia pada paket Enterprise. Tab lain tetap terbuka karena
+        # termasuk pemantauan dasar.
+        from .. import batas_paket
+        if batas_paket.boleh_pakai(self.ctx.lisensi, "audit_lanjutan"):
+            self.tabs.addTab(self.tab_riwayat, "Riwayat Perubahan Data")
+
         self.tabs.currentChanged.connect(self.muat)
         self.lay.addWidget(self.tabs, 1)
 

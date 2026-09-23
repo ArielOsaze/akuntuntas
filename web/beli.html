@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beli Lisensi AkunTuntas</title>
+<meta name="description" content="Beli lisensi AkunTuntas. Bayar sekali, pakai selamanya. Kunci lisensi langsung muncul setelah pembayaran.">
+<link rel="icon" href="logo-32.png" type="image/png">
+<link rel="stylesheet" href="styles.css">
+<style>
+    .beli-wadah {
+        max-width: 660px;
+        margin: 0 auto;
+        padding: 48px 0 72px;
+    }
+
+    .beli-kepala {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .beli-kepala h1 {
+        font-size: 33px;
+        letter-spacing: -0.02em;
+        margin-bottom: 11px;
+    }
+
+    .beli-kepala p {
+        color: var(--teks-abu);
+        font-size: 16px;
+        line-height: 1.65;
+    }
+
+    .beli-kartu {
+        background: var(--putih);
+        border: 1px solid var(--garis);
+        border-radius: var(--radius);
+        box-shadow: var(--bayang);
+        padding: 32px;
+    }
+
+    .beli-pilih {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 26px;
+    }
+
+    .beli-paket {
+        border: 1.5px solid var(--garis);
+        border-radius: 11px;
+        padding: 17px 16px;
+        cursor: pointer;
+        background: var(--putih);
+        text-align: left;
+        font-family: inherit;
+        transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .beli-paket:hover { border-color: #9CB8D6; }
+
+    .beli-paket.pilih {
+        border-color: var(--biru);
+        background: #F5F9FD;
+        box-shadow: 0 0 0 3px rgba(27, 79, 138, 0.1);
+    }
+
+    .beli-paket strong {
+        display: block;
+        font-size: 16px;
+        margin-bottom: 4px;
+        color: var(--teks);
+    }
+
+    .beli-paket .beli-harga {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--biru);
+        margin-bottom: 5px;
+    }
+
+    .beli-paket span {
+        font-size: 13px;
+        color: var(--teks-abu);
+        line-height: 1.5;
+        display: block;
+    }
+
+    .beli-bidang { margin-bottom: 17px; }
+
+    .beli-bidang label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 7px;
+    }
+
+    .beli-bidang label span {
+        color: var(--teks-abu);
+        font-weight: 400;
+        font-size: 13px;
+    }
+
+    .beli-input {
+        width: 100%;
+        font-size: 15.5px;
+        padding: 12px 14px;
+        border: 1.5px solid var(--garis);
+        border-radius: 9px;
+        color: var(--teks);
+        background: var(--putih);
+        font-family: inherit;
+        box-sizing: border-box;
+    }
+
+    .beli-input:focus {
+        outline: none;
+        border-color: var(--biru);
+        box-shadow: 0 0 0 3px rgba(27, 79, 138, 0.13);
+    }
+
+    .beli-pesan {
+        display: none;
+        margin-bottom: 18px;
+        padding: 13px 15px;
+        border-radius: 9px;
+        font-size: 14px;
+        line-height: 1.55;
+        background: #FEF2F2;
+        border: 1px solid #FCA5A5;
+        color: #991B1B;
+    }
+
+    .beli-pesan.tampil { display: block; }
+
+    .beli-ringkas {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 18px;
+        background: var(--latar-lembut);
+        border: 1px solid var(--garis);
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .beli-ringkas span:first-child { font-size: 14.5px; color: var(--teks-abu); }
+    .beli-ringkas span:last-child { font-size: 21px; font-weight: 700; color: var(--teks); }
+
+    .beli-tombol {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        width: 100%;
+        padding: 16px 24px;
+        background: var(--biru);
+        color: #FFFFFF;
+        border: none;
+        border-radius: 10px;
+        font-size: 16.5px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    .beli-tombol:hover { background: var(--biru-tua); }
+    .beli-tombol:disabled { background: #94A3B8; cursor: wait; }
+    .beli-tombol svg { width: 19px; height: 19px; stroke: currentColor; }
+
+    .beli-catatan {
+        margin-top: 17px;
+        font-size: 13.5px;
+        color: var(--teks-abu);
+        line-height: 1.65;
+        text-align: center;
+    }
+
+    .beli-catatan a { color: var(--biru); font-weight: 600; }
+
+    .beli-cara {
+        margin-top: 26px;
+        padding-top: 24px;
+        border-top: 1px solid var(--garis);
+    }
+
+    .beli-cara h4 { font-size: 14px; margin-bottom: 13px; }
+
+    .beli-cara ol {
+        list-style: none;
+        counter-reset: langkah;
+        padding: 0;
+        margin: 0;
+    }
+
+    .beli-cara li {
+        counter-increment: langkah;
+        display: flex;
+        gap: 11px;
+        font-size: 14px;
+        color: var(--teks-abu);
+        line-height: 1.6;
+        margin-bottom: 11px;
+    }
+
+    .beli-cara li::before {
+        content: counter(langkah);
+        flex-shrink: 0;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #E8F0F9;
+        color: var(--biru-tua);
+        font-size: 12.5px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    @media (max-width: 620px) {
+        .beli-wadah { padding: 30px 0 54px; }
+        .beli-kepala h1 { font-size: 26px; }
+        .beli-kartu { padding: 22px 18px; }
+        .beli-pilih { grid-template-columns: 1fr; }
+    }
+</style>
+</head>
+<body>
+
+<header class="kepala">
+    <div class="wadah kepala-isi">
+        <a class="merek" href="index.html">
+            <img src="logo.png" alt="">
+            AkunTuntas
+        </a>
+        <nav class="nav">
+            <a href="index.html#fitur">Fitur</a>
+            <a href="index.html#cara">Cara Kerja</a>
+            <a href="index.html#tanya">Pertanyaan</a>
+        </nav>
+        <div class="kepala-tombol">
+            <a class="tombol tombol-garis" href="unduh.html">Unduh</a>
+        </div>
+    </div>
+</header>
+
+<main class="bagian">
+    <div class="wadah">
+        <div class="beli-wadah">
+            <div class="beli-kepala">
+                <h1>Beli lisensi AkunTuntas</h1>
+                <p>
+                    Bayar sekali, pakai selamanya. Kunci lisensi muncul langsung
+                    di halaman setelah pembayaran berhasil.
+                </p>
+            </div>
+
+            <div class="beli-kartu">
+                <div class="beli-pilih">
+                    <button class="beli-paket pilih" id="pilih-standar" type="button" data-paket="standar" data-harga="3499000">
+                        <strong>Standar</strong>
+                        <div class="beli-harga">Rp3.499.000</div>
+                        <span>1 perangkat. Untuk UMKM dan usaha perseorangan.</span>
+                    </button>
+                    <button class="beli-paket" id="pilih-enterprise" type="button" data-paket="enterprise" data-harga="5499000">
+                        <strong>Enterprise</strong>
+                        <div class="beli-harga">Rp5.499.000</div>
+                        <span>10 perangkat. Untuk PT, grup usaha, dan kantor akuntan.</span>
+                    </button>
+                </div>
+
+                <div class="beli-pesan" id="pesan"></div>
+
+                <div class="beli-bidang">
+                    <label for="nama">Nama pembeli</label>
+                    <input class="beli-input" id="nama" type="text" placeholder="Nama lengkap Anda" autocomplete="name">
+                </div>
+
+                <div class="beli-bidang">
+                    <label for="email">Email <span>(kunci lisensi dikirim ke sini)</span></label>
+                    <input class="beli-input" id="email" type="email" placeholder="nama@email.com" autocomplete="email">
+                </div>
+
+                <div class="beli-bidang">
+                    <label for="wa">Nomor WhatsApp</label>
+                    <input class="beli-input" id="wa" type="tel" placeholder="08xxxxxxxxxx" autocomplete="tel">
+                </div>
+
+                <div class="beli-bidang">
+                    <label for="usaha">Nama usaha <span>(boleh dikosongkan)</span></label>
+                    <input class="beli-input" id="usaha" type="text" placeholder="Contoh: PT Maju Bersama">
+                </div>
+
+                <div class="beli-ringkas">
+                    <span>Total pembayaran</span>
+                    <span id="total">Rp3.499.000</span>
+                </div>
+
+                <button class="beli-tombol" id="bayar" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="5" width="20" height="14" rx="2"/>
+                        <path d="M2 10h20"/>
+                    </svg>
+                    Lanjut ke pembayaran
+                </button>
+
+                <p class="beli-catatan">
+                    Pembayaran ditangani oleh iPaymu. Kami tidak menyimpan data
+                    kartu atau rekening Anda.
+                </p>
+
+                <div class="beli-cara">
+                    <h4>Setelah pembayaran</h4>
+                    <ol>
+                        <li>Kunci lisensi muncul di halaman dan dikirim ke email Anda.</li>
+                        <li>Unduh pemasang Windows dari halaman unduh.</li>
+                        <li>Pasang aplikasi, lalu masukkan kunci lisensi pada layar aktivasi.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <p class="beli-catatan">
+                Butuh faktur pajak atau pembelian lebih dari satu lisensi?
+                <a href="mailto:akuntuntas@gmail.com?subject=Pembelian%20Lisensi%20AkunTuntas">Hubungi kami</a>.
+            </p>
+        </div>
+    </div>
+</main>
+
+<footer class="kaki">
+    <div class="wadah">
+        <div class="kaki-bawah">
+            <span>&copy; 2026 Xinet Group. Seluruh hak cipta dilindungi.</span>
+            <span><a href="index.html" style="color: #8FA7BE;">Kembali ke beranda</a></span>
+        </div>
+    </div>
+</footer>
+
+<script>
+(function () {
+    var ALAMAT_SERVER = "https://cumirppxywzkbrzlvknr.supabase.co/functions/v1/license";
+
+    var pilihStandar = document.getElementById("pilih-standar");
+    var pilihEnterprise = document.getElementById("pilih-enterprise");
+    var pesan = document.getElementById("pesan");
+    var nama = document.getElementById("nama");
+    var email = document.getElementById("email");
+    var wa = document.getElementById("wa");
+    var usaha = document.getElementById("usaha");
+    var total = document.getElementById("total");
+    var tombol = document.getElementById("bayar");
+
+    var paketTerpilih = "standar";
+    var hargaTerpilih = 3499000;
+
+    // Bila pembeli datang dari tombol paket tertentu, pilihan itu langsung
+    // ditandai supaya tidak perlu memilih dua kali.
+    var diminta = new URLSearchParams(window.location.search).get("paket");
+    if (diminta === "enterprise") {
+        paketTerpilih = "enterprise";
+        hargaTerpilih = 5499000;
+        pilihStandar.classList.remove("pilih");
+        pilihEnterprise.classList.add("pilih");
+        total.textContent = "Rp5.499.000";
+    }
+
+    function rupiah(angka) {
+        return "Rp" + Number(angka).toLocaleString("id-ID");
+    }
+
+    function pilihPaket(paket, harga, tombolPilih) {
+        paketTerpilih = paket;
+        hargaTerpilih = harga;
+        pilihStandar.classList.remove("pilih");
+        pilihEnterprise.classList.remove("pilih");
+        tombolPilih.classList.add("pilih");
+        total.textContent = rupiah(harga);
+    }
+
+    pilihStandar.addEventListener("click", function () {
+        pilihPaket("standar", 3499000, pilihStandar);
+    });
+    pilihEnterprise.addEventListener("click", function () {
+        pilihPaket("enterprise", 5499000, pilihEnterprise);
+    });
+
+    // Rapikan nomor WhatsApp: buang spasi, tanda hubung, dan awalan +62.
+    wa.addEventListener("input", function () {
+        var angka = wa.value.replace(/[^0-9]/g, "");
+        if (angka.startsWith("62")) angka = angka.slice(2);
+        if (angka && !angka.startsWith("0")) angka = "0" + angka;
+        wa.value = angka.slice(0, 14);
+    });
+
+    function tampilkanPesan(teks) {
+        pesan.textContent = teks;
+        pesan.className = "beli-pesan tampil";
+    }
+
+    tombol.addEventListener("click", function () {
+        var namaNilai = nama.value.trim();
+        var emailNilai = email.value.trim();
+        var waNilai = wa.value.trim();
+
+        if (!namaNilai) {
+            tampilkanPesan("Nama pembeli wajib diisi.");
+            nama.focus();
+            return;
+        }
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailNilai)) {
+            tampilkanPesan("Alamat email belum benar. Kunci lisensi dikirim ke email ini.");
+            email.focus();
+            return;
+        }
+        if (waNilai.length < 9) {
+            tampilkanPesan("Nomor WhatsApp belum lengkap.");
+            wa.focus();
+            return;
+        }
+
+        pesan.className = "beli-pesan";
+        tombol.disabled = true;
+        tombol.textContent = "Menyiapkan pembayaran...";
+
+        fetch(ALAMAT_SERVER, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                aksi: "beli",
+                paket: paketTerpilih,
+                nama: namaNilai,
+                email: emailNilai,
+                whatsapp: waNilai,
+                usaha: usaha.value.trim()
+            })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (!d.ok || !d.tautan_bayar) {
+                tampilkanPesan(d.pesan || "Pembayaran gagal disiapkan. Coba lagi.");
+                tombol.disabled = false;
+                tombol.textContent = "Lanjut ke pembayaran";
+                return;
+            }
+            // Simpan kode pesanan supaya pembeli bisa membuka lagi halaman selesai.
+            try { localStorage.setItem("akuntuntas_pesanan", d.pesanan); } catch (e) {}
+            window.location.href = d.tautan_bayar;
+        })
+        .catch(function () {
+            tampilkanPesan("Tidak dapat menghubungi layanan pembayaran. Periksa sambungan internet Anda.");
+            tombol.disabled = false;
+            tombol.textContent = "Lanjut ke pembayaran";
+        });
+    });
+})();
+</script>
+
+</body>
+</html>

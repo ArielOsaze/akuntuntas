@@ -24,6 +24,12 @@ os.environ["AKUNTANSIID_DATA"] = str(DATA)
 
 from akuntansi_id import db, services as SV, modules as M, modules_sales as S  # noqa: E402
 
+# Alat ini membuat beberapa perusahaan uji sekaligus, jadi dipakai
+# lisensi uji paket Enterprise agar batas multi badan usaha tidak
+# menghalangi pengujian.
+from akuntansi_id.core.license import Lisensi as _Lisensi
+_LISENSI_UJI = _Lisensi(kunci="ATNTUJI", paket="enterprise", fitur={})
+
 lulus = 0
 gagal = 0
 
@@ -53,7 +59,7 @@ def saldo(cid: int, kode: str) -> int:
 
 def main() -> int:
     db.init_db()
-    cid = SV.create_company("PT Uji Akuntansi", "pt")
+    cid = SV.create_company("PT Uji Akuntansi", "pt", lisensi=_LISENSI_UJI)
 
     print("=" * 72)
     print("PEMBURU BUG — PERHITUNGAN AKUNTANSI & PERSEDIAAN")
@@ -123,7 +129,7 @@ def main() -> int:
     # ============================================ 3. FIFO
     print()
     print("[3] FIFO: lapisan tertua dipakai lebih dulu")
-    cid2 = SV.create_company("PT Uji FIFO", "pt")
+    cid2 = SV.create_company("PT Uji FIFO", "pt", lisensi=_LISENSI_UJI)
     pid2 = M.buat_produk(cid2, "Barang FIFO", tipe="barang", metode_hpp="fifo",
                          harga_beli=0, harga_jual=0)
     M.stok_masuk(cid2, pid2, 10, 10_000, "2026-01-01")   # lapisan 1
@@ -142,7 +148,7 @@ def main() -> int:
     # ============================================ 4. AVERAGE
     print()
     print("[4] Average: harga rata-rata bergerak")
-    cid3 = SV.create_company("PT Uji Average", "pt")
+    cid3 = SV.create_company("PT Uji Average", "pt", lisensi=_LISENSI_UJI)
     pid3 = M.buat_produk(cid3, "Barang Average", tipe="barang",
                          metode_hpp="average", harga_beli=0, harga_jual=0)
     M.stok_masuk(cid3, pid3, 10, 10_000, "2026-01-01")
@@ -157,7 +163,7 @@ def main() -> int:
     # ============================================ 5. JASA TANPA STOK
     print()
     print("[5] Jasa tidak menyentuh persediaan")
-    cid4 = SV.create_company("PT Uji Jasa", "pt")
+    cid4 = SV.create_company("PT Uji Jasa", "pt", lisensi=_LISENSI_UJI)
     jasa = M.buat_produk(cid4, "Konsultasi", tipe="jasa",
                          harga_jual=5_000_000)
     S.buat_invoice(cid4, "2026-03-01",
@@ -177,7 +183,7 @@ def main() -> int:
     # ============================================ 6. PEMBULATAN
     print()
     print("[6] Pembulatan pajak tidak menghasilkan pecahan")
-    cid5 = SV.create_company("PT Uji Bulat", "pt")
+    cid5 = SV.create_company("PT Uji Bulat", "pt", lisensi=_LISENSI_UJI)
     S.buat_invoice(cid5, "2026-03-01",
                    [{"deskripsi": "Barang", "qty": 3, "harga_satuan": 33_333}],
                    None, jenis_ppn="11%", user_id=1, username="admin")

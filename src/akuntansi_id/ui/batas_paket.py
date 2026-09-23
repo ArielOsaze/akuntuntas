@@ -1,9 +1,16 @@
 """
 AkunTuntas - Pembatasan Fitur Menurut Paket Lisensi
 ====================================================
-Paket Standar hanya memuat fitur dasar. Halaman yang termasuk fitur lanjutan
-disembunyikan seluruhnya, bukan sekadar dinonaktifkan, supaya tidak ada
-tombol yang bisa diklik lalu menampilkan pesan penolakan.
+Paket Standar hanya memuat fitur dasar. Ada dua macam pembatasan di sini:
+
+1. Halaman yang seluruhnya milik Enterprise disembunyikan, bukan sekadar
+   dinonaktifkan, supaya tidak ada tombol yang bisa diklik lalu menampilkan
+   pesan penolakan.
+
+2. Sebagian halaman dipakai kedua paket, tetapi di dalamnya ada bagian yang
+   hanya untuk Enterprise, misalnya pilihan laporan SAK EP pada halaman
+   Laporan. Bagian seperti itu diperiksa memakai `boleh_pakai` saat halaman
+   dibuka.
 
 Halaman lanjutan juga dijaga di sisi halamannya sendiri: bila dibuka lewat
 jalan lain (misalnya dari pencarian atau dari tombol di halaman lain),
@@ -25,6 +32,17 @@ HALAMAN_ENTERPRISE = {
     "pajak_lanjutan": ("Pajak Lanjutan", "pajak_lanjutan"),
 }
 
+# Bagian di dalam halaman yang hanya tersedia pada paket Enterprise. Halaman
+# induknya tetap dapat dibuka pada paket Standar, tetapi bagian ini tidak.
+BAGIAN_ENTERPRISE = {
+    "laporan_sak_ep": "Laporan SAK EP dan SAK Umum",
+    "laporan_sak_umum": "Laporan SAK Umum",
+    "payroll_lanjutan": "Payroll lanjutan",
+    "audit_lanjutan": "Log audit lanjutan",
+    "multi_cabang": "Multi cabang",
+    "multi_entitas": "Beberapa badan usaha",
+}
+
 
 def boleh_buka(lisensi, kode: str) -> bool:
     """Apakah halaman tertentu boleh dibuka pada paket lisensi ini."""
@@ -33,6 +51,25 @@ def boleh_buka(lisensi, kode: str) -> bool:
     if lisensi is None:
         return False
     return lisensi.enterprise
+
+
+def boleh_pakai(lisensi, bagian: str) -> bool:
+    """
+    Apakah bagian tertentu di dalam halaman boleh dipakai.
+
+    Dipakai untuk fitur Enterprise yang menumpang halaman bersama, misalnya
+    pilihan laporan SAK EP pada halaman Laporan.
+    """
+    if lisensi is None:
+        return False
+    if lisensi.enterprise:
+        return True
+    return lisensi.punya(bagian)
+
+
+def nama_bagian(bagian: str) -> str:
+    """Nama bagian yang mudah dibaca untuk ditampilkan ke pengguna."""
+    return BAGIAN_ENTERPRISE.get(bagian, "Fitur lanjutan")
 
 
 def halaman_terkunci(nama_fitur: str) -> QWidget:

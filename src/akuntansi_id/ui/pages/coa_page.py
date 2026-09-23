@@ -680,6 +680,7 @@ class PerusahaanPage(QWidget):
                 alamat=self.inp_alamat.text().strip(),
                 kota=self.inp_kota.text().strip(),
                 tahun_buku_awal=self.inp_mulai.date().toString("yyyy-MM-dd"),
+                lisensi=self.ctx.lisensi,
             )
             self.ctx.company_id = cid
             self.ctx.company = services.get_company(cid)

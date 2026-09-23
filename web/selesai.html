@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pesanan AkunTuntas</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="logo-32.png" type="image/png">
+<link rel="stylesheet" href="styles.css">
+<style>
+    .selesai-wadah {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 56px 0 72px;
+    }
+
+    .selesai-kartu {
+        background: var(--putih);
+        border: 1px solid var(--garis);
+        border-radius: var(--radius);
+        box-shadow: var(--bayang);
+        padding: 34px;
+    }
+
+    .selesai-ikon {
+        width: 62px;
+        height: 62px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+    }
+
+    .selesai-ikon.tunggu { background: #FEF3C7; }
+    .selesai-ikon.lunas { background: #D1FAE5; }
+    .selesai-ikon.gagal { background: #FEE2E2; }
+
+    .selesai-ikon svg { width: 30px; height: 30px; }
+    .selesai-ikon.tunggu svg { stroke: #B45309; }
+    .selesai-ikon.lunas svg { stroke: #047857; }
+    .selesai-ikon.gagal svg { stroke: #B91C1C; }
+
+    .selesai-judul {
+        text-align: center;
+        font-size: 25px;
+        margin-bottom: 10px;
+        letter-spacing: -0.01em;
+    }
+
+    .selesai-ket {
+        text-align: center;
+        color: var(--teks-abu);
+        font-size: 15.5px;
+        line-height: 1.65;
+        margin-bottom: 26px;
+    }
+
+    .selesai-rinci {
+        background: var(--latar-lembut);
+        border: 1px solid var(--garis);
+        border-radius: 10px;
+        padding: 16px 18px;
+        margin-bottom: 22px;
+    }
+
+    .selesai-baris {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        font-size: 14.5px;
+        padding: 7px 0;
+    }
+
+    .selesai-baris span:first-child { color: var(--teks-abu); }
+    .selesai-baris span:last-child { font-weight: 600; text-align: right; }
+
+    .selesai-kunci {
+        background: #ECFDF5;
+        border: 1.5px solid #6EE7B7;
+        border-radius: 11px;
+        padding: 20px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .selesai-kunci p {
+        font-size: 13.5px;
+        color: #065F46;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .selesai-kunci-kotak {
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 21px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: #064E3B;
+        background: #FFFFFF;
+        border: 1px solid #A7F3D0;
+        border-radius: 8px;
+        padding: 14px 12px;
+        margin-bottom: 12px;
+        word-break: break-all;
+        user-select: all;
+    }
+
+    .selesai-salin {
+        background: #047857;
+        color: #FFFFFF;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    .selesai-salin:hover { background: #065F46; }
+
+    .selesai-tombol {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        width: 100%;
+        padding: 15px 24px;
+        background: var(--biru);
+        color: #FFFFFF;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        font-family: inherit;
+        margin-bottom: 11px;
+    }
+
+    .selesai-tombol:hover { background: var(--biru-tua); }
+
+    .selesai-tombol svg { width: 19px; height: 19px; stroke: currentColor; }
+
+    .selesai-tombol.garis {
+        background: transparent;
+        color: var(--biru);
+        border: 1.5px solid var(--garis);
+    }
+
+    .selesai-tombol.garis:hover { background: var(--latar-lembut); border-color: var(--biru); }
+
+    .selesai-catatan {
+        margin-top: 20px;
+        font-size: 13.5px;
+        color: var(--teks-abu);
+        line-height: 1.65;
+        text-align: center;
+    }
+
+    .selesai-catatan a { color: var(--biru); font-weight: 600; }
+
+    .selesai-putar {
+        display: inline-block;
+        width: 17px;
+        height: 17px;
+        border: 2.5px solid #B45309;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: putar 0.85s linear infinite;
+        margin-right: 9px;
+        vertical-align: -3px;
+    }
+
+    @keyframes putar { to { transform: rotate(360deg); } }
+
+    @media (max-width: 620px) {
+        .selesai-wadah { padding: 34px 0 54px; }
+        .selesai-kartu { padding: 24px 18px; }
+        .selesai-kunci-kotak { font-size: 17px; letter-spacing: 1px; }
+    }
+</style>
+</head>
+<body>
+
+<header class="kepala">
+    <div class="wadah kepala-isi">
+        <a class="merek" href="index.html">
+            <img src="logo.png" alt="">
+            AkunTuntas
+        </a>
+        <nav class="nav">
+            <a href="index.html#fitur">Fitur</a>
+            <a href="index.html#harga">Harga</a>
+            <a href="unduh.html">Unduh</a>
+        </nav>
+        <div class="kepala-tombol">
+            <a class="tombol tombol-garis" href="unduh.html">Unduh</a>
+        </div>
+    </div>
+</header>
+
+<main class="bagian">
+    <div class="wadah">
+        <div class="selesai-wadah">
+            <div class="selesai-kartu" id="kartu">
+                <div class="selesai-ikon tunggu" id="ikon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+                    </svg>
+                </div>
+
+                <h1 class="selesai-judul" id="judul">Menunggu pembayaran</h1>
+                <p class="selesai-ket" id="keterangan">
+                    <span class="selesai-putar"></span>
+                    Kami sedang memeriksa pembayaran Anda.
+                </p>
+
+                <div class="selesai-rinci" id="rinci" style="display: none;">
+                    <div class="selesai-baris">
+                        <span>Kode pesanan</span>
+                        <span id="kode">-</span>
+                    </div>
+                    <div class="selesai-baris">
+                        <span>Nama</span>
+                        <span id="nama">-</span>
+                    </div>
+                    <div class="selesai-baris">
+                        <span>Jumlah</span>
+                        <span id="jumlah">-</span>
+                    </div>
+                </div>
+
+                <div class="selesai-kunci" id="kunci-kotak" style="display: none;">
+                    <p>Kunci lisensi Anda</p>
+                    <div class="selesai-kunci-kotak" id="kunci">-</div>
+                    <button class="selesai-salin" id="salin" type="button">Salin kunci</button>
+                </div>
+
+                <a class="selesai-tombol" id="ke-unduh" href="unduh.html" style="display: none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <path d="M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    Unduh pemasang sekarang
+                </a>
+
+                <a class="selesai-tombol garis" id="ulang" href="#" style="display: none;">
+                    Coba periksa lagi
+                </a>
+
+                <p class="selesai-catatan" id="catatan">
+                    Halaman ini memeriksa pembayaran secara berkala. Anda boleh
+                    menutupnya; kunci lisensi juga dikirim ke email Anda.
+                </p>
+
+                <p class="selesai-catatan">
+                    Ada kendala? Hubungi
+                    <a href="mailto:akuntuntas@gmail.com">akuntuntas@gmail.com</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="kaki">
+    <div class="wadah">
+        <div class="kaki-bawah">
+            <span>&copy; 2026 Xinet Group. Seluruh hak cipta dilindungi.</span>
+            <span><a href="index.html" style="color: #8FA7BE;">Kembali ke beranda</a></span>
+        </div>
+    </div>
+</footer>
+
+<script>
+(function () {
+    var ALAMAT_SERVER = "https://cumirppxywzkbrzlvknr.supabase.co/functions/v1/license";
+
+    var kode = new URLSearchParams(window.location.search).get("pesanan") || "";
+    var ikon = document.getElementById("ikon");
+    var judul = document.getElementById("judul");
+    var keterangan = document.getElementById("keterangan");
+    var rinci = document.getElementById("rinci");
+    var elKode = document.getElementById("kode");
+    var elNama = document.getElementById("nama");
+    var elJumlah = document.getElementById("jumlah");
+    var kunciKotak = document.getElementById("kunci-kotak");
+    var elKunci = document.getElementById("kunci");
+    var tombolSalin = document.getElementById("salin");
+    var keUnduh = document.getElementById("ke-unduh");
+    var ulang = document.getElementById("ulang");
+    var catatan = document.getElementById("catatan");
+
+    var percobaan = 0;
+    var maksPercobaan = 40;
+    var jeda = 5000;
+
+    function rupiah(angka) {
+        return "Rp" + Number(angka || 0).toLocaleString("id-ID");
+    }
+
+    function gantiIkon(jenis) {
+        ikon.className = "selesai-ikon " + jenis;
+        if (jenis === "lunas") {
+            ikon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+        } else if (jenis === "gagal") {
+            ikon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+        }
+    }
+
+    function tampilkanLunas(data) {
+        gantiIkon("lunas");
+        judul.textContent = "Pembayaran berhasil";
+        keterangan.textContent =
+            "Terima kasih. Lisensi Anda sudah aktif dan berlaku selamanya untuk perangkat ini.";
+        elKunci.textContent = data.kunci;
+        kunciKotak.style.display = "block";
+        keUnduh.style.display = "flex";
+        ulang.style.display = "none";
+        catatan.textContent =
+            "Simpan kunci ini di tempat aman. Kunci juga dikirim ke email Anda. " +
+            "Kunci yang sama dipakai saat memasang aplikasi.";
+    }
+
+    function periksa() {
+        if (!kode) {
+            gantiIkon("gagal");
+            judul.textContent = "Kode pesanan tidak ditemukan";
+            keterangan.textContent =
+                "Halaman ini dibuka tanpa kode pesanan. Periksa tautan pada email Anda, " +
+                "atau hubungi kami bila masih bermasalah.";
+            return;
+        }
+
+        percobaan++;
+
+        fetch(ALAMAT_SERVER, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ aksi: "status", pesanan: kode })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (!d.ok) {
+                gantiIkon("gagal");
+                judul.textContent = "Pesanan tidak ditemukan";
+                keterangan.textContent = d.pesan || "Kode pesanan tidak dikenali.";
+                return;
+            }
+
+            elKode.textContent = kode;
+            elNama.textContent = d.nama_pembeli || "-";
+            elJumlah.textContent = rupiah(d.jumlah);
+            rinci.style.display = "block";
+
+            if (d.status === "dibayar") {
+                tampilkanLunas(d);
+                return;
+            }
+
+            if (d.status === "dibatalkan") {
+                gantiIkon("gagal");
+                judul.textContent = "Pesanan dibatalkan";
+                keterangan.textContent = "Pesanan ini sudah dibatalkan.";
+                return;
+            }
+
+            // masih menunggu: ulangi pemeriksaan sampai batas waktu
+            if (percobaan >= maksPercobaan) {
+                gantiIkon("tunggu");
+                judul.textContent = "Pembayaran belum terdeteksi";
+                keterangan.textContent =
+                    "Kami belum menerima konfirmasi pembayaran. Bila Anda sudah membayar, " +
+                    "tekan tombol di bawah untuk memeriksa lagi.";
+                ulang.style.display = "flex";
+                catatan.textContent =
+                    "Kunci lisensi akan dikirim ke email Anda begitu pembayaran terkonfirmasi.";
+            } else {
+                setTimeout(periksa, jeda);
+            }
+        })
+        .catch(function () {
+            if (percobaan < maksPercobaan) {
+                setTimeout(periksa, jeda);
+            } else {
+                gantiIkon("gagal");
+                judul.textContent = "Tidak dapat memeriksa pesanan";
+                keterangan.textContent =
+                    "Periksa sambungan internet Anda, lalu tekan tombol di bawah.";
+                ulang.style.display = "flex";
+            }
+        });
+    }
+
+    tombolSalin.addEventListener("click", function () {
+        var teks = elKunci.textContent;
+        var berhasil = function () {
+            tombolSalin.textContent = "Tersalin";
+            setTimeout(function () { tombolSalin.textContent = "Salin kunci"; }, 2000);
+        };
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(teks).then(berhasil, function () {
+                tombolSalin.textContent = "Gagal menyalin";
+            });
+        } else {
+            var sementara = document.createElement("textarea");
+            sementara.value = teks;
+            document.body.appendChild(sementara);
+            sementara.select();
+            document.execCommand("copy");
+            document.body.removeChild(sementara);
+            berhasil();
+        }
+    });
+
+    ulang.addEventListener("click", function (e) {
+        e.preventDefault();
+        percobaan = 0;
+        ulang.style.display = "none";
+        gantiIkon("tunggu");
+        judul.textContent = "Menunggu pembayaran";
+        keterangan.innerHTML = '<span class="selesai-putar"></span> Kami sedang memeriksa pembayaran Anda.';
+        periksa();
+    });
+
+    periksa();
+})();
+</script>
+
+</body>
+</html>
