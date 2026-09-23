@@ -66,7 +66,6 @@ def main() -> int:
 
     # Cari label judul dan badge
     target = {"Kesehatan Keuangan": None, "Kinerja Bulanan 2026": None}
-    badge = None
     for lbl in halaman.findChildren(QLabel):
         teks = lbl.text().strip()
         if teks in target:
@@ -74,7 +73,6 @@ def main() -> int:
             atas = lbl.mapTo(j, lbl.rect().topLeft()).y()
             target[teks] = (kiri, atas, lbl.width(), lbl.height())
         if teks.startswith("GRADE"):
-            badge = teks
             print(f"  badge ditemukan: '{teks}'")
             print(f"    lebar label : {lbl.width()}px")
             print(f"    butuh teks  : {lbl.fontMetrics().horizontalAdvance(teks)}px")

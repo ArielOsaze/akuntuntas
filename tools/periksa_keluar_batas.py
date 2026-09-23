@@ -25,7 +25,7 @@ sys.path.insert(0, str(AKAR / "src"))
 
 from PySide6.QtWidgets import (  # noqa: E402
     QApplication, QComboBox, QLabel, QLineEdit, QPushButton, QScrollArea,
-    QTableWidget, QTabWidget, QWidget)
+    QTableWidget)
 
 from akuntansi_id.core import license as LIS  # noqa: E402
 from akuntansi_id.core import security as sec  # noqa: E402
@@ -67,7 +67,6 @@ def periksa_halaman(app, jendela, kode: str) -> list[str]:
         return ["halaman kosong"]
 
     batas_kanan = halaman.width()
-    batas_bawah = halaman.height()
 
     jenis_penting = (QLabel, QPushButton, QLineEdit, QComboBox,
                      QTableWidget)
@@ -81,7 +80,6 @@ def periksa_halaman(app, jendela, kode: str) -> list[str]:
             continue
 
         # Posisi relatif terhadap halaman
-        kiri = anak.mapTo(halaman, anak.rect().topLeft()).x()
         kanan = anak.mapTo(halaman, anak.rect().topRight()).x()
 
         # Widget di dalam area gulir memang boleh lebih panjang dari layar;

@@ -54,7 +54,6 @@ def main() -> int:
     tunggu(app, 2.0)
 
     halaman = j.stack.currentWidget()
-    isi = halaman
 
     print("=" * 72)
     print("  CARI LABEL BERTUMPUK DI DASHBOARD")

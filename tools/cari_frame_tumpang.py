@@ -17,7 +17,7 @@ os.environ["AKUNTANSIID_DATA"] = str(AKAR / "_contoh")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, str(AKAR / "src"))
 
-from PySide6.QtWidgets import QApplication, QFrame, QLabel  # noqa: E402
+from PySide6.QtWidgets import QApplication, QLabel  # noqa: E402
 
 
 def main() -> int:

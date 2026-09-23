@@ -23,8 +23,7 @@ AKAR = Path(__file__).resolve().parent.parent
 os.environ["AKUNTANSIID_DATA"] = str(AKAR / "_ssdata")
 sys.path.insert(0, str(AKAR / "src"))
 
-from PySide6.QtWidgets import (  # noqa: E402
-    QApplication, QLabel, QScrollArea)
+from PySide6.QtWidgets import QApplication, QLabel  # noqa: E402
 
 from akuntansi_id.core import license as LIS  # noqa: E402
 from akuntansi_id.core import security as sec  # noqa: E402
