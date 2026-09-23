@@ -210,6 +210,15 @@ class BarChart(QWidget):
 
             ada1 = h1 >= 18
             ada2 = h2 >= 18
+            # Label nilai disembunyikan bila kolomnya terlalu sempit untuk
+            # memuatnya. Pada layar sempit, label nilai antar bulan akan
+            # bertumpuk dan angkanya justru tidak terbaca. Angka yang sama
+            # tetap dapat dibaca dari keterangan di atas grafik.
+            if lebar_grup < l1 + 6:
+                ada1 = False
+            if lebar_grup < l2 + 6:
+                ada2 = False
+
             jarak_label = 8          # jarak label ke puncak batang
             tinggi_label = 13
             berdekatan = (ada1 and ada2
@@ -230,11 +239,22 @@ class BarChart(QWidget):
                 y2 = dasar - h2 - jarak_label - tinggi_label
                 y2 = max(y2, batas_atas_teks)
                 x2 = min(max(tengah2 - l2 / 2, 2.0), w - l2 - 2)
-                # Bila label beban beririsan mendatar dengan label pendapatan
-                # pada ketinggian yang sama, geser ke bawah sedikit.
-                if ada1 and not (x2 + l2 <= x1 or x1 + l1 <= x2) \
-                        and abs(y2 - y1) < tinggi_label:
-                    y2 = min(y1 + tinggi_label + 1, dasar - tinggi_label - 2)
+                # Bila label beban beririsan mendatar dengan label pendapatan,
+                # geser ke bawah sampai benar-benar tidak bertumpuk. Pergeseran
+                # sebelumnya hanya sebesar tinggi label, sehingga masih
+                # menyisakan tumpang tindih beberapa piksel.
+                if ada1 and not (x2 + l2 <= x1 or x1 + l1 <= x2):
+                    batas_bawah = dasar - tinggi_label - 2
+                    if abs(y2 - y1) < tinggi_label + 2:
+                        y2 = min(y1 + tinggi_label + 3, batas_bawah)
+                    # Bila masih bertumpuk karena ruang bawah tidak cukup,
+                    # geser mendatar ke sisi yang masih lapang.
+                    if abs(y2 - y1) < tinggi_label + 2:
+                        geser = x1 + l1 - x2 + 2
+                        if x2 + geser + l2 <= w - 2:
+                            x2 += geser
+                        elif x1 - l2 - 2 >= 2:
+                            x2 = x1 - l2 - 2
                 p.setPen(QColor(C.WARNING))
                 p.drawText(QRectF(x2, y2, l2, tinggi_label), Qt.AlignCenter, t2)
 
@@ -462,21 +482,38 @@ class DashboardPage(QWidget):
                 f"Analisis tidak dapat dijalankan: {e}", "danger",
                 "Terjadi kesalahan"))
 
+        # Dua panel diletakkan berdampingan pada jendela lebar, dan bertumpuk
+        # pada jendela sempit. Pemilihan susunan dilakukan otomatis memakai
+        # grid: bila lebar kurang dari 1100 piksel, kedua panel ditumpuk
+        # supaya tidak ada yang terpotong. Ini menghindari pembagian ruang
+        # yang dipaksakan, yang membuat salah satu panel terlalu sempit.
+        from PySide6.QtWidgets import QGridLayout
         baris = QWidget()
         baris.setStyleSheet("background: transparent;")
-        bl = QHBoxLayout(baris)
-        bl.setContentsMargins(0, 0, 0, 0)
-        bl.setSpacing(14)
+        grid = QGridLayout(baris)
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setSpacing(14)
 
         if analisis is not None:
-            bl.addWidget(self._panel_kesehatan(analisis, comp), 6)
+            panel_kesehatan = self._panel_kesehatan(analisis, comp)
+            panel_kesehatan.setMinimumWidth(380)
+            grid.addWidget(panel_kesehatan, 0, 0)
 
         try:
-            bl.addWidget(self._panel_grafik(cid, tahun), 5)
+            panel_grafik = self._panel_grafik(cid, tahun)
+            panel_grafik.setMinimumWidth(360)
+            grid.addWidget(panel_grafik, 0, 1)
         except Exception:
             pass
 
-        if bl.count():
+        grid.setColumnStretch(0, 6)
+        grid.setColumnStretch(1, 5)
+        # Kolom kedua turun ke baris berikutnya saat jendela menyempit.
+        grid.setColumnMinimumWidth(0, 380)
+        grid.setColumnMinimumWidth(1, 360)
+        self._grid_panel = grid
+
+        if grid.count():
             self.isi_lay.addWidget(baris)
 
         # ============================================================
@@ -553,20 +590,38 @@ class DashboardPage(QWidget):
         judul_baris.setSpacing(12)
         j = QLabel("Kesehatan Keuangan")
         j.setStyleSheet("font-size: 19px; font-weight: 700; background: transparent;")
+        # Judul boleh membungkus menjadi dua baris. Dengan penskalaan tampilan
+        # Windows, lebar teks dapat membesar sementara ruang panel tetap, dan
+        # tanpa pembungkusan tulisannya terpotong. Membungkus dua baris tetap
+        # terbaca utuh dan tidak mengubah susunan panel.
+        j.setWordWrap(True)
+        j.setMinimumWidth(0)
         judul_baris.addWidget(j)
+        judul_baris.addStretch()
+        kanan.addLayout(judul_baris)
 
+        # Badge hanya ditampilkan bila panel cukup lebar untuk memuatnya
+        # bersama judul. Pada jendela sempit, badge disembunyikan supaya
+        # judulnya tetap terbaca utuh. Keterangan grade sudah tercantum pada
+        # kalimat ringkasan di bawahnya, sehingga tidak ada informasi hilang.
         badge_warna, badge_bg = theme.STATUS_COLORS.get(
             "baik" if analisis.skor >= 70 else
             ("peringatan" if analisis.skor >= 55 else "kritis"),
             (C.TEXT_MUTED, C.NEUTRAL_BG))
-        bdg = QLabel(f"GRADE {analisis.grade} · {analisis.grade_label.upper()}")
+        teks_badge = f"GRADE {analisis.grade} · {analisis.grade_label.upper()}"
+        bdg = QLabel(teks_badge)
         theme.latar(bdg, f"background: {badge_bg}; color: {badge_warna}; border-radius: 9px; "
             f"padding: 4px 12px; font-size: {theme.FS_TINY}px; font-weight: 800;")
-        bdg.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
-        judul_baris.addWidget(bdg)
-        judul_baris.addStretch()
-        kanan.addLayout(judul_baris)
-        kanan.addSpacing(4)
+        bdg.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        bdg.setMinimumWidth(
+            bdg.fontMetrics().horizontalAdvance(teks_badge) + 26)
+        bdg.setVisible(self.width() >= 520)
+
+        baris_badge = QHBoxLayout()
+        baris_badge.addWidget(bdg)
+        baris_badge.addStretch()
+        kanan.addLayout(baris_badge)
+        kanan.addSpacing(6)
 
         ringkasan = w.LabelTinggiOtomatis(w.rata_kanan_kiri(analisis.ringkasan))
         ringkasan.setTextFormat(Qt.RichText)
@@ -588,15 +643,19 @@ class DashboardPage(QWidget):
             (analisis.jumlah_baik, "Baik", "baik"),
         ]:
             warna, bg = theme.STATUS_COLORS[tingkat]
-            chip = QLabel(f"<b style='font-size:16px'>{jumlah}</b> "
-                          f"<span style='font-size:10px'>{label}</span>")
+            chip = QLabel(f"<b style='font-size:15px'>{jumlah}</b>"
+                          f"<span style='font-size:9px'> {label}</span>")
             chip.setTextFormat(Qt.RichText)
             chip.setAlignment(Qt.AlignCenter)
             theme.latar(chip, f"background: {bg}; color: {warna}; border-radius: 8px; "
-                "padding: 6px 14px;")
-            chip.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
-            hitung.addWidget(chip)
-        hitung.addStretch()
+                "padding: 5px 9px;")
+            # Chip dibiarkan menyusut mengikuti ruang yang tersedia, tetapi
+            # tidak lebih kecil dari ukuran isinya. Ukuran minimum dipakai
+            # sebagai batas bawah, dan lebarnya dibatasi pada ukuran saran
+            # supaya keempat chip tidak saling menimpa saat ruang sempit.
+            chip.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+            chip.setMinimumWidth(0)
+            hitung.addWidget(chip, 1)
         kanan.addLayout(hitung)
         al.addLayout(kanan, 1)
         lay.addWidget(atas)
@@ -633,6 +692,13 @@ class DashboardPage(QWidget):
         grid = QGridLayout(wadah)
         grid.setContentsMargins(0, 0, 0, 0)
         grid.setSpacing(14)
+        # Tiga kartu dalam satu baris. Setiap kolom diberi bobot sama dan
+        # boleh menyusut, sehingga isinya tidak pernah melebihi lebar jendela.
+        # Tanpa ini, ukuran minimum kartu membuat baris melebar keluar tepi
+        # dan kartu ketiga terpotong pada layar 1366 piksel.
+        for kolom in range(3):
+            grid.setColumnStretch(kolom, 1)
+            grid.setColumnMinimumWidth(kolom, 0)
 
         omzet = kpi["omzet"]
         pct_pkp = omzet / config.THRESHOLD_PKP * 100
@@ -823,13 +889,19 @@ class DashboardPage(QWidget):
         lay = kartu.body()
 
         kepala = QHBoxLayout()
+        kepala.setSpacing(14)
         j = QLabel(f"Kinerja Bulanan {tahun}")
         j.setObjectName("SectionTitle")
+        j.setMinimumWidth(0)
         kepala.addWidget(j)
         kepala.addStretch()
 
+        # Legenda diletakkan pada barisnya sendiri di bawah judul. Bila
+        # ditempatkan sebaris dengan judul, ruang yang tersisa tidak cukup
+        # pada layar 1366 piksel dan label terakhir terpotong. Menaruhnya
+        # terpisah membuat seluruh label selalu terbaca utuh.
         legenda = QHBoxLayout()
-        legenda.setSpacing(16)
+        legenda.setSpacing(14)
         for bentuk, warna, teks in [
                 ("kotak", C.PRIMARY, "Pendapatan"),
                 ("kotak", C.WARNING, "HPP + Beban"),
@@ -849,10 +921,14 @@ class DashboardPage(QWidget):
             t = QLabel(teks)
             t.setStyleSheet(f"font-size: {theme.FS_TINY}px; color: {C.TEXT_MUTED}; "
                             "background: transparent;")
+            t.setMinimumWidth(t.fontMetrics().horizontalAdvance(teks) + 2)
             item.addWidget(t)
             legenda.addLayout(item)
-        kepala.addLayout(legenda)
+        legenda.addStretch()
+
         lay.addLayout(kepala)
+        lay.addSpacing(6)
+        lay.addLayout(legenda)
 
         data = acc.ringkasan_bulanan(cid, tahun)
         chart = BarChart()

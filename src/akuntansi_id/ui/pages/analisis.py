@@ -173,7 +173,8 @@ class AnalisisPage(QWidget):
             chip.setAlignment(Qt.AlignCenter)
             theme.latar(chip, f"background: {bg}; color: {warna}; "
                                "border-radius: 8px; padding: 7px 16px;")
-            chip.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+            chip.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+            chip.setMinimumWidth(chip.sizeHint().width())
             st.addWidget(chip)
         st.addStretch()
         kanan.addLayout(st)
@@ -212,7 +213,8 @@ class AnalisisPage(QWidget):
         theme.latar(b, f"background: {C.NEUTRAL_BG}; color: {C.TEXT_MUTED}; "
                         "border-radius: 9px; padding: 2px 9px; "
                         f"font-size: {theme.FS_TINY}px; font-weight: 700;")
-        b.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        b.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        b.setMinimumWidth(b.sizeHint().width())
         l.addWidget(b)
         l.addStretch()
         return wdg

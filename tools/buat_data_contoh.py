@@ -82,30 +82,18 @@ def main() -> int:
 
     laptop = M.buat_produk(cid, "Laptop Pro 14 inch", tipe="barang", satuan="unit",
                            harga_beli=8_500_000, harga_jual=12_500_000,
-                           qty_awal=30, metode="average")
+                           qty_awal=40, metode="average")
     printer = M.buat_produk(cid, "Printer Laser A4", tipe="barang", satuan="unit",
                             harga_beli=2_400_000, harga_jual=3_750_000,
-                            qty_awal=50, metode="average")
+                            qty_awal=70, metode="average")
     jaringan = M.buat_produk(cid, "Instalasi Jaringan Kantor", tipe="jasa",
                              satuan="paket", harga_jual=15_000_000)
     servis = M.buat_produk(cid, "Jasa Servis & Perawatan", tipe="jasa",
                            satuan="kunjungan", harga_jual=850_000)
 
-    penjualan = [
-        (f"{tahun}-01-12", pelanggan[0], laptop, 3, 12_500_000),
-        (f"{tahun}-01-25", pelanggan[1], printer, 8, 3_750_000),
-        (f"{tahun}-02-05", pelanggan[0], jaringan, 1, 15_000_000),
-        (f"{tahun}-02-14", pelanggan[2], laptop, 5, 12_500_000),
-        (f"{tahun}-02-22", pelanggan[1], servis, 6, 850_000),
-        (f"{tahun}-03-08", pelanggan[0], printer, 12, 3_750_000),
-    ]
-    for tanggal, mitra, produk, qty, harga in penjualan:
-        S.buat_invoice(
-            cid, tanggal,
-            [{"product_id": produk, "deskripsi": "", "qty": qty,
-              "satuan": "unit", "harga_satuan": harga, "diskon_persen": 0}],
-            mitra, jenis_ppn="12% DPP Nilai Lain (11/12)")
-
+    # Pembelian persediaan dijalankan lebih dahulu, lalu penjualan menyusul
+    # menurut urutan tanggal. Bila penjualan dijalankan lebih dahulu, stok
+    # akan habis di tengah jalan dan pembuatan data contoh gagal.
     S.buat_bill(
         cid, f"{tahun}-01-20",
         [{"product_id": laptop, "deskripsi": "", "qty": 20, "satuan": "unit",
@@ -116,6 +104,59 @@ def main() -> int:
         [{"product_id": printer, "deskripsi": "", "qty": 30, "satuan": "unit",
           "harga_satuan": 2_400_000, "diskon_persen": 0}],
         vendor[1], jenis="Persediaan", jenis_ppn="12% DPP Nilai Lain (11/12)")
+    # Pembelian ulang tiap kuartal, mengikuti laju penjualan sepanjang tahun.
+    for bulan in (4, 7, 10):
+        S.buat_bill(
+            cid, f"{tahun}-{bulan:02d}-14",
+            [{"product_id": laptop, "deskripsi": "", "qty": 12,
+              "satuan": "unit", "harga_satuan": 8_500_000,
+              "diskon_persen": 0}],
+            vendor[0], jenis="Persediaan",
+            jenis_ppn="12% DPP Nilai Lain (11/12)")
+        S.buat_bill(
+            cid, f"{tahun}-{bulan:02d}-25",
+            [{"product_id": printer, "deskripsi": "", "qty": 18,
+              "satuan": "unit", "harga_satuan": 2_400_000,
+              "diskon_persen": 0}],
+            vendor[1], jenis="Persediaan",
+            jenis_ppn="12% DPP Nilai Lain (11/12)")
+
+    penjualan = [
+        (f"{tahun}-01-12", pelanggan[0], laptop, 3, 12_500_000),
+        (f"{tahun}-01-25", pelanggan[1], printer, 8, 3_750_000),
+        (f"{tahun}-02-05", pelanggan[0], jaringan, 1, 15_000_000),
+        (f"{tahun}-02-14", pelanggan[2], laptop, 5, 12_500_000),
+        (f"{tahun}-02-22", pelanggan[1], servis, 6, 850_000),
+        (f"{tahun}-03-08", pelanggan[0], printer, 12, 3_750_000),
+        # Transaksi bulan berikutnya membuat grafik kinerja bulanan terisi
+        # sepanjang tahun, sehingga contoh tampilan menggambarkan usaha yang
+        # sudah berjalan lama, bukan usaha yang baru sebulan berdiri.
+        (f"{tahun}-03-21", pelanggan[2], servis, 9, 850_000),
+        (f"{tahun}-04-09", pelanggan[1], laptop, 4, 12_500_000),
+        (f"{tahun}-04-18", pelanggan[0], printer, 7, 3_750_000),
+        (f"{tahun}-05-06", pelanggan[2], jaringan, 1, 15_000_000),
+        (f"{tahun}-05-19", pelanggan[1], servis, 11, 850_000),
+        (f"{tahun}-06-11", pelanggan[0], laptop, 6, 12_500_000),
+        (f"{tahun}-06-24", pelanggan[2], printer, 9, 3_750_000),
+        (f"{tahun}-07-07", pelanggan[1], jaringan, 2, 15_000_000),
+        (f"{tahun}-07-16", pelanggan[0], servis, 8, 850_000),
+        (f"{tahun}-08-05", pelanggan[2], laptop, 5, 12_500_000),
+        (f"{tahun}-08-20", pelanggan[1], printer, 14, 3_750_000),
+        (f"{tahun}-09-10", pelanggan[0], servis, 12, 850_000),
+        (f"{tahun}-09-23", pelanggan[2], jaringan, 1, 15_000_000),
+        (f"{tahun}-10-08", pelanggan[1], laptop, 3, 12_500_000),
+        (f"{tahun}-10-21", pelanggan[0], printer, 10, 3_750_000),
+        (f"{tahun}-11-06", pelanggan[2], servis, 7, 850_000),
+        (f"{tahun}-11-19", pelanggan[1], jaringan, 2, 15_000_000),
+        (f"{tahun}-12-04", pelanggan[0], laptop, 8, 12_500_000),
+        (f"{tahun}-12-17", pelanggan[2], printer, 11, 3_750_000),
+    ]
+    for tanggal, mitra, produk, qty, harga in penjualan:
+        S.buat_invoice(
+            cid, tanggal,
+            [{"product_id": produk, "deskripsi": "", "qty": qty,
+              "satuan": "unit", "harga_satuan": harga, "diskon_persen": 0}],
+            mitra, jenis_ppn="12% DPP Nilai Lain (11/12)")
 
     kategori = O.buat_kategori_biaya(cid, "Operasional Kantor", akun_beban="6023")
     O.ajukan_biaya(cid, f"{tahun}-01-31", "Listrik dan air kantor Januari",

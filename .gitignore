@@ -5,6 +5,12 @@ installer_output/
 msix_output/
 *.spec.bak
 
+# Gambar untuk halaman listing Microsoft Store. Dibuat ulang oleh
+# tools/tangkapan_store.py, jadi tidak perlu disimpan di repositori.
+store_gambar/
+_ss/
+_ssdata/
+
 # Berkas MSIX yang dibangun ulang. Identitas penerbit memuat kode akun
 # Partner Center, jadi tidak perlu ikut tersimpan.
 msix/AppxManifest.xml

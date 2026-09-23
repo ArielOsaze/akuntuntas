@@ -303,7 +303,7 @@ def recent_audit(limit: int = 200, kategori: str = None) -> list:
     """
     if kategori:
         baris = db.q(
-            """SELECT ts, username, kategori,
+            """SELECT id, ts, username, kategori,
                       action AS action, action AS aksi,
                       entity AS entity, entity AS objek,
                       entity_id, detail,
@@ -313,7 +313,7 @@ def recent_audit(limit: int = 200, kategori: str = None) -> list:
                ORDER BY id DESC LIMIT ?""", (kategori, limit))
     else:
         baris = db.q(
-            """SELECT ts, username, kategori,
+            """SELECT id, ts, username, kategori,
                       action AS action, action AS aksi,
                       entity AS entity, entity AS objek,
                       entity_id, detail,

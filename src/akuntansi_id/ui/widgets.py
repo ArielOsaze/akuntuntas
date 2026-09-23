@@ -147,7 +147,10 @@ class KpiTile(QFrame):
         super().__init__(parent)
         self.setObjectName("KpiTile")
         self.setMinimumHeight(112)
-        self.setMinimumWidth(168)
+        # Lebar minimum dijaga kecil supaya tiga kartu dalam satu baris tetap
+        # muat pada layar 1366 piksel, ukuran terkecil yang didukung. Nilai
+        # yang terlalu besar membuat kartu ketiga keluar dari tepi jendela.
+        self.setMinimumWidth(120)
         lay = QVBoxLayout(self)
         lay.setContentsMargins(16, 13, 16, 13)
         lay.setSpacing(4)
@@ -388,7 +391,11 @@ class Badge(QLabel):
             f"QLabel {{ background: {bg}; color: {warna}; border-radius: 9px; "
             f"padding: 3px 10px; font-size: {theme.FS_TINY}px; font-weight: 700; }}")
         self.setAlignment(Qt.AlignCenter)
-        self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        # Lebar minimum dikunci pada lebar teks supaya label tidak menyusut
+        # sampai tulisannya terpotong saat ruang di sekitarnya sempit.
+        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        self.setMinimumWidth(
+            self.fontMetrics().horizontalAdvance(teks.upper()) + 24)
 
 
 # ==========================================================================
@@ -795,10 +802,13 @@ class TemuanCard(QFrame):
         # Header: badge + judul
         header = QHBoxLayout()
         header.setSpacing(10)
-        badge = QLabel(f"{temuan.ikon} {temuan.label}")
+        teks_badge = f"{temuan.ikon} {temuan.label}"
+        badge = QLabel(teks_badge)
         theme.latar(badge, f"background: {bg}; color: {warna}; border-radius: 9px; "
             f"padding: 3px 10px; font-size: {theme.FS_TINY}px; font-weight: 800;")
-        badge.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        badge.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        badge.setMinimumWidth(
+            badge.fontMetrics().horizontalAdvance(teks_badge) + 24)
         header.addWidget(badge)
 
         lbl_kat = QLabel(temuan.kategori)

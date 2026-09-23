@@ -72,6 +72,13 @@ def kotak_teks(chart: BarChart, bulan_sorot: int) -> list:
         l2 = fm.horizontalAdvance(t2) + 8
 
         ada1, ada2 = h1 >= 18, h2 >= 18
+        # Label disembunyikan bila kolom terlalu sempit, sama seperti yang
+        # dilakukan grafik. Tanpa penyesuaian ini, pemeriksaan mengukur label
+        # yang sebenarnya tidak digambar.
+        if lebar_grup < l1 + 6:
+            ada1 = False
+        if lebar_grup < l2 + 6:
+            ada2 = False
         jarak_label = 8
         tinggi_label = 13
         berdekatan = ada1 and ada2 and abs(tengah1 - tengah2) < (l1 + l2) / 2
@@ -91,8 +98,18 @@ def kotak_teks(chart: BarChart, bulan_sorot: int) -> list:
             x = min(max(tengah2 - l2 / 2, 2.0), lebar - l2 - 2)
             if kotak1 is not None:
                 x1, y1, w1 = kotak1[1], kotak1[2], kotak1[3]
-                if not (x + l2 <= x1 or x1 + w1 <= x) and abs(y - y1) < tinggi_label:
-                    y = min(y1 + tinggi_label + 1, dasar - tinggi_label - 2)
+                # Logika pergeseran harus sama dengan yang dipakai grafik,
+                # supaya pemeriksaan ini mengukur keadaan yang sebenarnya.
+                if not (x + l2 <= x1 or x1 + w1 <= x):
+                    batas_bawah = dasar - tinggi_label - 2
+                    if abs(y - y1) < tinggi_label + 2:
+                        y = min(y1 + tinggi_label + 3, batas_bawah)
+                    if abs(y - y1) < tinggi_label + 2:
+                        geser = x1 + w1 - x + 2
+                        if x + geser + l2 <= lebar - 2:
+                            x += geser
+                        elif x1 - l2 - 2 >= 2:
+                            x = x1 - l2 - 2
             kotak.append((f"nilai beban {t2}", x, y, l2, tinggi_label))
 
         # jarak label ke puncak batang tidak boleh nol (menempel)

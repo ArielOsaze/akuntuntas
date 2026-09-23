@@ -98,9 +98,20 @@ def main() -> int:
     cek("Log keamanan mencatat sumber komputer",
         all(a["sumber"] for a in keamanan),
         "ada catatan tanpa sumber")
-    cek("Jumlah ketiga kategori sama dengan seluruh catatan",
-        len(keamanan) + len(data) + len(admin) == len(semua),
-        f"{len(keamanan)}+{len(data)}+{len(admin)} != {len(semua)}")
+    # Ketiga kategori harus mencakup seluruh catatan pada rentang yang sama.
+    # Perbandingan memakai id baris, bukan penjumlahan, karena `recent_audit`
+    # membatasi jumlah baris per panggilan. Menjumlahkan hasil tiga kategori
+    # dengan batas 200 masing-masing dapat melebihi jumlah hasil tanpa
+    # kategori yang juga dibatasi 200.
+    id_terpisah = {a["id"] for a in (keamanan + data + admin)}
+    id_semua = {a["id"] for a in semua}
+    cek("Seluruh catatan terbagi ke dalam tiga kategori",
+        id_semua.issubset(id_terpisah),
+        f"{len(id_semua - id_terpisah)} catatan tidak masuk kategori mana pun")
+    cek("Tidak ada catatan yang masuk dua kategori",
+        len(id_terpisah) == len(keamanan) + len(data) + len(admin),
+        f"{len(keamanan) + len(data) + len(admin) - len(id_terpisah)} "
+        "catatan ganda")
 
     # ------------------------------------------------------- label aksi
     print("\n[Label aksi]")
