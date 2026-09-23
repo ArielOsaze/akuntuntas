@@ -34,12 +34,12 @@ HALAMAN_ENTERPRISE = {
 
 # Bagian di dalam halaman yang hanya tersedia pada paket Enterprise. Halaman
 # induknya tetap dapat dibuka pada paket Standar, tetapi bagian ini tidak.
+#
+# Daftar ini sengaja hanya memuat bagian yang benar-benar ada di aplikasi.
+# Menuliskan fitur yang belum dibuat akan membuat tabel perbandingan di situs
+# menjanjikan sesuatu yang tidak bisa dipakai pembeli.
 BAGIAN_ENTERPRISE = {
-    "laporan_sak_ep": "Laporan SAK EP dan SAK Umum",
-    "laporan_sak_umum": "Laporan SAK Umum",
-    "payroll_lanjutan": "Payroll lanjutan",
-    "audit_lanjutan": "Log audit lanjutan",
-    "multi_cabang": "Multi cabang",
+    "audit_lanjutan": "Riwayat perubahan data",
     "multi_entitas": "Beberapa badan usaha",
 }
 

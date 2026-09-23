@@ -501,15 +501,15 @@ def _versi_app() -> str:
 # ==========================================================================
 # KETERANGAN PAKET
 # ==========================================================================
-# Fitur yang hanya tersedia pada paket Enterprise. Halaman yang bergantung
-# pada fitur ini disembunyikan saat paket Standar dipakai.
+# Fitur yang hanya tersedia pada paket Enterprise. Daftar ini dipakai untuk
+# memberi keterangan kepada pengguna, dan harus sejalan dengan penjagaan di
+# ui/batas_paket.py. Fitur yang belum benar-benar ada di aplikasi tidak
+# dicantumkan supaya keterangan paket tidak menjanjikan hal yang keliru.
 FITUR_ENTERPRISE = {
     "konsolidasi": "Konsolidasi multi-entitas",
-    "multi_cabang": "Multi cabang",
     "dimensi": "Dimensi biaya dan proyek",
-    "payroll_lanjutan": "Payroll lanjutan",
     "pajak_lanjutan": "Pajak lanjutan",
-    "audit_lanjutan": "Audit lanjutan",
+    "audit_lanjutan": "Riwayat perubahan data",
     "multi_entitas": "Beberapa badan usaha",
 }
 
