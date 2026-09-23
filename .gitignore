@@ -38,6 +38,12 @@ supabase/_deploy*.json
 supabase/_sql_*.txt
 web/_tampilan/
 
+# Setelan sertifikat penandatanganan aplikasi. Berkas ini memuat kata sandi
+# sertifikat, jadi tidak boleh ikut tersimpan di repositori.
+sertifikat.json
+*.pfx
+*.p12
+
 # Berkas sementara
 *.log
 *.tmp

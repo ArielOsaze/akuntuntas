@@ -16,7 +16,7 @@
 
 #define NamaAplikasi "AkunTuntas"
 #define VersiAplikasi "1.0.0"
-#define Penerbit "AkunTuntas"
+#define Penerbit "Xinet Group"
 #define Deskripsi "Pembukuan & Pajak Perusahaan Indonesia"
 #define NamaExe "AkunTuntas.exe"
 
@@ -27,6 +27,19 @@ AppVersion={#VersiAplikasi}
 AppVerName={#NamaAplikasi} {#VersiAplikasi}
 AppPublisher={#Penerbit}
 AppComments={#Deskripsi}
+; Keterangan penerbit yang muncul di Control Panel dan di tab Detail berkas.
+; Nilai ini juga dipakai Windows untuk mengisi kolom Company pada properti
+; berkas, sehingga asal aplikasi jelas meski belum ditandatangani secara
+; digital.
+VersionInfoCompany={#Penerbit}
+VersionInfoDescription={#Deskripsi}
+VersionInfoProductName={#NamaAplikasi}
+VersionInfoProductVersion={#VersiAplikasi}
+VersionInfoVersion={#VersiAplikasi}.0
+VersionInfoCopyright=Hak cipta 2026 {#Penerbit}
+AppPublisherURL=https://akuntuntas.xinet.id
+AppSupportURL=https://akuntuntas.xinet.id
+AppUpdatesURL=https://akuntuntas.xinet.id/unduh.html
 DefaultDirName={autopf}\{#NamaAplikasi}
 DefaultGroupName={#NamaAplikasi}
 DisableProgramGroupPage=yes

@@ -167,6 +167,82 @@
         text-align: center;
     }
 
+    /* Keterangan keaslian berkas. Bagian ini menjawab keraguan pembeli yang
+       melihat peringatan keamanan Windows saat pertama kali menjalankan
+       pemasang. */
+    .unduh-penerbit {
+        border-top: 1px solid var(--garis);
+        padding-top: 18px;
+        margin-top: 18px;
+        text-align: left;
+    }
+
+    .unduh-penerbit h5 {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--teks);
+        margin-bottom: 10px;
+    }
+
+    .unduh-penerbit p {
+        font-size: 13px;
+        line-height: 1.65;
+        color: var(--teks-abu);
+        margin-bottom: 10px;
+    }
+
+    .unduh-penerbit strong { color: var(--teks); }
+
+    .unduh-sidik { margin-bottom: 8px; }
+
+    .unduh-hash {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        background: var(--latar-lembut);
+        border: 1px solid var(--garis);
+        border-radius: 9px;
+        padding: 11px 13px;
+        margin-bottom: 10px;
+    }
+
+    .unduh-hash-label {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: var(--teks-abu);
+        background: var(--putih);
+        border: 1px solid var(--garis);
+        border-radius: 5px;
+        padding: 3px 7px;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .unduh-hash code {
+        font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+        font-size: 11.5px;
+        line-height: 1.6;
+        color: var(--teks);
+        word-break: break-all;
+    }
+
+    .unduh-cara-cek {
+        font-size: 12.5px;
+        color: var(--teks-abu);
+        margin-bottom: 0;
+    }
+
+    .unduh-cara-cek code {
+        font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+        font-size: 11.5px;
+        background: var(--latar-lembut);
+        border: 1px solid var(--garis);
+        border-radius: 5px;
+        padding: 1px 5px;
+        color: var(--teks);
+    }
+
     .unduh-syarat {
         margin-top: 30px;
         padding-top: 24px;
@@ -283,6 +359,35 @@
                         jalankan pemasang lalu masukkan kunci lisensi yang sama
                         pada layar aktivasi.
                     </p>
+
+                    <div class="unduh-penerbit">
+                        <h5>Keaslian berkas</h5>
+                        <p>
+                            Berkas pemasang diterbitkan atas nama
+                            <strong>Xinet Group</strong>. Nama itu tercantum
+                            pada jendela pemasang dan pada properti berkas.
+                        </p>
+                        <p>
+                            Aplikasi ini belum ditandatangani dengan sertifikat
+                            digital, sehingga Windows dapat menampilkan
+                            peringatan keamanan saat berkas pertama kali
+                            dijalankan. Peringatan itu wajar untuk aplikasi baru
+                            dan bukan tanda bahwa berkasnya berbahaya.
+                        </p>
+                        <p class="unduh-sidik">
+                            Sebelum menjalankan, pastikan sidik jari berkas yang
+                            Anda unduh sama dengan nilai di bawah ini.
+                        </p>
+                        <div class="unduh-hash">
+                            <span class="unduh-hash-label">SHA256</span>
+                            <code>a2c8799175f83094f8301284b6333653debafaa96b99ae2dc8140baba9106193</code>
+                        </div>
+                        <p class="unduh-cara-cek">
+                            Cara memeriksa: buka PowerShell, lalu jalankan
+                            <code>Get-FileHash "berkas-anda.exe" -Algorithm SHA256</code>.
+                            Nilai yang muncul harus sama persis.
+                        </p>
+                    </div>
                 </div>
 
                 <div class="unduh-syarat">
