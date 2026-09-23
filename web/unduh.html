@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unduh AkunTuntas</title>
+<meta name="description" content="Unduh pemasang AkunTuntas untuk Windows 64-bit. Masukkan kunci lisensi Anda untuk memulai unduhan.">
+<link rel="icon" href="logo-32.png" type="image/png">
+<link rel="stylesheet" href="styles.css">
+<style>
+    .unduh-wadah {
+        max-width: 620px;
+        margin: 0 auto;
+        padding: 56px 0 72px;
+    }
+
+    .unduh-kepala {
+        text-align: center;
+        margin-bottom: 34px;
+    }
+
+    .unduh-kepala h1 {
+        font-size: 34px;
+        letter-spacing: -0.02em;
+        margin-bottom: 12px;
+    }
+
+    .unduh-kepala p {
+        color: var(--teks-abu);
+        font-size: 16px;
+        line-height: 1.65;
+    }
+
+    .unduh-kartu {
+        background: var(--putih);
+        border: 1px solid var(--garis);
+        border-radius: var(--radius);
+        box-shadow: var(--bayang);
+        padding: 32px;
+    }
+
+    .unduh-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .unduh-baris {
+        display: flex;
+        gap: 10px;
+    }
+
+    .unduh-input {
+        flex: 1;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 16px;
+        letter-spacing: 1px;
+        padding: 13px 14px;
+        border: 1.5px solid var(--garis);
+        border-radius: 9px;
+        color: var(--teks);
+        background: var(--putih);
+        min-width: 0;
+    }
+
+    .unduh-input:focus {
+        outline: none;
+        border-color: var(--biru);
+        box-shadow: 0 0 0 3px rgba(27, 79, 138, 0.13);
+    }
+
+    .unduh-pesan {
+        display: none;
+        margin-top: 16px;
+        padding: 13px 15px;
+        border-radius: 9px;
+        font-size: 14px;
+        line-height: 1.55;
+    }
+
+    .unduh-pesan.tampil { display: block; }
+
+    .unduh-pesan.galat {
+        background: #FEF2F2;
+        border: 1px solid #FCA5A5;
+        color: #991B1B;
+    }
+
+    .unduh-pesan.info {
+        background: #EFF6FF;
+        border: 1px solid #93C5FD;
+        color: #1E40AF;
+    }
+
+    .unduh-hasil {
+        display: none;
+        margin-top: 22px;
+        padding-top: 22px;
+        border-top: 1px solid var(--garis);
+    }
+
+    .unduh-hasil.tampil { display: block; }
+
+    .unduh-paket {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 15px;
+        background: #ECFDF5;
+        border: 1px solid #6EE7B7;
+        border-radius: 10px;
+        margin-bottom: 18px;
+    }
+
+    .unduh-paket svg {
+        width: 22px;
+        height: 22px;
+        stroke: #047857;
+        flex-shrink: 0;
+    }
+
+    .unduh-paket div strong {
+        display: block;
+        color: #065F46;
+        font-size: 15px;
+        margin-bottom: 2px;
+    }
+
+    .unduh-paket div span {
+        color: #047857;
+        font-size: 13.5px;
+    }
+
+    .unduh-tombol {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        width: 100%;
+        padding: 15px 24px;
+        background: var(--biru);
+        color: #FFFFFF;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        font-family: inherit;
+        transition: background 0.15s ease;
+    }
+
+    .unduh-tombol:hover { background: var(--biru-tua); }
+
+    .unduh-tombol svg {
+        width: 19px;
+        height: 19px;
+        stroke: currentColor;
+    }
+
+    .unduh-catatan {
+        margin-top: 16px;
+        font-size: 13px;
+        color: var(--teks-abu);
+        line-height: 1.6;
+        text-align: center;
+    }
+
+    .unduh-syarat {
+        margin-top: 30px;
+        padding-top: 24px;
+        border-top: 1px solid var(--garis);
+    }
+
+    .unduh-syarat h4 {
+        font-size: 14px;
+        margin-bottom: 12px;
+    }
+
+    .unduh-syarat ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .unduh-syarat li {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        font-size: 14px;
+        color: var(--teks-abu);
+        margin-bottom: 9px;
+        line-height: 1.55;
+    }
+
+    .unduh-syarat li svg {
+        width: 17px;
+        height: 17px;
+        stroke: var(--biru);
+        flex-shrink: 0;
+        margin-top: 3px;
+    }
+
+    .unduh-bantuan {
+        margin-top: 26px;
+        text-align: center;
+        font-size: 14px;
+        color: var(--teks-abu);
+    }
+
+    .unduh-bantuan a { color: var(--biru); font-weight: 600; }
+
+    @media (max-width: 620px) {
+        .unduh-wadah { padding: 36px 0 56px; }
+        .unduh-kepala h1 { font-size: 26px; }
+        .unduh-kartu { padding: 22px 18px; }
+        .unduh-baris { flex-direction: column; }
+    }
+</style>
+</head>
+<body>
+
+<header class="kepala">
+    <div class="wadah kepala-isi">
+        <a class="merek" href="index.html">
+            <img src="logo.png" alt="">
+            AkunTuntas
+        </a>
+        <nav class="nav">
+            <a href="index.html#fitur">Fitur</a>
+            <a href="index.html#cara">Cara Kerja</a>
+            <a href="index.html#harga">Harga</a>
+            <a href="index.html#tanya">Pertanyaan</a>
+        </nav>
+        <a class="tombol" href="index.html#harga">Beli Lisensi</a>
+    </div>
+</header>
+
+<main class="bagian">
+    <div class="wadah">
+        <div class="unduh-wadah">
+            <div class="unduh-kepala">
+                <h1>Unduh AkunTuntas</h1>
+                <p>
+                    Masukkan kunci lisensi Anda untuk membuka tautan unduhan.
+                    Kunci dikirim ke email Anda setelah pembayaran.
+                </p>
+            </div>
+
+            <div class="unduh-kartu">
+                <label class="unduh-label" for="kunci">Kunci lisensi</label>
+                <div class="unduh-baris">
+                    <input class="unduh-input" id="kunci" type="text"
+                           placeholder="ATNT-XXXX-XXXX-XXXX-XXXX"
+                           maxlength="24" autocomplete="off" spellcheck="false">
+                    <button class="tombol" id="periksa" type="button">Periksa Kunci</button>
+                </div>
+
+                <div class="unduh-pesan" id="pesan"></div>
+
+                <div class="unduh-hasil" id="hasil">
+                    <div class="unduh-paket">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 6L9 17l-5-5"/>
+                        </svg>
+                        <div>
+                            <strong id="nama-paket">AkunTuntas</strong>
+                            <span id="keterangan-paket"></span>
+                        </div>
+                    </div>
+
+                    <a class="unduh-tombol" id="tautan" href="#" download>
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <path d="M7 10l5 5 5-5M12 15V3"/>
+                        </svg>
+                        Unduh Pemasang Windows
+                    </a>
+
+                    <p class="unduh-catatan">
+                        Berkas berukuran sekitar 107 MB. Setelah terunduh,
+                        jalankan pemasang lalu masukkan kunci lisensi yang sama
+                        pada layar aktivasi.
+                    </p>
+                </div>
+
+                <div class="unduh-syarat">
+                    <h4>Yang perlu disiapkan</h4>
+                    <ul>
+                        <li>
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span>Windows 10 atau Windows 11, 64-bit</span>
+                        </li>
+                        <li>
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span>Ruang penyimpanan kosong sekitar 400 MB</span>
+                        </li>
+                        <li>
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span>Sambungan internet sebentar saja, hanya untuk aktivasi</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <p class="unduh-bantuan">
+                Belum punya kunci lisensi?
+                <a href="index.html#harga">Lihat pilihan paket</a> atau
+                <a href="mailto:akuntuntas@gmail.com?subject=Pembelian%20Lisensi%20AkunTuntas">hubungi kami</a>.
+            </p>
+        </div>
+    </div>
+</main>
+
+<footer class="kaki">
+    <div class="wadah">
+        <div class="kaki-bawah">
+            <span>&copy; 2026 Xinet Group. Seluruh hak cipta dilindungi.</span>
+            <span><a href="index.html" style="color: #8FA7BE;">Kembali ke beranda</a></span>
+        </div>
+    </div>
+</footer>
+
+<script>
+(function () {
+    var ALAMAT_SERVER = "https://cumirppxywzkbrzlvknr.supabase.co/functions/v1/license";
+    var inpKunci = document.getElementById("kunci");
+    var tombol = document.getElementById("periksa");
+    var pesan = document.getElementById("pesan");
+    var hasil = document.getElementById("hasil");
+    var namaPaket = document.getElementById("nama-paket");
+    var ketPaket = document.getElementById("keterangan-paket");
+    var tautan = document.getElementById("tautan");
+
+    // Rapikan penulisan kunci: buang spasi dan tanda hubung, lalu susun
+    // ulang dalam kelompok empat huruf supaya mudah dibaca.
+    function rapikanKunci(teks) {
+        var bersih = (teks || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+        var potongan = [];
+        for (var i = 0; i < bersih.length && potongan.length < 5; i += 4) {
+            potongan.push(bersih.slice(i, i + 4));
+        }
+        return potongan.join("-");
+    }
+
+    function tampilkanPesan(teks, jenis) {
+        pesan.textContent = teks;
+        pesan.className = "unduh-pesan tampil " + (jenis || "info");
+    }
+
+    function sembunyikanPesan() {
+        pesan.className = "unduh-pesan";
+    }
+
+    inpKunci.addEventListener("input", function () {
+        var posisiDiAkhir = inpKunci.selectionStart === inpKunci.value.length;
+        inpKunci.value = rapikanKunci(inpKunci.value);
+        if (posisiDiAkhir) {
+            inpKunci.setSelectionRange(inpKunci.value.length, inpKunci.value.length);
+        }
+    });
+
+    inpKunci.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { tombol.click(); }
+    });
+
+    tombol.addEventListener("click", function () {
+        var kunci = inpKunci.value.trim();
+        if (kunci.replace(/[^A-Z0-9]/g, "").length < 20) {
+            tampilkanPesan("Kunci lisensi belum lengkap. Periksa kembali penulisan kunci Anda.", "galat");
+            return;
+        }
+
+        tombol.disabled = true;
+        tombol.textContent = "Memeriksa...";
+        sembunyikanPesan();
+        hasil.className = "unduh-hasil";
+
+        fetch(ALAMAT_SERVER, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ aksi: "periksa", kunci: kunci })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (!d.ok) {
+                tampilkanPesan(d.pesan || "Kunci lisensi tidak dapat diperiksa.", "galat");
+                return;
+            }
+            if (!d.tautan) {
+                tampilkanPesan(
+                    "Kunci Anda sah, tetapi berkas pemasang belum tersedia. " +
+                    "Hubungi akuntuntas@gmail.com untuk mendapatkan tautan unduhan.",
+                    "info");
+                return;
+            }
+            namaPaket.textContent = d.nama_paket || "AkunTuntas";
+            ketPaket.textContent = "Berlaku untuk " + (d.max_device || 1) +
+                " perangkat" + (d.pemilik ? " atas nama " + d.pemilik : "");
+            tautan.href = d.tautan;
+            hasil.className = "unduh-hasil tampil";
+            hasil.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        })
+        .catch(function () {
+            tampilkanPesan(
+                "Tidak dapat menghubungi server lisensi. Periksa sambungan " +
+                "internet Anda lalu coba lagi.", "galat");
+        })
+        .finally(function () {
+            tombol.disabled = false;
+            tombol.textContent = "Periksa Kunci";
+        });
+    });
+})();
+</script>
+
+</body>
+</html>

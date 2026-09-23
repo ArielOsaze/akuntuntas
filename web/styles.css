@@ -55,6 +55,12 @@ body {
     height: 68px;
 }
 
+.kepala-tombol {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .merek {
     display: flex;
     align-items: center;
@@ -650,7 +656,14 @@ body {
     margin-bottom: 12px;
 }
 
-.kaki-merek img { width: 30px; height: 30px; }
+.kaki-merek img {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #FFFFFF;
+    padding: 3px;
+    box-sizing: border-box;
+}
 
 .kaki-kolom h5 {
     color: var(--putih);

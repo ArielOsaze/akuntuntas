@@ -23,7 +23,7 @@ Aktivasi dilakukan sekali di awal. Setelah aktif, aplikasi berjalan penuh
 tanpa internet. Keterangan lisensi diperiksa berkala ke server supaya
 lisensi yang dicabut karena pelanggaran dapat berhenti berlaku.
 
-Situs resmi: https://akuntuntas-bot-whatsapp1.vercel.app
+Situs resmi: https://akuntuntas.xinet.id
 
 Pembelian dan pertanyaan lisensi: akuntuntas@gmail.com
 
