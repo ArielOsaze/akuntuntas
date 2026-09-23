@@ -1,0 +1,68 @@
+{
+  "name": "AkunTuntas",
+  "version": "1.0.0",
+  "description": "Pembukuan & Pajak Perusahaan Indonesia",
+  "author": "AkunTuntas",
+  "license": "Proprietary",
+  "data_dir_default": "%LOCALAPPDATA%\\AkunTuntas",
+  "features": [
+    "Pembukuan double-entry otomatis seimbang",
+    "Laporan keuangan sesuai SAK (EMKM/EP/Umum)",
+    "PPh Badan Pasal 31E & PPh Final UMKM 0,5%",
+    "PPN dengan mekanisme DPP Nilai Lain 11/12",
+    "PPh 21 skema TER (PMK 168/2023, terverifikasi)",
+    "PPh 22/23/26/4(2) potong-pungut",
+    "Penyusutan komersial & fiskal (PMK 72/2023)",
+    "Rekonsiliasi fiskal otomatis",
+    "Penjualan: Sales Order, Invoice (PDF), Penerimaan, Nota Kredit",
+    "Pembelian: Purchase Order, Bill, Pembayaran Vendor, Retur",
+    "Aging piutang & utang dengan pengingat jatuh tempo",
+    "Biaya: pengajuan, persetujuan, pembayaran, lampiran bukti",
+    "Kas & bank multi rekening + impor mutasi + rekonsiliasi bank",
+    "Pelanggan & pemasok dengan riwayat dan saldo",
+    "Produk & persediaan: FIFO/Average, multi gudang, kartu stok, opname",
+    "Dimensi: cost center, proyek, cabang + laba rugi per dimensi",
+    "Tutup buku per periode dengan kontrol jurnal",
+    "Jurnal berulang otomatis (template transaksi rutin)",
+    "Konsolidasi grup entitas multi perusahaan",
+    "Akses LAN server/klien + cadangan & pemulihan data",
+    "Pengguna, peran, dan hak akses per modul",
+    "Log audit & riwayat perubahan data",
+    "Keranjang sampah dengan pemulihan data",
+    "Impor data massal CSV dengan deteksi duplikat",
+    "Pencarian global lintas modul",
+    "Analisis kesehatan keuangan 30+ pemeriksaan",
+    "Kalender & kalkulator sanksi pajak",
+    "Mode Pemula / Ahli",
+    "Database lokal SQLite (sepenuhnya offline)"
+  ],
+  "regulasi": {
+    "edisi": "2026.02",
+    "acuan_utama": [
+      "UU No. 7/2021 (UU HPP)",
+      "UU No. 6/2023 (Cipta Kerja)",
+      "UU No. 1/2026",
+      "PP 55/2022 jo. PP 20/2026",
+      "PMK 168/PMK.03/2023 (TER PPh 21)",
+      "PMK 131/PMK.03/2024 (PPN DPP nilai lain)",
+      "PMK 72/PMK.03/2023 (penyusutan fiskal)",
+      "PMK 81/2024 (sanksi bunga)",
+      "PMK 114/2025 (zakat, bantuan, hibahan)",
+      "Pasal 28 & 39 UU KUP (kewajiban pembukuan)",
+      "SAK EMKM, SAK EP, PSAK 1/2/14/16/34/46/57/65/71/72"
+    ]
+  },
+  "requirements": {
+    "os": "Windows 10/11 (64-bit)",
+    "ram_mb": 512,
+    "disk_mb": 250,
+    "network": "Tidak diperlukan (sepenuhnya offline)"
+  },
+  "verifikasi": {
+    "uji_backend": 320,
+    "uji_antarmuka": 107,
+    "uji_antarmuka_mendalam": 120,
+    "uji_kepatuhan_pajak": 70,
+    "tabel_ter": "Cocok 100% dengan PMK 168/2023"
+  }
+}

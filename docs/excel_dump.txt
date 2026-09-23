@@ -1,0 +1,502 @@
+====================================================================================================
+SHEET: README  dims=A1:I1000 rows=1000 cols=9
+====================================================================================================
+A1='Template Pembukuan & Pajak Perusahaan Indonesia'
+A2='Versi aturan sampai 17 September 2026. Untuk badan usaha dengan omzet < Rp5 miliar/tahun. Ambang penting perpajakan tetap Rp4,8 miliar, bukan Rp5 miliar.'
+A4='TUJUAN' | B4='Pembukuan double-entry, laporan keuangan, laba kotor/bersih, rekonsiliasi fiskal, PPh Badan, PPN, PotPut, aset tetap, payroll ringkas, dan dashboard.'
+A5='ALUR PAKAI' | B5='1) Setup → 2) COA/saldo awal → 3) Jurnal → 4) Penjualan/Pembelian untuk PPN → 5) Pajak PotPut → 6) Aset Tetap/Payroll → 7) Laporan → 8) Rekonsiliasi Fiskal & PPh Badan.'
+A6='SUMBER LAPORAN' | B6='Laporan keuangan utama berasal dari sheet Jurnal. Penjualan/Pembelian adalah subledger pajak dan harus direkonsiliasi dengan Jurnal.'
+A7='AMBANG RP4,8 M' | B7='Walau workbook ditujukan untuk omzet < Rp5 miliar, Rp4,8 miliar adalah ambang penting untuk PKP/PPh Final dan batas bagian omzet fasilitas Pasal 31E. Omzet Rp4,8–5 miliar harus diperlakukan berbeda dari omzet ≤ Rp4,8 miliar.'
+A8='PPh FINAL 0,5%' | B8='PP 20/2026 mengubah cakupan subjek PPh Final 0,5%. Untuk badan, perseroan perorangan dan koperasi tetap menjadi subjek utama; PT/CV/Firma/BUMDes tertentu hanya dapat memanfaatkan transisi bila periode PP 55/2022 belum berakhir. Karena sangat tergantung bentuk dan riwayat WP, opsi Final 0,5% membutuhkan konfirmasi manual eligibility.'
+A9='PPh BADAN UMUM' | B9='Tarif umum badan 22%. Pasal 31E memberi pengurangan 50% dari tarif atas PKP yang terkait bagian omzet sampai Rp4,8 miliar untuk badan dengan omzet sampai Rp50 miliar. Jika omzet ≤ Rp4,8 miliar, tarif efektif atas seluruh PKP adalah 11%.'
+A10='PPN' | B10='Batas pengusaha kecil Rp4,8 miliar. Untuk non-mewah, mekanisme umum 12% × DPP nilai lain 11/12 menghasilkan beban efektif 11%; objek mewah tertentu memakai 12% dari DPP penuh.'
+A11='WARNA' | B11='Biru = input pengguna. Hijau = formula/link antar-sheet. Hitam = kalkulasi. Kuning = asumsi/kontrol penting.'
+A12='DISCLAIMER' | B12='Template membantu administrasi dan estimasi. Transaksi khusus, fasilitas, industri khusus, koreksi fiskal tertentu, dan interpretasi regulasi tetap perlu diverifikasi sesuai fakta serta ketentuan terbaru.'
+A13='KAPASITAS INPUT' | B13='Template menyediakan 300 baris awal untuk Jurnal, Penjualan, Pembelian, Pajak PotPut, dan Payroll. Jika perlu lebih banyak, salin formula/format baris terakhir ke bawah dan perluas range laporan terkait.'
+A14='PPh 21' | B14='Sengaja tidak dihitung otomatis karena TER/perhitungan PPh 21 bergantung profil pegawai dan masa pajak. Masukkan hasil payroll/Coretax pada sheet Payroll dan Pajak PotPut.'
+
+====================================================================================================
+SHEET: Setup  dims=A1:E1000 rows=1000 cols=5
+====================================================================================================
+A1='Setup Perusahaan & Asumsi Pajak'
+A2='Isi sel biru. Sel kuning adalah asumsi penting. Jangan memilih Final 0,5% sebelum eligibility benar-benar dikonfirmasi.'
+A4='Parameter' | B4='Nilai' | C4='Keterangan' | D4='Status/Alert' | E4='Sumber'
+A5='Tahun Pajak' | B5=2026.0 | C5='Tahun laporan'
+A6='Nama Perusahaan' | B6='PT SAYBA ARC' | C6='Nama badan usaha'
+A7='Bentuk Badan' | B7='Perseroan Perorangan' | C7='PT / Perseroan Perorangan / CV / Firma / Koperasi / BUMDes / Lainnya' | D7='PP 20/2026: cek omzet, periode dan pengecualian.'
+A8='Tanggal Terdaftar NPWP' | B8=datetime.datetime(2026, 1, 1, 0, 0) | C8='Untuk evaluasi periode fasilitas'
+A9='Skema PPh Dipilih' | B9='Ketentuan Umum (Pasal 31E)' | C9='Default aman untuk badan umum' | D9='OK'
+A10='Eligibility Final 0,5% Dikonfirmasi' | B10='Ya' | C10='Pilih Ya hanya setelah bentuk badan, periode, omzet, dan pengecualian sudah dicek'
+A11='Status PKP' | B11='Tidak' | C11='Ya/Tidak'
+A12='Batas Omzet Final/PKP (Rp)' | B12=4800000000.0 | C12='Ambang utama' | E12='https://www.pajak.go.id/id/pengusaha'
+A13='Tarif PPh Final (jika eligible)' | B13=0.005 | C13='0,5% omzet eligible' | E13='https://www.pajak.go.id/id/peraturan/perubahan-atas-peraturan-pemerintah-nomor-55-tahun-2022-tentang-penyesuaian-pengaturan-di'
+A14='Tarif PPh Badan Umum' | B14=0.22 | C14='Tarif umum' | E14='https://www.pajak.go.id/en/node/119971'
+A15='Tarif Efektif Pasal 31E' | B15=0.11 | C15='50% × 22%' | E15='https://www.pajak.go.id/en/node/119971'
+A16='Batas Omzet Pasal 31E (Rp)' | B16=50000000000.0 | C16='Fasilitas tersedia sampai Rp50 miliar' | E16='https://www.pajak.go.id/en/node/119971'
+A17='Tarif PPN Non-Mewah efektif' | B17=0.11 | C17='12% × DPP nilai lain 11/12' | E17='https://www.pajak.go.id/id/peraturan/perlakuan-pajak-pertambahan-nilai-atas-impor-barang-kena-pajak-penyerahan-barang-kena'
+A18='Tarif PPN Mewah tertentu' | B18=0.12 | C18='DPP penuh untuk objek tertentu' | E18='https://www.pajak.go.id/id/peraturan/perlakuan-pajak-pertambahan-nilai-atas-impor-barang-kena-pajak-penyerahan-barang-kena'
+A21='Kode Pajak' | B21='Jenis' | C21='Tarif Default' | D21='Kredit PPh Badan?' | E21='Catatan'
+A22='PPh23-JASA' | B22='PPh 23 jasa/sewa harta selain tanah/bangunan' | C22=0.02 | D22='Tidak' | E22='Umumnya 2% dari jumlah bruto sesuai objek'
+A23='PPh23-15' | B23='PPh 23 bunga/royalti/hadiah tertentu' | C23=0.15 | D23='Ya' | E23='Kredit bila perusahaan adalah penerima penghasilan yang dipotong'
+A24='PPh4-SEWA' | B24='PPh Final 4(2) sewa tanah/bangunan' | C24=0.1 | D24='Tidak' | E24='Final'
+A25='PPh-FINAL05' | B25='PPh Final UMKM 0,5%' | C25=0.005 | D25='Tidak' | E25='Hanya jika eligible'
+A26='PPh21' | B26='PPh 21' | D26='Tidak' | E26='Hitung dari payroll/Coretax sesuai profil pegawai'
+A27='PPh22' | B27='PPh 22' | D27='Ya' | E27='Tarif tergantung transaksi'
+A28='PPh23-KREDIT' | B28='PPh 23 dipotong pihak lain' | D28='Ya' | E28='Isi tarif/nominal sesuai bukti potong'
+A29='PPh24' | B29='PPh 24 kredit luar negeri' | D29='Ya' | E29='Sesuai batas kredit yang diperkenankan'
+A30='PPh25' | B30='Angsuran PPh 25' | D30='Ya' | E30='Dibayar sendiri, kredit SPT tahunan'
+
+====================================================================================================
+SHEET: COA  dims=A1:I1000 rows=1000 cols=9
+====================================================================================================
+A1='Chart of Accounts (COA)'
+A2='Sesuaikan jika perlu. Jangan mengubah kode yang sudah dipakai di Jurnal tanpa memperbarui transaksi terkait.'
+A4='Kode' | B4='Nama Akun' | C4='Tipe Akun' | D4='Grup Laba Rugi' | E4='Baris Neraca' | F4='Normal' | G4='Perlakuan Fiskal Default' | H4='Saldo Awal Debit (Rp)' | I4='Saldo Awal Kredit (Rp)'
+A5='1001' | B5='Kas' | C5='Aset' | E5='Kas & Bank' | F5='Debit' | G5='Deductible/Taxable' | H5=100000000.0 | I5=0.0
+A6='1002' | B6='Bank' | C6='Aset' | E6='Kas & Bank' | F6='Debit' | G6='Deductible/Taxable' | H6=0.0 | I6=0.0
+A7='1101' | B7='Piutang Usaha' | C7='Aset' | E7='Piutang Usaha' | F7='Debit' | G7='Deductible/Taxable' | H7=0.0 | I7=0.0
+A8='1102' | B8='Persediaan' | C8='Aset' | E8='Persediaan' | F8='Debit' | G8='Deductible/Taxable' | H8=0.0 | I8=0.0
+A9='1103' | B9='Biaya Dibayar Dimuka' | C9='Aset' | E9='Aset Lancar Lain' | F9='Debit' | G9='Deductible/Taxable' | H9=0.0 | I9=0.0
+A10='1104' | B10='Pajak Dibayar Dimuka / Kredit PPh' | C10='Aset' | E10='Aset Lancar Lain' | F10='Debit' | G10='Deductible/Taxable' | H10=0.0 | I10=0.0
+A11='1201' | B11='Aset Tetap - Harga Perolehan' | C11='Aset' | E11='Aset Tetap' | F11='Debit' | G11='Deductible/Taxable' | H11=0.0 | I11=0.0
+A12='1202' | B12='Akumulasi Penyusutan' | C12='Aset' | E12='Akumulasi Penyusutan' | F12='Kredit' | G12='Deductible/Taxable' | H12=0.0 | I12=0.0
+A13='1301' | B13='Aset Lain-lain' | C13='Aset' | E13='Aset Lain' | F13='Debit' | G13='Deductible/Taxable' | H13=0.0 | I13=0.0
+A14='2001' | B14='Utang Usaha' | C14='Liabilitas' | E14='Utang Usaha' | F14='Kredit' | G14='Deductible/Taxable' | H14=0.0 | I14=0.0
+A15='2101' | B15='Utang PPN' | C15='Liabilitas' | E15='Utang Pajak' | F15='Kredit' | G15='Deductible/Taxable' | H15=0.0 | I15=0.0
+A16='2102' | B16='Utang PPh PotPut' | C16='Liabilitas' | E16='Utang Pajak' | F16='Kredit' | G16='Deductible/Taxable' | H16=0.0 | I16=0.0
+A17='2201' | B17='Pinjaman Jangka Pendek' | C17='Liabilitas' | E17='Pinjaman Jangka Pendek' | F17='Kredit' | G17='Deductible/Taxable' | H17=0.0 | I17=0.0
+A18='2301' | B18='Pinjaman Jangka Panjang' | C18='Liabilitas' | E18='Pinjaman Jangka Panjang' | F18='Kredit' | G18='Deductible/Taxable' | H18=0.0 | I18=0.0
+A19='3001' | B19='Modal Disetor' | C19='Ekuitas' | E19='Modal' | F19='Kredit' | G19='Deductible/Taxable' | H19=0.0 | I19=100000000.0
+A20='3101' | B20='Saldo Laba' | C20='Ekuitas' | E20='Saldo Laba' | F20='Kredit' | G20='Deductible/Taxable' | H20=0.0 | I20=0.0
+A21='4001' | B21='Penjualan / Pendapatan Usaha' | C21='Pendapatan' | D21='Pendapatan Usaha' | F21='Kredit' | G21='Deductible/Taxable' | H21=0.0 | I21=0.0
+A22='4002' | B22='Pendapatan Usaha Lain' | C22='Pendapatan' | D22='Pendapatan Usaha' | F22='Kredit' | G22='Deductible/Taxable' | H22=0.0 | I22=0.0
+A23='4101' | B23='Pendapatan Dikenai PPh Final Tersendiri' | C23='Pendapatan' | D23='Pendapatan Lain' | F23='Kredit' | G23='Final Income (-)' | H23=0.0 | I23=0.0
+A24='5001' | B24='Harga Pokok Penjualan' | C24='Beban' | D24='HPP' | F24='Debit' | G24='Deductible/Taxable' | H24=0.0 | I24=0.0
+A25='6001' | B25='Gaji & Tunjangan' | C25='Beban' | D25='Beban Operasional' | F25='Debit' | G25='Deductible/Taxable' | H25=0.0 | I25=0.0
+A26='6002' | B26='Sewa' | C26='Beban' | D26='Beban Operasional' | F26='Debit' | G26='Deductible/Taxable' | H26=0.0 | I26=0.0
+A27='6003' | B27='Listrik/Internet/Utilitas' | C27='Beban' | D27='Beban Operasional' | F27='Debit' | G27='Deductible/Taxable' | H27=0.0 | I27=0.0
+A28='6004' | B28='Marketing & Promosi' | C28='Beban' | D28='Beban Operasional' | F28='Debit' | G28='Deductible/Taxable' | H28=0.0 | I28=0.0
+A29='6005' | B29='Transportasi & Perjalanan Dinas' | C29='Beban' | D29='Beban Operasional' | F29='Debit' | G29='Deductible/Taxable' | H29=0.0 | I29=0.0
+A30='6006' | B30='Jasa Profesional' | C30='Beban' | D30='Beban Operasional' | F30='Debit' | G30='Deductible/Taxable' | H30=0.0 | I30=0.0
+A31='6007' | B31='Penyusutan Komersial' | C31='Beban' | D31='Beban Operasional' | F31='Debit' | G31='Timing/Depreciation' | H31=0.0 | I31=0.0
+A32='6008' | B32='ATK & Perlengkapan' | C32='Beban' | D32='Beban Operasional' | F32='Debit' | G32='Deductible/Taxable' | H32=0.0 | I32=0.0
+A33='6009' | B33='Biaya Bank & Payment Gateway' | C33='Beban' | D33='Beban Operasional' | F33='Debit' | G33='Deductible/Taxable' | H33=0.0 | I33=0.0
+A34='6010' | B34='Perbaikan & Pemeliharaan' | C34='Beban' | D34='Beban Operasional' | F34='Debit' | G34='Deductible/Taxable' | H34=0.0 | I34=0.0
+A35='6011' | B35='Piutang Tak Tertagih' | C35='Beban' | D35='Beban Operasional' | F35='Debit' | G35='Review Fiskal' | H35=0.0 | I35=0.0
+A36='6012' | B36='Entertainment/Representasi' | C36='Beban' | D36='Beban Operasional' | F36='Debit' | G36='Review Fiskal' | H36=0.0 | I36=0.0
+A37='6013' | B37='Denda & Sanksi Pajak' | C37='Beban' | D37='Beban Operasional' | F37='Debit' | G37='Non-Deductible (+)' | H37=0.0 | I37=0.0
+A38='6014' | B38='Sumbangan/Donasi Umum' | C38='Beban' | D38='Beban Operasional' | F38='Debit' | G38='Non-Deductible (+)' | H38=0.0 | I38=0.0
+A39='6015' | B39='PPh Badan/Final sebagai Beban' | C39='Beban' | D39='Beban Operasional' | F39='Debit' | G39='Non-Deductible (+)' | H39=0.0 | I39=0.0
+A40='7001' | B40='Pendapatan Bunga Deposito/Jasa Giro' | C40='Pendapatan' | D40='Pendapatan Lain' | F40='Kredit' | G40='Final Income (-)' | H40=0.0 | I40=0.0
+A41='7002' | B41='Pendapatan Lain-lain Kena Pajak' | C41='Pendapatan' | D41='Pendapatan Lain' | F41='Kredit' | G41='Deductible/Taxable' | H41=0.0 | I41=0.0
+A42='8001' | B42='Beban Bunga' | C42='Beban' | D42='Beban Lain' | F42='Debit' | G42='Deductible/Taxable' | H42=0.0 | I42=0.0
+A43='8002' | B43='Beban Lain-lain' | C43='Beban' | D43='Beban Lain' | F43='Debit' | G43='Review Fiskal' | H43=0.0 | I43=0.0
+A44='TOTAL' | B44='Total Saldo Awal' | G44='SEIMBANG' | H44=100000000 | I44=100000000
+
+====================================================================================================
+SHEET: Jurnal  dims=A1:Q1000 rows=1000 cols=17
+====================================================================================================
+A1='Jurnal Umum'
+A2='Sumber utama laporan keuangan. Setiap No. Bukti harus balance. Kapasitas awal 300 baris; tambah baris jika diperlukan.'
+A4='Tanggal' | B4='No. Bukti' | C4='Keterangan' | D4='Kode Akun' | E4='Nama Akun' | F4='Tipe' | G4='Grup L/R' | H4='Baris Neraca' | I4='Perlakuan Fiskal' | J4='Debit (Rp)' | K4='Kredit (Rp)' | L4='Lawan Transaksi' | M4='NPWP/NIK' | N4='Ref Pajak' | O4='Catatan' | P4='Cek Baris' | Q4='Selisih No. Bukti'
+A5=datetime.datetime(2026, 1, 15, 0, 0) | B5='BKM-001' | C5='Penerimaan pembayaran project Website Development' | D5='1001' | E5='Kas' | F5='Aset' | H5='Kas & Bank' | I5='Deductible/Taxable' | J5=10000000.0 | K5=0.0 | P5='OK' | Q5=0
+A6=datetime.datetime(2026, 1, 15, 0, 0) | B6='BKM-001' | C6='Pendapatan jasa project Website Development' | D6=4001.0 | E6='Penjualan / Pendapatan Usaha' | F6='Pendapatan' | G6='Pendapatan Usaha' | I6='Deductible/Taxable' | J6=0.0 | K6=10000000.0 | P6='OK' | Q6=0
+A7=datetime.datetime(2026, 1, 16, 0, 0) | B7='BKK-001' | C7='Biaya operasional project Website Development' | D7='6003' | E7='Listrik/Internet/Utilitas' | F7='Beban' | G7='Beban Operasional' | I7='Deductible/Taxable' | J7=1000000.0 | K7=0.0 | P7='OK' | Q7=0
+A8=datetime.datetime(2026, 1, 16, 0, 0) | B8='BKK-001' | C8='Pengeluaran kas biaya operasional project' | D8='1001' | E8='Kas' | F8='Aset' | H8='Kas & Bank' | I8='Deductible/Taxable' | J8=0.0 | K8=1000000.0 | P8='OK' | Q8=0
+A9=datetime.datetime(2026, 1, 17, 0, 0) | B9='BKK-002' | C9='Pembayaran jasa profesional project Website Development' | D9='6006' | E9='Jasa Profesional' | F9='Beban' | G9='Beban Operasional' | I9='Deductible/Taxable' | J9=3000000.0 | K9=0.0 | P9='OK' | Q9=0
+A10=datetime.datetime(2026, 1, 17, 0, 0) | B10='BKK-002' | C10='Pengeluaran kas jasa profesional project' | D10='1001' | E10='Kas' | F10='Aset' | H10='Kas & Bank' | I10='Deductible/Taxable' | J10=0.0 | K10=3000000.0 | P10='OK' | Q10=0
+A11=datetime.datetime(2026, 1, 31, 0, 0) | B11='BKK-003' | C11='Pembayaran gaji direktur bulan Januari 2026' | D11='6001' | E11='Gaji & Tunjangan' | F11='Beban' | G11='Beban Operasional' | I11='Deductible/Taxable' | J11=3000000.0 | K11=0.0 | P11='OK' | Q11=0
+A12=datetime.datetime(2026, 1, 31, 0, 0) | B12='BKK-003' | C12='Pengeluaran kas gaji direktur' | D12='1001' | E12='Kas' | F12='Aset' | H12='Kas & Bank' | I12='Deductible/Taxable' | J12=0.0 | K12=3000000.0 | P12='OK' | Q12=0
+
+====================================================================================================
+SHEET: Penjualan  dims=A1:N1000 rows=1000 cols=14
+====================================================================================================
+A1='Subledger Penjualan & PPN Keluaran'
+A2='Nilai Penjualan adalah harga/penggantian sebelum PPN. Rekonsiliasi dengan pendapatan pada Jurnal.'
+A4='Tanggal' | B4='No. Invoice' | C4='Pelanggan' | D4='NPWP/NIK' | E4='Nilai Penjualan (Rp)' | F4='Jenis PPN' | G4='DPP Faktur (Rp)' | H4='Tarif Efektif' | I4='PPN Keluaran (Rp)' | J4='Total Tagihan (Rp)' | K4='Lunas?' | L4='Tanggal Bayar' | M4='Bulan' | N4='Catatan'
+A5=datetime.datetime(2026, 1, 15, 0, 0) | B5='INV/2026/001' | C5='Klien Website Development' | D5='-' | E5=10000000.0 | F5='Non-PKP/Tidak Dipungut' | G5=0 | H5=0 | I5=0 | J5=10000000 | K5='Ya' | L5=datetime.datetime(2026, 1, 15, 0, 0) | M5=1 | N5='Project Website Development perdana'
+
+====================================================================================================
+SHEET: Pembelian  dims=A1:N1000 rows=1000 cols=14
+====================================================================================================
+A1='Subledger Pembelian/Biaya & PPN Masukan'
+A2='Masukkan nilai sebelum PPN. Tandai PPN Masukan yang dapat dikreditkan.'
+A4='Tanggal' | B4='No. Invoice' | C4='Vendor' | D4='NPWP/NIK' | E4='Nilai Sebelum PPN (Rp)' | F4='Jenis PPN' | G4='DPP Faktur (Rp)' | H4='Tarif Efektif' | I4='PPN Masukan (Rp)' | J4='Dapat Dikreditkan?' | K4='PPN Dikreditkan (Rp)' | L4='Total Bayar (Rp)' | M4='Bulan' | N4='Catatan'
+
+====================================================================================================
+SHEET: Aset Tetap  dims=A1:P1000 rows=1000 cols=16
+====================================================================================================
+A1='Aset Tetap & Penyusutan Komersial/Fiskal'
+A2='Tarif fiskal mengikuti kelompok umum PMK 72/2023. Untuk aset lama, isi Nilai Buku Fiskal Awal Tahun.'
+A4='ID Aset' | B4='Nama Aset' | C4='Tanggal Perolehan' | D4='Harga Perolehan (Rp)' | E4='Nilai Residu Komersial (Rp)' | F4='Umur Komersial (Tahun)' | G4='Kelompok Fiskal' | H4='Metode Fiskal' | I4='Umur Fiskal' | J4='Tarif Fiskal' | K4='NBV Fiskal Awal (isi jika aset sebelum tahun pajak)' | L4='Bulan Disusutkan Tahun Ini' | M4='Penyusutan Komersial (Rp)' | N4='Penyusutan Fiskal (Rp)' | O4='Nilai Buku Fiskal Akhir (Rp)' | P4='Selisih Komersial-Fiskal (Rp)'
+L107='TOTAL' | M107=0 | N107=0 | O107=0 | P107=0
+
+====================================================================================================
+SHEET: Pajak PotPut  dims=A1:N1000 rows=1000 cols=14
+====================================================================================================
+A1='Register Pajak Potong/Pungut & Kredit Pajak'
+A2='Untuk PPh 21/22/23/24/25/4(2), PPh Final 0,5%, dan bukti potong. Tarif tertentu bergantung transaksi sehingga tersedia override.'
+A4='Tanggal' | B4='Masa' | C4='Kode Pajak' | D4='Jenis' | E4='Arah' | F4='DPP (Rp)' | G4='Tarif Default' | H4='Tarif Override' | I4='Tarif Dipakai' | J4='Pajak (Rp)' | K4='Kredit PPh Badan?' | L4='Tanggal Bayar/Potong' | M4='No. Bupot/Billing' | N4='Catatan'
+K5='Tidak'
+K6='Tidak'
+K7='Tidak'
+K8='Tidak'
+K9='Tidak'
+K10='Tidak'
+K11='Tidak'
+K12='Tidak'
+K13='Tidak'
+K14='Tidak'
+K15='Tidak'
+K16='Tidak'
+K17='Tidak'
+K18='Tidak'
+K19='Tidak'
+K20='Tidak'
+K21='Tidak'
+K22='Tidak'
+K23='Tidak'
+K24='Tidak'
+K25='Tidak'
+K26='Tidak'
+K27='Tidak'
+K28='Tidak'
+K29='Tidak'
+K30='Tidak'
+K31='Tidak'
+K32='Tidak'
+K33='Tidak'
+K34='Tidak'
+K35='Tidak'
+K36='Tidak'
+K37='Tidak'
+K38='Tidak'
+K39='Tidak'
+K40='Tidak'
+K41='Tidak'
+K42='Tidak'
+K43='Tidak'
+K44='Tidak'
+K45='Tidak'
+K46='Tidak'
+K47='Tidak'
+K48='Tidak'
+K49='Tidak'
+K50='Tidak'
+K51='Tidak'
+K52='Tidak'
+K53='Tidak'
+K54='Tidak'
+K55='Tidak'
+K56='Tidak'
+K57='Tidak'
+K58='Tidak'
+K59='Tidak'
+K60='Tidak'
+K61='Tidak'
+K62='Tidak'
+K63='Tidak'
+K64='Tidak'
+K65='Tidak'
+K66='Tidak'
+K67='Tidak'
+K68='Tidak'
+K69='Tidak'
+K70='Tidak'
+K71='Tidak'
+K72='Tidak'
+K73='Tidak'
+K74='Tidak'
+K75='Tidak'
+K76='Tidak'
+K77='Tidak'
+K78='Tidak'
+K79='Tidak'
+K80='Tidak'
+K81='Tidak'
+K82='Tidak'
+K83='Tidak'
+K84='Tidak'
+K85='Tidak'
+K86='Tidak'
+K87='Tidak'
+K88='Tidak'
+K89='Tidak'
+K90='Tidak'
+K91='Tidak'
+K92='Tidak'
+K93='Tidak'
+K94='Tidak'
+K95='Tidak'
+K96='Tidak'
+K97='Tidak'
+K98='Tidak'
+K99='Tidak'
+K100='Tidak'
+K101='Tidak'
+K102='Tidak'
+K103='Tidak'
+K104='Tidak'
+K105='Tidak'
+K106='Tidak'
+K107='Tidak'
+K108='Tidak'
+K109='Tidak'
+K110='Tidak'
+K111='Tidak'
+K112='Tidak'
+K113='Tidak'
+K114='Tidak'
+K115='Tidak'
+K116='Tidak'
+K117='Tidak'
+K118='Tidak'
+K119='Tidak'
+K120='Tidak'
+
+====================================================================================================
+SHEET: Payroll  dims=A1:L1000 rows=1000 cols=12
+====================================================================================================
+A1='Payroll Ringkas & PPh 21'
+A2='PPh 21 diinput dari hasil payroll/Coretax/TER sesuai profil pegawai; workbook menghitung biaya dan take-home pay.'
+A4='Masa' | B4='NIK/NPWP' | C4='Nama' | D4='Gaji Pokok (Rp)' | E4='Tunjangan (Rp)' | F4='Bonus/Honor (Rp)' | G4='BPJS Ditanggung Karyawan (Rp)' | H4='PPh 21 Dipotong (Rp)' | I4='Potongan Lain (Rp)' | J4='Take Home Pay (Rp)' | K4='Beban Perusahaan Lain (Rp)' | L4='Total Beban Payroll (Rp)'
+A5='Januari' | B5='-' | C5='Direktur (Sayba Arc)' | D5=3000000.0 | E5=0.0 | F5=0.0 | G5=0.0 | H5=0.0 | I5=0.0 | J5=3000000 | K5=0.0 | L5=3000000
+
+====================================================================================================
+SHEET: Neraca Saldo  dims=A1:K1000 rows=1000 cols=11
+====================================================================================================
+A1='Neraca Saldo'
+A2='Otomatis dari COA dan Jurnal. Saldo akhir disajikan sesuai sisi normal akun.'
+A4='Kode' | B4='Nama Akun' | C4='Tipe' | D4='Grup L/R' | E4='Baris Neraca' | F4='Normal' | G4='Saldo Awal' | H4='Debit Tahun Berjalan' | I4='Kredit Tahun Berjalan' | J4='Saldo Akhir' | K4='Perlakuan Fiskal'
+A5='1001' | B5='Kas' | C5='Aset' | E5='Kas & Bank' | F5='Debit' | G5=100000000 | H5=10000000 | I5=7000000 | J5=103000000 | K5='Deductible/Taxable'
+A6='1002' | B6='Bank' | C6='Aset' | E6='Kas & Bank' | F6='Debit' | G6=0 | H6=0 | I6=0 | J6=0 | K6='Deductible/Taxable'
+A7='1101' | B7='Piutang Usaha' | C7='Aset' | E7='Piutang Usaha' | F7='Debit' | G7=0 | H7=0 | I7=0 | J7=0 | K7='Deductible/Taxable'
+A8='1102' | B8='Persediaan' | C8='Aset' | E8='Persediaan' | F8='Debit' | G8=0 | H8=0 | I8=0 | J8=0 | K8='Deductible/Taxable'
+A9='1103' | B9='Biaya Dibayar Dimuka' | C9='Aset' | E9='Aset Lancar Lain' | F9='Debit' | G9=0 | H9=0 | I9=0 | J9=0 | K9='Deductible/Taxable'
+A10='1104' | B10='Pajak Dibayar Dimuka / Kredit PPh' | C10='Aset' | E10='Aset Lancar Lain' | F10='Debit' | G10=0 | H10=0 | I10=0 | J10=0 | K10='Deductible/Taxable'
+A11='1201' | B11='Aset Tetap - Harga Perolehan' | C11='Aset' | E11='Aset Tetap' | F11='Debit' | G11=0 | H11=0 | I11=0 | J11=0 | K11='Deductible/Taxable'
+A12='1202' | B12='Akumulasi Penyusutan' | C12='Aset' | E12='Akumulasi Penyusutan' | F12='Kredit' | G12=0 | H12=0 | I12=0 | J12=0 | K12='Deductible/Taxable'
+A13='1301' | B13='Aset Lain-lain' | C13='Aset' | E13='Aset Lain' | F13='Debit' | G13=0 | H13=0 | I13=0 | J13=0 | K13='Deductible/Taxable'
+A14='2001' | B14='Utang Usaha' | C14='Liabilitas' | E14='Utang Usaha' | F14='Kredit' | G14=0 | H14=0 | I14=0 | J14=0 | K14='Deductible/Taxable'
+A15='2101' | B15='Utang PPN' | C15='Liabilitas' | E15='Utang Pajak' | F15='Kredit' | G15=0 | H15=0 | I15=0 | J15=0 | K15='Deductible/Taxable'
+A16='2102' | B16='Utang PPh PotPut' | C16='Liabilitas' | E16='Utang Pajak' | F16='Kredit' | G16=0 | H16=0 | I16=0 | J16=0 | K16='Deductible/Taxable'
+A17='2201' | B17='Pinjaman Jangka Pendek' | C17='Liabilitas' | E17='Pinjaman Jangka Pendek' | F17='Kredit' | G17=0 | H17=0 | I17=0 | J17=0 | K17='Deductible/Taxable'
+A18='2301' | B18='Pinjaman Jangka Panjang' | C18='Liabilitas' | E18='Pinjaman Jangka Panjang' | F18='Kredit' | G18=0 | H18=0 | I18=0 | J18=0 | K18='Deductible/Taxable'
+A19='3001' | B19='Modal Disetor' | C19='Ekuitas' | E19='Modal' | F19='Kredit' | G19=100000000 | H19=0 | I19=0 | J19=100000000 | K19='Deductible/Taxable'
+A20='3101' | B20='Saldo Laba' | C20='Ekuitas' | E20='Saldo Laba' | F20='Kredit' | G20=0 | H20=0 | I20=0 | J20=0 | K20='Deductible/Taxable'
+A21='4001' | B21='Penjualan / Pendapatan Usaha' | C21='Pendapatan' | D21='Pendapatan Usaha' | F21='Kredit' | G21=0 | H21=0 | I21=10000000 | J21=10000000 | K21='Deductible/Taxable'
+A22='4002' | B22='Pendapatan Usaha Lain' | C22='Pendapatan' | D22='Pendapatan Usaha' | F22='Kredit' | G22=0 | H22=0 | I22=0 | J22=0 | K22='Deductible/Taxable'
+A23='4101' | B23='Pendapatan Dikenai PPh Final Tersendiri' | C23='Pendapatan' | D23='Pendapatan Lain' | F23='Kredit' | G23=0 | H23=0 | I23=0 | J23=0 | K23='Final Income (-)'
+A24='5001' | B24='Harga Pokok Penjualan' | C24='Beban' | D24='HPP' | F24='Debit' | G24=0 | H24=0 | I24=0 | J24=0 | K24='Deductible/Taxable'
+A25='6001' | B25='Gaji & Tunjangan' | C25='Beban' | D25='Beban Operasional' | F25='Debit' | G25=0 | H25=3000000 | I25=0 | J25=3000000 | K25='Deductible/Taxable'
+A26='6002' | B26='Sewa' | C26='Beban' | D26='Beban Operasional' | F26='Debit' | G26=0 | H26=0 | I26=0 | J26=0 | K26='Deductible/Taxable'
+A27='6003' | B27='Listrik/Internet/Utilitas' | C27='Beban' | D27='Beban Operasional' | F27='Debit' | G27=0 | H27=1000000 | I27=0 | J27=1000000 | K27='Deductible/Taxable'
+A28='6004' | B28='Marketing & Promosi' | C28='Beban' | D28='Beban Operasional' | F28='Debit' | G28=0 | H28=0 | I28=0 | J28=0 | K28='Deductible/Taxable'
+A29='6005' | B29='Transportasi & Perjalanan Dinas' | C29='Beban' | D29='Beban Operasional' | F29='Debit' | G29=0 | H29=0 | I29=0 | J29=0 | K29='Deductible/Taxable'
+A30='6006' | B30='Jasa Profesional' | C30='Beban' | D30='Beban Operasional' | F30='Debit' | G30=0 | H30=3000000 | I30=0 | J30=3000000 | K30='Deductible/Taxable'
+A31='6007' | B31='Penyusutan Komersial' | C31='Beban' | D31='Beban Operasional' | F31='Debit' | G31=0 | H31=0 | I31=0 | J31=0 | K31='Timing/Depreciation'
+A32='6008' | B32='ATK & Perlengkapan' | C32='Beban' | D32='Beban Operasional' | F32='Debit' | G32=0 | H32=0 | I32=0 | J32=0 | K32='Deductible/Taxable'
+A33='6009' | B33='Biaya Bank & Payment Gateway' | C33='Beban' | D33='Beban Operasional' | F33='Debit' | G33=0 | H33=0 | I33=0 | J33=0 | K33='Deductible/Taxable'
+A34='6010' | B34='Perbaikan & Pemeliharaan' | C34='Beban' | D34='Beban Operasional' | F34='Debit' | G34=0 | H34=0 | I34=0 | J34=0 | K34='Deductible/Taxable'
+A35='6011' | B35='Piutang Tak Tertagih' | C35='Beban' | D35='Beban Operasional' | F35='Debit' | G35=0 | H35=0 | I35=0 | J35=0 | K35='Review Fiskal'
+A36='6012' | B36='Entertainment/Representasi' | C36='Beban' | D36='Beban Operasional' | F36='Debit' | G36=0 | H36=0 | I36=0 | J36=0 | K36='Review Fiskal'
+A37='6013' | B37='Denda & Sanksi Pajak' | C37='Beban' | D37='Beban Operasional' | F37='Debit' | G37=0 | H37=0 | I37=0 | J37=0 | K37='Non-Deductible (+)'
+A38='6014' | B38='Sumbangan/Donasi Umum' | C38='Beban' | D38='Beban Operasional' | F38='Debit' | G38=0 | H38=0 | I38=0 | J38=0 | K38='Non-Deductible (+)'
+A39='6015' | B39='PPh Badan/Final sebagai Beban' | C39='Beban' | D39='Beban Operasional' | F39='Debit' | G39=0 | H39=0 | I39=0 | J39=0 | K39='Non-Deductible (+)'
+A40='7001' | B40='Pendapatan Bunga Deposito/Jasa Giro' | C40='Pendapatan' | D40='Pendapatan Lain' | F40='Kredit' | G40=0 | H40=0 | I40=0 | J40=0 | K40='Final Income (-)'
+A41='7002' | B41='Pendapatan Lain-lain Kena Pajak' | C41='Pendapatan' | D41='Pendapatan Lain' | F41='Kredit' | G41=0 | H41=0 | I41=0 | J41=0 | K41='Deductible/Taxable'
+A42='8001' | B42='Beban Bunga' | C42='Beban' | D42='Beban Lain' | F42='Debit' | G42=0 | H42=0 | I42=0 | J42=0 | K42='Deductible/Taxable'
+A43='8002' | B43='Beban Lain-lain' | C43='Beban' | D43='Beban Lain' | F43='Debit' | G43=0 | H43=0 | I43=0 | J43=0 | K43='Review Fiskal'
+A44='TOTAL' | B44='Total Saldo Awal' | G44=0 | H44=0 | I44=0 | J44=0 | K44='SEIMBANG'
+F67='KONTROL'
+F68='Total Debit Jurnal' | J68=17000000
+F69='Total Kredit Jurnal' | J69=17000000
+
+====================================================================================================
+SHEET: Laba Rugi  dims=A1:D1000 rows=1000 cols=4
+====================================================================================================
+A1='Laporan Laba Rugi'
+A2='Otomatis dari Neraca Saldo. Menampilkan laba kotor, laba operasional, laba sebelum pajak, dan laba bersih.'
+A4='Uraian' | B4='Nilai (Rp)' | C4='Margin' | D4='Catatan'
+A5='Pendapatan Usaha' | B5=10000000 | C5=1
+A6='Harga Pokok Penjualan' | B6=0 | C6=0
+A7='LABA KOTOR' | B7=10000000 | C7=1 | D7='Pendapatan - HPP'
+A8='Beban Operasional' | B8=7000000 | C8=0.7
+A9='LABA OPERASIONAL' | B9=3000000 | C9=0.3
+A10='Pendapatan Lain' | B10=0 | C10=0
+A11='Beban Lain' | B11=0 | C11=0
+A12='LABA SEBELUM PAJAK' | B12=3000000 | C12=0.3
+A13='Beban Pajak Kini (estimasi)' | B13=330000 | C13=0.033 | D13='Dari PPh Badan'
+A14='LABA BERSIH SETELAH PAJAK' | B14=2670000 | C14=0.267
+
+====================================================================================================
+SHEET: Rekonsiliasi Fiskal  dims=A1:E1000 rows=1000 cols=5
+====================================================================================================
+A1='Rekonsiliasi Fiskal'
+A2='Mengubah laba komersial sebelum pajak menjadi Penghasilan Kena Pajak (PKP). Akun Review Fiskal tetap perlu ditinjau manual.'
+A4='Uraian' | B4='Nilai (Rp)' | C4='Jenis' | D4='Keterangan' | E4='Kontrol'
+A5='Laba Sebelum Pajak Komersial' | B5=3000000 | C5='Dasar' | D5='Dari Laba Rugi' | E5='3 akun COA berstatus Review Fiskal'
+A6='Koreksi Positif Otomatis - Non Deductible' | B6=0 | C6='Positif' | D6='Akun bertanda Non-Deductible (+)'
+A7='Koreksi Positif Penyusutan' | B7=0 | C7='Positif' | D7='Jika penyusutan komersial > fiskal'
+A8='Koreksi Negatif - Penghasilan Non/Final' | B8=0 | C8='Negatif' | D8='Penghasilan yang bukan objek/final dikeluarkan dari PKP umum'
+A9='Koreksi Negatif Penyusutan' | B9=0 | C9='Negatif' | D9='Jika penyusutan fiskal > komersial'
+A10='Total Koreksi Positif Manual' | B10=0 | C10='Positif' | D10='Dari tabel manual di bawah'
+A11='Total Koreksi Negatif Manual' | B11=0 | C11='Negatif' | D11='Dari tabel manual di bawah'
+A12='Penghasilan Neto Fiskal sebelum Kompensasi Rugi' | B12=3000000
+A13='Kompensasi Rugi Fiskal yang Dapat Dipakai' | B13=0.0 | C13='Input' | D13='Isi sesuai saldo rugi fiskal yang masih dapat dikompensasikan'
+A14='Penghasilan Kena Pajak sebelum pembulatan' | B14=3000000
+A15='PENGHASILAN KENA PAJAK (ribuan ke bawah)' | B15=3000000
+A18='Koreksi Manual' | B18='Nilai (Rp)' | C18='Jenis' | D18='Keterangan/Dokumen'
+
+====================================================================================================
+SHEET: PPh Badan  dims=A1:D1000 rows=1000 cols=4
+====================================================================================================
+A1='Penghitungan PPh Badan'
+A2='Mendukung ketentuan umum Pasal 31E dan opsi PPh Final 0,5% hanya bila eligibility dikonfirmasi.'
+A4='Uraian' | B4='Nilai' | C4='Keterangan' | D4='Status'
+A5='Omzet menurut Jurnal (Rp)' | B5=10000000 | C5='Pendapatan Usaha' | D5='Omzet tidak melewati ambang Rp4,8 miliar.'
+A6='Override Omzet Pajak (opsional) (Rp)' | B6=0.0 | C6='Isi bila omzet fiskal berbeda dari laporan komersial'
+A7='Omzet Fiskal Dipakai (Rp)' | B7=10000000 | C7='Override bila >0'
+A8='Batas Final/PKP (Rp)' | B8=4800000000 | C8='Ambang Rp4,8 miliar'
+A9='PKP Fiskal (Rp)' | B9=3000000 | C9='Dari Rekonsiliasi Fiskal'
+A10='Bagian PKP Fasilitas 31E (Rp)' | B10=3000000 | C10='PKP proporsional atas bagian omzet sampai ambang'
+A11='Bagian PKP Non-Fasilitas (Rp)' | B11=0 | C11='Sisa PKP'
+A12='PPh Pasal 31E / Umum (Rp)' | B12=330000 | C12='Tarif efektif 11% bagian fasilitas + 22% bagian non-fasilitas'
+A13='PPh Final 0,5% (Rp)' | B13=0 | C13='Hanya bila eligible dan omzet tidak melewati ambang'
+A14='Skema Efektif' | B14='Ketentuan Umum/Pasal 31E' | C14='Skema yang benar-benar digunakan'
+A15='PPh Tahunan Terutang (Rp)' | B15=330000 | C15='Sebelum kredit'
+A16='Kredit PPh 22/23/24/25 (Rp)' | B16=0 | C16='Dari register Pajak PotPut'
+A17='PPh Kurang/(Lebih) Bayar Estimasi (Rp)' | B17=330000 | C17='Untuk Final memakai pembayaran PPh Final terdaftar'
+A18='Estimasi PPh 25 / bulan tahun berikutnya (Rp)' | B18=27500 | C18='Indikatif untuk skema umum'
+A19='Beban Pajak Kini untuk Laba Rugi (Rp)' | B19=330000 | C19='Dipakai di Laba Rugi'
+
+====================================================================================================
+SHEET: PPN  dims=A1:F1000 rows=1000 cols=6
+====================================================================================================
+A1='Rekap PPN Bulanan'
+A2='PPN keluaran dari Penjualan dikurangi PPN Masukan yang dapat dikreditkan dari Pembelian.'
+A4='Bulan' | B4='PPN Keluaran (Rp)' | C4='PPN Masukan Kredit (Rp)' | D4='PPN Kurang/(Lebih) Bayar (Rp)' | E4='Status PKP' | F4='Catatan'
+A5='Jan' | B5=0 | C5=0 | D5=0 | E5='Tidak'
+A6='Feb' | B6=0 | C6=0 | D6=0 | E6='Tidak'
+A7='Mar' | B7=0 | C7=0 | D7=0 | E7='Tidak'
+A8='Apr' | B8=0 | C8=0 | D8=0 | E8='Tidak'
+A9='Mei' | B9=0 | C9=0 | D9=0 | E9='Tidak'
+A10='Jun' | B10=0 | C10=0 | D10=0 | E10='Tidak'
+A11='Jul' | B11=0 | C11=0 | D11=0 | E11='Tidak'
+A12='Agu' | B12=0 | C12=0 | D12=0 | E12='Tidak'
+A13='Sep' | B13=0 | C13=0 | D13=0 | E13='Tidak'
+A14='Okt' | B14=0 | C14=0 | D14=0 | E14='Tidak'
+A15='Nov' | B15=0 | C15=0 | D15=0 | E15='Tidak'
+A16='Des' | B16=0 | C16=0 | D16=0 | E16='Tidak'
+A17='TOTAL' | B17=0 | C17=0 | D17=0
+
+====================================================================================================
+SHEET: Neraca  dims=A1:D1000 rows=1000 cols=4
+====================================================================================================
+A1='Neraca / Laporan Posisi Keuangan'
+A2='Otomatis dari Neraca Saldo. Jangan mem-posting jurnal penutupan laba ke Saldo Laba sebelum laporan tahun berjalan selesai agar laba tidak terhitung ganda.'
+A4='ASET' | B4='Nilai (Rp)' | C4='LIABILITAS & EKUITAS' | D4='Nilai (Rp)'
+A5='Kas & Bank' | B5=103000000 | C5='Utang Usaha' | D5=0
+A6='Piutang Usaha' | B6=0 | C6='Utang Pajak' | D6=0
+A7='Persediaan' | B7=0 | C7='Pinjaman Jangka Pendek' | D7=0
+A8='Aset Lancar Lain' | B8=0 | C8='Pinjaman Jangka Panjang' | D8=0
+A9='TOTAL ASET LANCAR' | B9=103000000 | C9='TOTAL LIABILITAS' | D9=0
+A10='Aset Tetap' | B10=0 | C10='Modal' | D10=100000000
+A11='Akumulasi Penyusutan' | B11=0 | C11='Saldo Laba' | D11=0
+A12='Aset Lain' | B12=0 | C12='Laba Tahun Berjalan' | D12=2670000
+A13='TOTAL ASET' | B13=103000000 | C13='TOTAL EKUITAS' | D13=102670000
+A14='SELISIH NERACA' | B14=330000 | C14='TOTAL LIABILITAS & EKUITAS' | D14=102670000
+
+====================================================================================================
+SHEET: Arus Kas  dims=A1:C1000 rows=1000 cols=3
+====================================================================================================
+A1='Arus Kas (Metode Tidak Langsung - Estimasi)'
+A2='Menggunakan perubahan saldo akun. Cocok untuk kontrol manajemen; rekonsiliasi formal tetap perlu memastikan seluruh akun nonkas/pendanaan sudah terpetakan.'
+A4='Uraian' | B4='Nilai (Rp)' | C4='Catatan'
+A5='Laba Bersih' | B5=2670000 | C5='Dari Laba Rugi'
+A6='+ Penyusutan Komersial' | B6=0 | C6='Non-cash'
+A7='- Kenaikan Piutang' | B7=0
+A8='- Kenaikan Persediaan' | B8=0
+A9='- Kenaikan Aset Lancar Lain' | B9=0
+A10='+ Kenaikan Utang Usaha' | B10=0
+A11='+ Kenaikan Utang Pajak' | B11=0
+A12='ARUS KAS OPERASI' | B12=2670000
+A13='Belanja Aset Tetap / (Penurunan)' | B13=0 | C13='Pendekatan dari perubahan saldo bruto aset tetap'
+A14='ARUS KAS INVESTASI' | B14=0
+A15='Perubahan Pinjaman' | B15=0
+A16='Perubahan Modal' | B16=0
+A17='ARUS KAS PENDANAAN' | B17=0
+A18='KENAIKAN/(PENURUNAN) KAS' | B18=2670000
+A19='Kas Awal Tahun' | B19=100000000
+A20='Kas Akhir Tahun' | B20=103000000
+A21='CHECK / SELISIH ESTIMASI' | B21=330000 | C21='Ideal mendekati 0; selisih berarti ada akun arus kas yang belum dipetakan'
+
+====================================================================================================
+SHEET: Ringkasan Bulanan  dims=A1:K1000 rows=1000 cols=11
+====================================================================================================
+A1='Ringkasan Bulanan'
+A2='Kinerja bulanan dari Jurnal serta pajak dibayar dan PPN net.'
+A4='Bulan' | B4='Pendapatan (Rp)' | C4='HPP (Rp)' | D4='Laba Kotor (Rp)' | E4='Beban Operasional (Rp)' | F4='Laba Operasional (Rp)' | G4='Pendapatan Lain (Rp)' | H4='Beban Lain (Rp)' | I4='Laba Sebelum Pajak (Rp)' | J4='Pajak Dibayar (Rp)' | K4='PPN Net (Rp)'
+A5='Jan' | B5=10000000 | C5=0 | D5=10000000 | E5=7000000 | F5=3000000 | G5=0 | H5=0 | I5=3000000 | J5=0 | K5=0
+A6='Feb' | B6=0 | C6=0 | D6=0 | E6=0 | F6=0 | G6=0 | H6=0 | I6=0 | J6=0 | K6=0
+A7='Mar' | B7=0 | C7=0 | D7=0 | E7=0 | F7=0 | G7=0 | H7=0 | I7=0 | J7=0 | K7=0
+A8='Apr' | B8=0 | C8=0 | D8=0 | E8=0 | F8=0 | G8=0 | H8=0 | I8=0 | J8=0 | K8=0
+A9='Mei' | B9=0 | C9=0 | D9=0 | E9=0 | F9=0 | G9=0 | H9=0 | I9=0 | J9=0 | K9=0
+A10='Jun' | B10=0 | C10=0 | D10=0 | E10=0 | F10=0 | G10=0 | H10=0 | I10=0 | J10=0 | K10=0
+A11='Jul' | B11=0 | C11=0 | D11=0 | E11=0 | F11=0 | G11=0 | H11=0 | I11=0 | J11=0 | K11=0
+A12='Agu' | B12=0 | C12=0 | D12=0 | E12=0 | F12=0 | G12=0 | H12=0 | I12=0 | J12=0 | K12=0
+A13='Sep' | B13=0 | C13=0 | D13=0 | E13=0 | F13=0 | G13=0 | H13=0 | I13=0 | J13=0 | K13=0
+A14='Okt' | B14=0 | C14=0 | D14=0 | E14=0 | F14=0 | G14=0 | H14=0 | I14=0 | J14=0 | K14=0
+A15='Nov' | B15=0 | C15=0 | D15=0 | E15=0 | F15=0 | G15=0 | H15=0 | I15=0 | J15=0 | K15=0
+A16='Des' | B16=0 | C16=0 | D16=0 | E16=0 | F16=0 | G16=0 | H16=0 | I16=0 | J16=0 | K16=0
+A17='TOTAL' | B17=10000000 | C17=0 | D17=10000000 | E17=7000000 | F17=3000000 | G17=0 | H17=0 | I17=3000000 | J17=0 | K17=0
+
+====================================================================================================
+SHEET: Dashboard  dims=A1:K1000 rows=1000 cols=11
+====================================================================================================
+A1='Dashboard Keuangan & Pajak'
+A2='Ringkasan cepat untuk tahun pajak yang dipilih.'
+A4='KPI' | B4='Nilai' | C4='Catatan'
+A5='Omzet / Pendapatan Usaha' | B5=10000000 | C5='Di bawah/≤ Rp4,8 miliar'
+A6='Laba Kotor' | B6=10000000 | C6='Pendapatan - HPP'
+A7='Laba Sebelum Pajak' | B7=3000000
+A8='Laba Bersih' | B8=2670000 | C8='Setelah estimasi pajak kini'
+A9='Margin Bersih' | B9=0.267
+A10='PPh Tahunan Terutang' | B10=330000
+A11='PPh Kurang/(Lebih) Bayar' | B11=330000
+A12='PPN Net Tahun' | B12=0 | C12='Jika PKP'
+A13='Selisih Neraca' | B13=330000 | C13='Harus 0'
+A14='Selisih Debit/Kredit Jurnal' | B14=0 | C14='Harus 0'
+
+====================================================================================================
+SHEET: Checklist Pajak  dims=A1:F1000 rows=1000 cols=6
+====================================================================================================
+A1='Checklist Pembukuan & Kepatuhan Pajak'
+A2='Checklist manajemen. Tanggal setor/lapor harus mengikuti kalender dan ketentuan Coretax/DJP yang berlaku untuk masa terkait.'
+A4='Frekuensi' | B4='Area' | C4='Checklist' | D4='Status' | E4='PIC' | F4='Catatan'
+A5='Bulanan' | B5='Pembukuan' | C5='Rekonsiliasi kas/bank dengan Jurnal' | D5='Belum'
+A6='Bulanan' | B6='Penjualan' | C6='Rekonsiliasi invoice/faktur pajak dengan pendapatan Jurnal' | D6='Belum'
+A7='Bulanan' | B7='Pembelian' | C7='Rekonsiliasi invoice/faktur masukan dengan beban/persediaan/aset' | D7='Belum'
+A8='Bulanan' | B8='PPh 21' | C8='Pastikan payroll, pemotongan, bukti potong dan pelaporan sesuai data pegawai' | D8='Belum'
+A9='Bulanan' | B9='PPh 23/4(2)/lainnya' | C9='Review transaksi yang wajib dipotong/dipungut dan bukti potong' | D9='Belum'
+A10='Bulanan' | B10='PPh 25' | C10='Review angsuran dan pembayaran jika berlaku' | D10='Belum'
+A11='Bulanan' | B11='PPN' | C11='Jika PKP: rekonsiliasi PPN keluaran, masukan, faktur, dan SPT Masa' | D11='Belum'
+A12='Bulanan' | B12='Aset Tetap' | C12='Update perolehan/pelepasan dan penyusutan' | D12='Belum'
+A13='Tahunan' | B13='Stock Opname' | C13='Rekonsiliasi persediaan fisik dan buku' | D13='Belum'
+A14='Tahunan' | B14='Fiskal' | C14='Review akun Review Fiskal, koreksi positif/negatif, kompensasi rugi' | D14='Belum'
+A15='Tahunan' | B15='PPh Badan' | C15='Review Pasal 31E / eligibility Final 0,5% / kredit pajak' | D15='Belum'
+A16='Tahunan' | B16='SPT Tahunan' | C16='Siapkan laporan keuangan, rekonsiliasi fiskal, bukti bayar/potong, dan lampiran' | D16='Belum'
+
+====================================================================================================
+SHEET: Sumber  dims=A1:D1000 rows=1000 cols=4
+====================================================================================================
+A1='Sumber Resmi Pajak'
+A2='Tautan DJP/ketentuan yang menjadi dasar asumsi utama. Selalu cek pembaruan regulasi setelah tanggal versi workbook.'
+A4='Topik' | B4='Ringkasan' | C4='URL' | D4='Catatan'
+A5='PP 20 Tahun 2026 / PPh Final 0,5%' | B5='Tarif final 0,5%, subjek yang berlaku dan transisi dari PP 55/2022.' | C5='https://www.pajak.go.id/id/peraturan/perubahan-atas-peraturan-pemerintah-nomor-55-tahun-2022-tentang-penyesuaian-pengaturan-di' | D5='Aktif sejak 2026.'
+A6='PPh Badan & Pasal 31E' | B6='Tarif umum 22% dan fasilitas 50% tarif atas PKP terkait bagian omzet sampai Rp4,8 miliar untuk badan dengan omzet sampai Rp50 miliar.' | C6='https://www.pajak.go.id/en/node/119971' | D6='Penjelasan DJP.'
+A7='Ambang PKP' | B7='Pengusaha yang omzetnya melampaui Rp4,8 miliar wajib melaporkan usaha untuk dikukuhkan sebagai PKP sesuai ketentuan.' | C7='https://www.pajak.go.id/id/pengusaha' | D7='Panduan DJP.'
+A8='PPN 2025+' | B8='Non-mewah: 12% × DPP nilai lain 11/12; objek mewah tertentu menggunakan DPP penuh.' | C8='https://www.pajak.go.id/id/peraturan/perlakuan-pajak-pertambahan-nilai-atas-impor-barang-kena-pajak-penyerahan-barang-kena' | D8='PMK 131/2024.'
+A9='PPh 23/26' | B9='Umumnya 15% untuk bunga/royalti/hadiah tertentu dan 2% untuk sewa harta selain tanah/bangunan serta jasa tertentu.' | C9='https://www.pajak.go.id/id/pph-pasal-2326' | D9='Panduan DJP.'
+A10='PPh Final sewa tanah/bangunan' | B10='Tarif 10% dari jumlah bruto nilai persewaan.' | C10='https://stats.pajak.go.id/id/pph-pasal-4-ayat-2' | D10='Panduan DJP.'
+A11='Penyusutan Fiskal' | B11='Kelompok aset 1/2/3/4 dan bangunan sesuai PMK 72/2023.' | C11='https://stats.pajak.go.id/id/siaran-pers/pmk-72-tahun-2023-terbit-berikut-pokok-aturannya' | D11='PMK 72/2023.'

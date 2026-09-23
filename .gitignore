@@ -1,0 +1,43 @@
+# Hasil build
+build/
+dist/
+installer_output/
+*.spec.bak
+
+# Lingkungan Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Data uji & hasil uji
+_contoh/
+_ujidialog/
+_uitest/
+_uitest2/
+_pajaktest/
+_exetest/
+_testdata/
+_e2e*/
+_t2/
+_tampilan/
+_verifikasi/
+_ujidata/
+_ujiexe/
+_integrasi/
+_ujibentuk/
+# Folder uji sementara yang dibuat alat pemeriksa
+_uji*/
+tests/hasil_*.txt
+hasil_*.txt
+
+# Kunci penanda tangan lisensi. Kunci privat tidak boleh ikut tersimpan
+# di repositori; kunci publik boleh, karena memang dipakai aplikasi.
+supabase/_kunci/
+supabase/_deploy*.json
+supabase/_sql_*.txt
+web/_tampilan/
+
+# Berkas sementara
+*.log
+*.tmp

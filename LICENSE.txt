@@ -1,0 +1,178 @@
+PERJANJIAN LISENSI PENGGUNAAN PERANGKAT LUNAK
+AkunTuntas: Pembukuan dan Pajak Perusahaan Indonesia
+Versi 1.0.0
+
+
+1. PENERIMAAN KETENTUAN
+
+Dengan memasang, menyalin, atau menggunakan perangkat lunak AkunTuntas
+("Perangkat Lunak"), Anda menyatakan telah membaca, memahami, dan menyetujui
+seluruh ketentuan dalam perjanjian ini. Bila Anda tidak menyetujui, jangan
+memasang atau menggunakan Perangkat Lunak ini.
+
+
+2. PEMBERIAN LISENSI
+
+Perangkat Lunak ini dilisensikan, bukan dijual. Anda diberikan hak
+non-eksklusif dan tidak dapat dipindahtangankan untuk:
+
+  a. Memasang dan menggunakan Perangkat Lunak pada komputer yang Anda miliki
+     atau kuasai, untuk keperluan usaha Anda sendiri;
+  b. Membuat salinan cadangan untuk keperluan arsip;
+  c. Menggunakan Perangkat Lunak untuk mengelola data pembukuan lebih dari
+     satu entitas usaha dalam satu pemasangan.
+
+
+3. PEMBATASAN
+
+Anda tidak diperkenankan:
+
+  a. Menjual, menyewakan, menyublisensikan, atau mendistribusikan Perangkat
+     Lunak kepada pihak lain tanpa izin tertulis;
+  b. Melakukan rekayasa balik, mendekompilasi, atau membongkar kode Perangkat
+     Lunak, kecuali sejauh diizinkan oleh hukum yang berlaku;
+  c. Menghapus atau mengubah pemberitahuan hak cipta pada Perangkat Lunak;
+  d. Menggunakan Perangkat Lunak untuk kegiatan yang melanggar hukum,
+     termasuk pemalsuan dokumen pembukuan atau penggelapan pajak.
+
+
+3A. SISTEM LISENSI DAN LARANGAN PENEMBUSAN
+
+Perangkat Lunak dilindungi sistem lisensi dan aktivasi perangkat. Anda tidak
+diperkenankan:
+
+  a. Menembus, menonaktifkan, mengubah, atau menghilangkan sistem lisensi,
+     aktivasi perangkat, atau pengaman lain pada Perangkat Lunak;
+  b. Membuat, menyebarkan, atau memakai alat bantu apa pun untuk menembus
+     sistem lisensi, termasuk penambal, pembangkit kunci, atau pemuat tidak
+     resmi;
+  c. Menyalin berkas lisensi, sidik perangkat, atau data aktivasi ke komputer
+     lain untuk menghindari batas jumlah perangkat;
+  d. Menyewakan, meminjamkan, atau memakai satu lisensi pada lebih banyak
+     perangkat daripada yang diperbolehkan paket yang dibeli;
+  e. Menghapus, menyembunyikan, atau memalsukan keterangan paket lisensi.
+
+Pelanggaran atas ketentuan pada Pasal 3A mengakibatkan lisensi dicabut
+seketika tanpa pengembalian dana, dan dapat dituntut menurut hukum yang
+berlaku.
+
+
+3B. HAK CIPTA
+
+Seluruh hak cipta atas Perangkat Lunak, termasuk kode program, tampilan
+antarmuka, ikon, tata letak, dan dokumentasi, dimiliki oleh Xinet Group dan
+dilindungi oleh Undang-Undang Nomor 28 Tahun 2014 tentang Hak Cipta serta
+peraturan perundang-undangan lain yang berlaku.
+
+Pembelian lisensi memberikan hak untuk memakai Perangkat Lunak sesuai
+ketentuan dalam perjanjian ini. Pembelian lisensi BUKAN pengalihan hak cipta.
+Hak cipta tetap melekat sepenuhnya pada Xinet Group.
+
+
+4. KEPEMILIKAN DATA
+
+Seluruh data yang Anda masukkan ke dalam Perangkat Lunak adalah milik Anda
+sepenuhnya. Data disimpan secara lokal pada komputer Anda dalam format SQLite
+dan tidak dikirimkan ke pihak mana pun.
+
+Pengembang Perangkat Lunak:
+
+  a. Tidak memiliki akses terhadap data Anda;
+  b. Tidak mengumpulkan, menyimpan, atau memproses data Anda dalam bentuk apa
+     pun, baik secara daring maupun luring;
+  c. Tidak bertanggung jawab atas kehilangan data akibat kerusakan perangkat
+     keras, kegagalan sistem, kesalahan pengguna, atau keadaan memaksa.
+
+Anda bertanggung jawab penuh untuk membuat cadangan data secara berkala.
+
+
+5. BUKAN NASIHAT PROFESIONAL
+
+Perangkat Lunak ini adalah alat bantu administrasi, bukan pengganti jasa
+profesional. Perangkat Lunak:
+
+  a. Membantu menyusun pembukuan berpasangan dan menghasilkan laporan
+     keuangan berdasarkan standar akuntansi yang berlaku di Indonesia;
+  b. Menghitung estimasi kewajiban perpajakan berdasarkan ketentuan yang
+     berlaku pada saat versi ini dirilis;
+  c. Menyajikan analisis dan rekomendasi yang bersifat indikatif.
+
+Perangkat Lunak tidak memberikan nasihat akuntansi, perpajakan, hukum, atau
+investasi. Perhitungan yang dihasilkan bersifat estimasi dan dapat berbeda
+dari perhitungan resmi yang dilakukan otoritas pajak.
+
+Keputusan akhir mengenai perlakuan akuntansi, pelaporan pajak, dan kepatuhan
+hukum sepenuhnya menjadi tanggung jawab pengguna. Untuk transaksi yang
+bersifat khusus, bernilai besar, atau memiliki perlakuan perpajakan khusus,
+konsultasikan dengan konsultan pajak, akuntan bersertifikat, atau Account
+Representative di Kantor Pelayanan Pajak Anda.
+
+
+6. PERUBAHAN REGULASI
+
+Ketentuan perpajakan dan standar akuntansi di Indonesia dapat berubah. Versi
+Perangkat Lunak ini memuat ketentuan sampai edisi regulasi yang tertera pada
+menu Bantuan, Tentang Aplikasi.
+
+Pengguna bertanggung jawab untuk:
+
+  a. Memeriksa pembaruan regulasi secara berkala pada sumber resmi
+     (pajak.go.id, peraturan.bpk.go.id, dan sejenisnya);
+  b. Menyesuaikan perhitungan bila terjadi perubahan ketentuan;
+  c. Memperbarui ke versi Perangkat Lunak yang lebih baru bila tersedia.
+
+
+7. BATASAN TANGGUNG JAWAB
+
+Sejauh diizinkan oleh hukum yang berlaku, Perangkat Lunak ini disediakan
+sebagaimana adanya tanpa jaminan apa pun, baik tersurat maupun tersirat.
+
+Pengembang tidak bertanggung jawab atas:
+
+  a. Kerugian langsung, tidak langsung, insidental, atau konsekuensial yang
+     timbul dari penggunaan atau ketidakmampuan menggunakan Perangkat Lunak;
+  b. Kerugian akibat kesalahan perhitungan, kelalaian pengguna, atau
+     ketidakakuratan data masukan;
+  c. Sanksi administrasi atau pidana perpajakan yang timbul dari pelaporan
+     yang tidak sesuai ketentuan;
+  d. Kehilangan data akibat kerusakan perangkat keras, perangkat pengganggu,
+     atau kegagalan sistem;
+  e. Kerugian yang timbul dari keputusan usaha yang diambil berdasarkan
+     analisis Perangkat Lunak.
+
+Tanggung jawab total pengembang, bila ada, tidak akan melebihi nilai lisensi
+yang Anda bayarkan untuk Perangkat Lunak ini.
+
+
+8. DUKUNGAN DAN PEMBARUAN
+
+Perangkat Lunak disediakan tanpa jaminan dukungan teknis berkelanjutan.
+Pembaruan, bila tersedia, disediakan atas kebijakan pengembang.
+
+
+9. PENGAKHIRAN
+
+Lisensi ini berlaku sampai diakhiri. Hak Anda berakhir secara otomatis bila
+Anda melanggar ketentuan dalam perjanjian ini. Setelah pengakhiran, Anda
+wajib menghentikan penggunaan dan menghapus seluruh salinan Perangkat Lunak.
+
+Ketentuan mengenai kepemilikan data (Pasal 4) dan batasan tanggung jawab
+(Pasal 7) tetap berlaku setelah pengakhiran.
+
+
+10. HUKUM YANG BERLAKU
+
+Perjanjian ini diatur oleh hukum Republik Indonesia.
+
+
+11. KESELURUHAN PERJANJIAN
+
+Perjanjian ini merupakan keseluruhan perjanjian antara Anda dan pengembang
+mengenai Perangkat Lunak, dan menggantikan seluruh perjanjian atau
+kesepakatan sebelumnya.
+
+
+Dengan melanjutkan instalasi, Anda menyatakan telah membaca dan menyetujui
+seluruh ketentuan di atas.
+
+Hak Cipta 2026. Seluruh hak dilindungi.

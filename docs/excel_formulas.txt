@@ -1,0 +1,657 @@
+--- Setup (2 formulas) ---
+D7: =IF(OR(B7="Perseroan Perorangan",B7="Koperasi"),"PP 20/2026: cek omzet, periode dan pengecualian.",IF(OR(B7="PT",B7="CV",B7="Firma",B7="BUMDes/BUMDes Bersama"),"PP 20/2026: Final 0,5% untuk bentuk ini pada 2026 umumnya hanya transisi bila periode PP 55/2022 belum berakhir.","Cek aturan spesifik bentuk badan."))
+D9: =IF(AND(B9="Final 0,5% (jika eligible)",B10<>"Ya"),"PERINGATAN: Final dipilih tapi eligibility belum dikonfirmasi Ya.","OK")
+--- COA (3 formulas) ---
+G44: =IF(ROUND(H44,2)=ROUND(I44,2),"SEIMBANG","TIDAK SEIMBANG")
+H44: =SUM(H5:H43)
+I44: =SUM(I5:I43)
+--- Jurnal (2100 formulas) ---
+E5: =IFERROR(__xludf.DUMMYFUNCTION("IF(D5="""","""",IFERROR(VLOOKUP(TO_TEXT(D5),COA!$A$5:$I$64,2,FALSE()),IFERROR(VLOOKUP(D5,COA!$A$5:$I$64,2,FALSE()),"""")))"),"Kas")
+F5: =IFERROR(__xludf.DUMMYFUNCTION("IF(D5="""","""",IFERROR(VLOOKUP(TO_TEXT(D5),COA!$A$5:$I$64,3,FALSE()),IFERROR(VLOOKUP(D5,COA!$A$5:$I$64,3,FALSE()),"""")))"),"Aset")
+G5: =IFERROR(__xludf.DUMMYFUNCTION("IF(D5="""","""",IFERROR(VLOOKUP(TO_TEXT(D5),COA!$A$5:$I$64,4,FALSE()),IFERROR(VLOOKUP(D5,COA!$A$5:$I$64,4,FALSE()),"""")))"),"")
+H5: =IFERROR(__xludf.DUMMYFUNCTION("IF(D5="""","""",IFERROR(VLOOKUP(TO_TEXT(D5),COA!$A$5:$I$64,5,FALSE()),IFERROR(VLOOKUP(D5,COA!$A$5:$I$64,5,FALSE()),"""")))"),"Kas & Bank")
+I5: =IFERROR(__xludf.DUMMYFUNCTION("IF(D5="""","""",IFERROR(VLOOKUP(TO_TEXT(D5),COA!$A$5:$I$64,7,FALSE()),IFERROR(VLOOKUP(D5,COA!$A$5:$I$64,7,FALSE()),"""")))"),"Deductible/Taxable")
+P5: =IF(A5="","",IF(AND(J5>0,K5>0),"ERROR: debit & kredit sekaligus",IF(AND(J5=0,K5=0),"ERROR: nilai kosong","OK")))
+Q5: =IF(B5="","",SUMIFS($J$5:$J$304,$B$5:$B$304,B5)-SUMIFS($K$5:$K$304,$B$5:$B$304,B5))
+E6: =IFERROR(__xludf.DUMMYFUNCTION("IF(D6="""","""",IFERROR(VLOOKUP(TO_TEXT(D6),COA!$A$5:$I$64,2,FALSE()),IFERROR(VLOOKUP(D6,COA!$A$5:$I$64,2,FALSE()),"""")))"),"Penjualan / Pendapatan Usaha")
+F6: =IFERROR(__xludf.DUMMYFUNCTION("IF(D6="""","""",IFERROR(VLOOKUP(TO_TEXT(D6),COA!$A$5:$I$64,3,FALSE()),IFERROR(VLOOKUP(D6,COA!$A$5:$I$64,3,FALSE()),"""")))"),"Pendapatan")
+G6: =IFERROR(__xludf.DUMMYFUNCTION("IF(D6="""","""",IFERROR(VLOOKUP(TO_TEXT(D6),COA!$A$5:$I$64,4,FALSE()),IFERROR(VLOOKUP(D6,COA!$A$5:$I$64,4,FALSE()),"""")))"),"Pendapatan Usaha")
+H6: =IFERROR(__xludf.DUMMYFUNCTION("IF(D6="""","""",IFERROR(VLOOKUP(TO_TEXT(D6),COA!$A$5:$I$64,5,FALSE()),IFERROR(VLOOKUP(D6,COA!$A$5:$I$64,5,FALSE()),"""")))"),"")
+I6: =IFERROR(__xludf.DUMMYFUNCTION("IF(D6="""","""",IFERROR(VLOOKUP(TO_TEXT(D6),COA!$A$5:$I$64,7,FALSE()),IFERROR(VLOOKUP(D6,COA!$A$5:$I$64,7,FALSE()),"""")))"),"Deductible/Taxable")
+P6: =IF(A6="","",IF(AND(J6>0,K6>0),"ERROR: debit & kredit sekaligus",IF(AND(J6=0,K6=0),"ERROR: nilai kosong","OK")))
+Q6: =IF(B6="","",SUMIFS($J$5:$J$304,$B$5:$B$304,B6)-SUMIFS($K$5:$K$304,$B$5:$B$304,B6))
+E7: =IFERROR(__xludf.DUMMYFUNCTION("IF(D7="""","""",IFERROR(VLOOKUP(TO_TEXT(D7),COA!$A$5:$I$64,2,FALSE()),IFERROR(VLOOKUP(D7,COA!$A$5:$I$64,2,FALSE()),"""")))"),"Listrik/Internet/Utilitas")
+F7: =IFERROR(__xludf.DUMMYFUNCTION("IF(D7="""","""",IFERROR(VLOOKUP(TO_TEXT(D7),COA!$A$5:$I$64,3,FALSE()),IFERROR(VLOOKUP(D7,COA!$A$5:$I$64,3,FALSE()),"""")))"),"Beban")
+G7: =IFERROR(__xludf.DUMMYFUNCTION("IF(D7="""","""",IFERROR(VLOOKUP(TO_TEXT(D7),COA!$A$5:$I$64,4,FALSE()),IFERROR(VLOOKUP(D7,COA!$A$5:$I$64,4,FALSE()),"""")))"),"Beban Operasional")
+H7: =IFERROR(__xludf.DUMMYFUNCTION("IF(D7="""","""",IFERROR(VLOOKUP(TO_TEXT(D7),COA!$A$5:$I$64,5,FALSE()),IFERROR(VLOOKUP(D7,COA!$A$5:$I$64,5,FALSE()),"""")))"),"")
+I7: =IFERROR(__xludf.DUMMYFUNCTION("IF(D7="""","""",IFERROR(VLOOKUP(TO_TEXT(D7),COA!$A$5:$I$64,7,FALSE()),IFERROR(VLOOKUP(D7,COA!$A$5:$I$64,7,FALSE()),"""")))"),"Deductible/Taxable")
+P7: =IF(A7="","",IF(AND(J7>0,K7>0),"ERROR: debit & kredit sekaligus",IF(AND(J7=0,K7=0),"ERROR: nilai kosong","OK")))
+Q7: =IF(B7="","",SUMIFS($J$5:$J$304,$B$5:$B$304,B7)-SUMIFS($K$5:$K$304,$B$5:$B$304,B7))
+E8: =IFERROR(__xludf.DUMMYFUNCTION("IF(D8="""","""",IFERROR(VLOOKUP(TO_TEXT(D8),COA!$A$5:$I$64,2,FALSE()),IFERROR(VLOOKUP(D8,COA!$A$5:$I$64,2,FALSE()),"""")))"),"Kas")
+F8: =IFERROR(__xludf.DUMMYFUNCTION("IF(D8="""","""",IFERROR(VLOOKUP(TO_TEXT(D8),COA!$A$5:$I$64,3,FALSE()),IFERROR(VLOOKUP(D8,COA!$A$5:$I$64,3,FALSE()),"""")))"),"Aset")
+G8: =IFERROR(__xludf.DUMMYFUNCTION("IF(D8="""","""",IFERROR(VLOOKUP(TO_TEXT(D8),COA!$A$5:$I$64,4,FALSE()),IFERROR(VLOOKUP(D8,COA!$A$5:$I$64,4,FALSE()),"""")))"),"")
+H8: =IFERROR(__xludf.DUMMYFUNCTION("IF(D8="""","""",IFERROR(VLOOKUP(TO_TEXT(D8),COA!$A$5:$I$64,5,FALSE()),IFERROR(VLOOKUP(D8,COA!$A$5:$I$64,5,FALSE()),"""")))"),"Kas & Bank")
+I8: =IFERROR(__xludf.DUMMYFUNCTION("IF(D8="""","""",IFERROR(VLOOKUP(TO_TEXT(D8),COA!$A$5:$I$64,7,FALSE()),IFERROR(VLOOKUP(D8,COA!$A$5:$I$64,7,FALSE()),"""")))"),"Deductible/Taxable")
+P8: =IF(A8="","",IF(AND(J8>0,K8>0),"ERROR: debit & kredit sekaligus",IF(AND(J8=0,K8=0),"ERROR: nilai kosong","OK")))
+Q8: =IF(B8="","",SUMIFS($J$5:$J$304,$B$5:$B$304,B8)-SUMIFS($K$5:$K$304,$B$5:$B$304,B8))
+E9: =IFERROR(__xludf.DUMMYFUNCTION("IF(D9="""","""",IFERROR(VLOOKUP(TO_TEXT(D9),COA!$A$5:$I$64,2,FALSE()),IFERROR(VLOOKUP(D9,COA!$A$5:$I$64,2,FALSE()),"""")))"),"Jasa Profesional")
+F9: =IFERROR(__xludf.DUMMYFUNCTION("IF(D9="""","""",IFERROR(VLOOKUP(TO_TEXT(D9),COA!$A$5:$I$64,3,FALSE()),IFERROR(VLOOKUP(D9,COA!$A$5:$I$64,3,FALSE()),"""")))"),"Beban")
+G9: =IFERROR(__xludf.DUMMYFUNCTION("IF(D9="""","""",IFERROR(VLOOKUP(TO_TEXT(D9),COA!$A$5:$I$64,4,FALSE()),IFERROR(VLOOKUP(D9,COA!$A$5:$I$64,4,FALSE()),"""")))"),"Beban Operasional")
+H9: =IFERROR(__xludf.DUMMYFUNCTION("IF(D9="""","""",IFERROR(VLOOKUP(TO_TEXT(D9),COA!$A$5:$I$64,5,FALSE()),IFERROR(VLOOKUP(D9,COA!$A$5:$I$64,5,FALSE()),"""")))"),"")
+I9: =IFERROR(__xludf.DUMMYFUNCTION("IF(D9="""","""",IFERROR(VLOOKUP(TO_TEXT(D9),COA!$A$5:$I$64,7,FALSE()),IFERROR(VLOOKUP(D9,COA!$A$5:$I$64,7,FALSE()),"""")))"),"Deductible/Taxable")
+P9: =IF(A9="","",IF(AND(J9>0,K9>0),"ERROR: debit & kredit sekaligus",IF(AND(J9=0,K9=0),"ERROR: nilai kosong","OK")))
+Q9: =IF(B9="","",SUMIFS($J$5:$J$304,$B$5:$B$304,B9)-SUMIFS($K$5:$K$304,$B$5:$B$304,B9))
+E10: =IFERROR(__xludf.DUMMYFUNCTION("IF(D10="""","""",IFERROR(VLOOKUP(TO_TEXT(D10),COA!$A$5:$I$64,2,FALSE()),IFERROR(VLOOKUP(D10,COA!$A$5:$I$64,2,FALSE()),"""")))"),"Kas")
+F10: =IFERROR(__xludf.DUMMYFUNCTION("IF(D10="""","""",IFERROR(VLOOKUP(TO_TEXT(D10),COA!$A$5:$I$64,3,FALSE()),IFERROR(VLOOKUP(D10,COA!$A$5:$I$64,3,FALSE()),"""")))"),"Aset")
+G10: =IFERROR(__xludf.DUMMYFUNCTION("IF(D10="""","""",IFERROR(VLOOKUP(TO_TEXT(D10),COA!$A$5:$I$64,4,FALSE()),IFERROR(VLOOKUP(D10,COA!$A$5:$I$64,4,FALSE()),"""")))"),"")
+H10: =IFERROR(__xludf.DUMMYFUNCTION("IF(D10="""","""",IFERROR(VLOOKUP(TO_TEXT(D10),COA!$A$5:$I$64,5,FALSE()),IFERROR(VLOOKUP(D10,COA!$A$5:$I$64,5,FALSE()),"""")))"),"Kas & Bank")
+I10: =IFERROR(__xludf.DUMMYFUNCTION("IF(D10="""","""",IFERROR(VLOOKUP(TO_TEXT(D10),COA!$A$5:$I$64,7,FALSE()),IFERROR(VLOOKUP(D10,COA!$A$5:$I$64,7,FALSE()),"""")))"),"Deductible/Taxable")
+P10: =IF(A10="","",IF(AND(J10>0,K10>0),"ERROR: debit & kredit sekaligus",IF(AND(J10=0,K10=0),"ERROR: nilai kosong","OK")))
+Q10: =IF(B10="","",SUMIFS($J$5:$J$304,$B$5:$B$304,B10)-SUMIFS($K$5:$K$304,$B$5:$B$304,B10))
+E11: =IFERROR(__xludf.DUMMYFUNCTION("IF(D11="""","""",IFERROR(VLOOKUP(TO_TEXT(D11),COA!$A$5:$I$64,2,FALSE()),IFERROR(VLOOKUP(D11,COA!$A$5:$I$64,2,FALSE()),"""")))"),"Gaji & Tunjangan")
+F11: =IFERROR(__xludf.DUMMYFUNCTION("IF(D11="""","""",IFERROR(VLOOKUP(TO_TEXT(D11),COA!$A$5:$I$64,3,FALSE()),IFERROR(VLOOKUP(D11,COA!$A$5:$I$64,3,FALSE()),"""")))"),"Beban")
+G11: =IFERROR(__xludf.DUMMYFUNCTION("IF(D11="""","""",IFERROR(VLOOKUP(TO_TEXT(D11),COA!$A$5:$I$64,4,FALSE()),IFERROR(VLOOKUP(D11,COA!$A$5:$I$64,4,FALSE()),"""")))"),"Beban Operasional")
+H11: =IFERROR(__xludf.DUMMYFUNCTION("IF(D11="""","""",IFERROR(VLOOKUP(TO_TEXT(D11),COA!$A$5:$I$64,5,FALSE()),IFERROR(VLOOKUP(D11,COA!$A$5:$I$64,5,FALSE()),"""")))"),"")
+I11: =IFERROR(__xludf.DUMMYFUNCTION("IF(D11="""","""",IFERROR(VLOOKUP(TO_TEXT(D11),COA!$A$5:$I$64,7,FALSE()),IFERROR(VLOOKUP(D11,COA!$A$5:$I$64,7,FALSE()),"""")))"),"Deductible/Taxable")
+P11: =IF(A11="","",IF(AND(J11>0,K11>0),"ERROR: debit & kredit sekaligus",IF(AND(J11=0,K11=0),"ERROR: nilai kosong","OK")))
+Q11: =IF(B11="","",SUMIFS($J$5:$J$304,$B$5:$B$304,B11)-SUMIFS($K$5:$K$304,$B$5:$B$304,B11))
+E12: =IFERROR(__xludf.DUMMYFUNCTION("IF(D12="""","""",IFERROR(VLOOKUP(TO_TEXT(D12),COA!$A$5:$I$64,2,FALSE()),IFERROR(VLOOKUP(D12,COA!$A$5:$I$64,2,FALSE()),"""")))"),"Kas")
+F12: =IFERROR(__xludf.DUMMYFUNCTION("IF(D12="""","""",IFERROR(VLOOKUP(TO_TEXT(D12),COA!$A$5:$I$64,3,FALSE()),IFERROR(VLOOKUP(D12,COA!$A$5:$I$64,3,FALSE()),"""")))"),"Aset")
+G12: =IFERROR(__xludf.DUMMYFUNCTION("IF(D12="""","""",IFERROR(VLOOKUP(TO_TEXT(D12),COA!$A$5:$I$64,4,FALSE()),IFERROR(VLOOKUP(D12,COA!$A$5:$I$64,4,FALSE()),"""")))"),"")
+H12: =IFERROR(__xludf.DUMMYFUNCTION("IF(D12="""","""",IFERROR(VLOOKUP(TO_TEXT(D12),COA!$A$5:$I$64,5,FALSE()),IFERROR(VLOOKUP(D12,COA!$A$5:$I$64,5,FALSE()),"""")))"),"Kas & Bank")
+I12: =IFERROR(__xludf.DUMMYFUNCTION("IF(D12="""","""",IFERROR(VLOOKUP(TO_TEXT(D12),COA!$A$5:$I$64,7,FALSE()),IFERROR(VLOOKUP(D12,COA!$A$5:$I$64,7,FALSE()),"""")))"),"Deductible/Taxable")
+P12: =IF(A12="","",IF(AND(J12>0,K12>0),"ERROR: debit & kredit sekaligus",IF(AND(J12=0,K12=0),"ERROR: nilai kosong","OK")))
+Q12: =IF(B12="","",SUMIFS($J$5:$J$304,$B$5:$B$304,B12)-SUMIFS($K$5:$K$304,$B$5:$B$304,B12))
+E13: =IFERROR(__xludf.DUMMYFUNCTION("IF(D13="""","""",IFERROR(VLOOKUP(TO_TEXT(D13),COA!$A$5:$I$64,2,FALSE()),IFERROR(VLOOKUP(D13,COA!$A$5:$I$64,2,FALSE()),"""")))"),"")
+F13: =IFERROR(__xludf.DUMMYFUNCTION("IF(D13="""","""",IFERROR(VLOOKUP(TO_TEXT(D13),COA!$A$5:$I$64,3,FALSE()),IFERROR(VLOOKUP(D13,COA!$A$5:$I$64,3,FALSE()),"""")))"),"")
+G13: =IFERROR(__xludf.DUMMYFUNCTION("IF(D13="""","""",IFERROR(VLOOKUP(TO_TEXT(D13),COA!$A$5:$I$64,4,FALSE()),IFERROR(VLOOKUP(D13,COA!$A$5:$I$64,4,FALSE()),"""")))"),"")
+H13: =IFERROR(__xludf.DUMMYFUNCTION("IF(D13="""","""",IFERROR(VLOOKUP(TO_TEXT(D13),COA!$A$5:$I$64,5,FALSE()),IFERROR(VLOOKUP(D13,COA!$A$5:$I$64,5,FALSE()),"""")))"),"")
+--- Penjualan (1500 formulas) ---
+G5: =IF(A5="","",IF(F5="Non-Mewah",E5*11/12,IF(F5="Mewah",E5,IF(F5="Ekspor",E5,0))))
+H5: =IF(A5="","",IF(Setup!$B$11<>"Ya",0,IF(F5="Non-Mewah",Setup!$B$17,IF(F5="Mewah",Setup!$B$18,0))))
+I5: =IF(A5="","",IF(Setup!$B$11<>"Ya",0,IF(F5="Non-Mewah",E5*Setup!$B$17,IF(F5="Mewah",E5*Setup!$B$18,0))))
+J5: =IF(A5="","",E5+I5)
+M5: =IF(A5="","",MONTH(A5))
+G6: =IF(A6="","",IF(F6="Non-Mewah",E6*11/12,IF(F6="Mewah",E6,IF(F6="Ekspor",E6,0))))
+H6: =IF(A6="","",IF(Setup!$B$11<>"Ya",0,IF(F6="Non-Mewah",Setup!$B$17,IF(F6="Mewah",Setup!$B$18,0))))
+I6: =IF(A6="","",IF(Setup!$B$11<>"Ya",0,IF(F6="Non-Mewah",E6*Setup!$B$17,IF(F6="Mewah",E6*Setup!$B$18,0))))
+J6: =IF(A6="","",E6+I6)
+M6: =IF(A6="","",MONTH(A6))
+G7: =IF(A7="","",IF(F7="Non-Mewah",E7*11/12,IF(F7="Mewah",E7,IF(F7="Ekspor",E7,0))))
+H7: =IF(A7="","",IF(Setup!$B$11<>"Ya",0,IF(F7="Non-Mewah",Setup!$B$17,IF(F7="Mewah",Setup!$B$18,0))))
+I7: =IF(A7="","",IF(Setup!$B$11<>"Ya",0,IF(F7="Non-Mewah",E7*Setup!$B$17,IF(F7="Mewah",E7*Setup!$B$18,0))))
+J7: =IF(A7="","",E7+I7)
+M7: =IF(A7="","",MONTH(A7))
+G8: =IF(A8="","",IF(F8="Non-Mewah",E8*11/12,IF(F8="Mewah",E8,IF(F8="Ekspor",E8,0))))
+H8: =IF(A8="","",IF(Setup!$B$11<>"Ya",0,IF(F8="Non-Mewah",Setup!$B$17,IF(F8="Mewah",Setup!$B$18,0))))
+I8: =IF(A8="","",IF(Setup!$B$11<>"Ya",0,IF(F8="Non-Mewah",E8*Setup!$B$17,IF(F8="Mewah",E8*Setup!$B$18,0))))
+J8: =IF(A8="","",E8+I8)
+M8: =IF(A8="","",MONTH(A8))
+G9: =IF(A9="","",IF(F9="Non-Mewah",E9*11/12,IF(F9="Mewah",E9,IF(F9="Ekspor",E9,0))))
+H9: =IF(A9="","",IF(Setup!$B$11<>"Ya",0,IF(F9="Non-Mewah",Setup!$B$17,IF(F9="Mewah",Setup!$B$18,0))))
+I9: =IF(A9="","",IF(Setup!$B$11<>"Ya",0,IF(F9="Non-Mewah",E9*Setup!$B$17,IF(F9="Mewah",E9*Setup!$B$18,0))))
+J9: =IF(A9="","",E9+I9)
+M9: =IF(A9="","",MONTH(A9))
+G10: =IF(A10="","",IF(F10="Non-Mewah",E10*11/12,IF(F10="Mewah",E10,IF(F10="Ekspor",E10,0))))
+H10: =IF(A10="","",IF(Setup!$B$11<>"Ya",0,IF(F10="Non-Mewah",Setup!$B$17,IF(F10="Mewah",Setup!$B$18,0))))
+I10: =IF(A10="","",IF(Setup!$B$11<>"Ya",0,IF(F10="Non-Mewah",E10*Setup!$B$17,IF(F10="Mewah",E10*Setup!$B$18,0))))
+J10: =IF(A10="","",E10+I10)
+M10: =IF(A10="","",MONTH(A10))
+G11: =IF(A11="","",IF(F11="Non-Mewah",E11*11/12,IF(F11="Mewah",E11,IF(F11="Ekspor",E11,0))))
+H11: =IF(A11="","",IF(Setup!$B$11<>"Ya",0,IF(F11="Non-Mewah",Setup!$B$17,IF(F11="Mewah",Setup!$B$18,0))))
+I11: =IF(A11="","",IF(Setup!$B$11<>"Ya",0,IF(F11="Non-Mewah",E11*Setup!$B$17,IF(F11="Mewah",E11*Setup!$B$18,0))))
+J11: =IF(A11="","",E11+I11)
+M11: =IF(A11="","",MONTH(A11))
+G12: =IF(A12="","",IF(F12="Non-Mewah",E12*11/12,IF(F12="Mewah",E12,IF(F12="Ekspor",E12,0))))
+H12: =IF(A12="","",IF(Setup!$B$11<>"Ya",0,IF(F12="Non-Mewah",Setup!$B$17,IF(F12="Mewah",Setup!$B$18,0))))
+I12: =IF(A12="","",IF(Setup!$B$11<>"Ya",0,IF(F12="Non-Mewah",E12*Setup!$B$17,IF(F12="Mewah",E12*Setup!$B$18,0))))
+J12: =IF(A12="","",E12+I12)
+M12: =IF(A12="","",MONTH(A12))
+G13: =IF(A13="","",IF(F13="Non-Mewah",E13*11/12,IF(F13="Mewah",E13,IF(F13="Ekspor",E13,0))))
+H13: =IF(A13="","",IF(Setup!$B$11<>"Ya",0,IF(F13="Non-Mewah",Setup!$B$17,IF(F13="Mewah",Setup!$B$18,0))))
+I13: =IF(A13="","",IF(Setup!$B$11<>"Ya",0,IF(F13="Non-Mewah",E13*Setup!$B$17,IF(F13="Mewah",E13*Setup!$B$18,0))))
+J13: =IF(A13="","",E13+I13)
+M13: =IF(A13="","",MONTH(A13))
+G14: =IF(A14="","",IF(F14="Non-Mewah",E14*11/12,IF(F14="Mewah",E14,IF(F14="Ekspor",E14,0))))
+H14: =IF(A14="","",IF(Setup!$B$11<>"Ya",0,IF(F14="Non-Mewah",Setup!$B$17,IF(F14="Mewah",Setup!$B$18,0))))
+I14: =IF(A14="","",IF(Setup!$B$11<>"Ya",0,IF(F14="Non-Mewah",E14*Setup!$B$17,IF(F14="Mewah",E14*Setup!$B$18,0))))
+J14: =IF(A14="","",E14+I14)
+M14: =IF(A14="","",MONTH(A14))
+G15: =IF(A15="","",IF(F15="Non-Mewah",E15*11/12,IF(F15="Mewah",E15,IF(F15="Ekspor",E15,0))))
+H15: =IF(A15="","",IF(Setup!$B$11<>"Ya",0,IF(F15="Non-Mewah",Setup!$B$17,IF(F15="Mewah",Setup!$B$18,0))))
+I15: =IF(A15="","",IF(Setup!$B$11<>"Ya",0,IF(F15="Non-Mewah",E15*Setup!$B$17,IF(F15="Mewah",E15*Setup!$B$18,0))))
+J15: =IF(A15="","",E15+I15)
+M15: =IF(A15="","",MONTH(A15))
+G16: =IF(A16="","",IF(F16="Non-Mewah",E16*11/12,IF(F16="Mewah",E16,IF(F16="Ekspor",E16,0))))
+H16: =IF(A16="","",IF(Setup!$B$11<>"Ya",0,IF(F16="Non-Mewah",Setup!$B$17,IF(F16="Mewah",Setup!$B$18,0))))
+I16: =IF(A16="","",IF(Setup!$B$11<>"Ya",0,IF(F16="Non-Mewah",E16*Setup!$B$17,IF(F16="Mewah",E16*Setup!$B$18,0))))
+J16: =IF(A16="","",E16+I16)
+M16: =IF(A16="","",MONTH(A16))
+--- Pembelian (1800 formulas) ---
+G5: =IF(A5="","",IF(F5="Non-Mewah",E5*11/12,IF(F5="Mewah",E5,0)))
+H5: =IF(A5="","",IF(Setup!$B$11<>"Ya",0,IF(F5="Non-Mewah",Setup!$B$17,IF(F5="Mewah",Setup!$B$18,0))))
+I5: =IF(A5="","",IF(Setup!$B$11<>"Ya",0,IF(F5="Non-Mewah",E5*Setup!$B$17,IF(F5="Mewah",E5*Setup!$B$18,0))))
+K5: =IF(A5="","",IF(J5="Ya",I5,0))
+L5: =IF(A5="","",E5+I5)
+M5: =IF(A5="","",MONTH(A5))
+G6: =IF(A6="","",IF(F6="Non-Mewah",E6*11/12,IF(F6="Mewah",E6,0)))
+H6: =IF(A6="","",IF(Setup!$B$11<>"Ya",0,IF(F6="Non-Mewah",Setup!$B$17,IF(F6="Mewah",Setup!$B$18,0))))
+I6: =IF(A6="","",IF(Setup!$B$11<>"Ya",0,IF(F6="Non-Mewah",E6*Setup!$B$17,IF(F6="Mewah",E6*Setup!$B$18,0))))
+K6: =IF(A6="","",IF(J6="Ya",I6,0))
+L6: =IF(A6="","",E6+I6)
+M6: =IF(A6="","",MONTH(A6))
+G7: =IF(A7="","",IF(F7="Non-Mewah",E7*11/12,IF(F7="Mewah",E7,0)))
+H7: =IF(A7="","",IF(Setup!$B$11<>"Ya",0,IF(F7="Non-Mewah",Setup!$B$17,IF(F7="Mewah",Setup!$B$18,0))))
+I7: =IF(A7="","",IF(Setup!$B$11<>"Ya",0,IF(F7="Non-Mewah",E7*Setup!$B$17,IF(F7="Mewah",E7*Setup!$B$18,0))))
+K7: =IF(A7="","",IF(J7="Ya",I7,0))
+L7: =IF(A7="","",E7+I7)
+M7: =IF(A7="","",MONTH(A7))
+G8: =IF(A8="","",IF(F8="Non-Mewah",E8*11/12,IF(F8="Mewah",E8,0)))
+H8: =IF(A8="","",IF(Setup!$B$11<>"Ya",0,IF(F8="Non-Mewah",Setup!$B$17,IF(F8="Mewah",Setup!$B$18,0))))
+I8: =IF(A8="","",IF(Setup!$B$11<>"Ya",0,IF(F8="Non-Mewah",E8*Setup!$B$17,IF(F8="Mewah",E8*Setup!$B$18,0))))
+K8: =IF(A8="","",IF(J8="Ya",I8,0))
+L8: =IF(A8="","",E8+I8)
+M8: =IF(A8="","",MONTH(A8))
+G9: =IF(A9="","",IF(F9="Non-Mewah",E9*11/12,IF(F9="Mewah",E9,0)))
+H9: =IF(A9="","",IF(Setup!$B$11<>"Ya",0,IF(F9="Non-Mewah",Setup!$B$17,IF(F9="Mewah",Setup!$B$18,0))))
+I9: =IF(A9="","",IF(Setup!$B$11<>"Ya",0,IF(F9="Non-Mewah",E9*Setup!$B$17,IF(F9="Mewah",E9*Setup!$B$18,0))))
+K9: =IF(A9="","",IF(J9="Ya",I9,0))
+L9: =IF(A9="","",E9+I9)
+M9: =IF(A9="","",MONTH(A9))
+G10: =IF(A10="","",IF(F10="Non-Mewah",E10*11/12,IF(F10="Mewah",E10,0)))
+H10: =IF(A10="","",IF(Setup!$B$11<>"Ya",0,IF(F10="Non-Mewah",Setup!$B$17,IF(F10="Mewah",Setup!$B$18,0))))
+I10: =IF(A10="","",IF(Setup!$B$11<>"Ya",0,IF(F10="Non-Mewah",E10*Setup!$B$17,IF(F10="Mewah",E10*Setup!$B$18,0))))
+K10: =IF(A10="","",IF(J10="Ya",I10,0))
+L10: =IF(A10="","",E10+I10)
+M10: =IF(A10="","",MONTH(A10))
+G11: =IF(A11="","",IF(F11="Non-Mewah",E11*11/12,IF(F11="Mewah",E11,0)))
+H11: =IF(A11="","",IF(Setup!$B$11<>"Ya",0,IF(F11="Non-Mewah",Setup!$B$17,IF(F11="Mewah",Setup!$B$18,0))))
+I11: =IF(A11="","",IF(Setup!$B$11<>"Ya",0,IF(F11="Non-Mewah",E11*Setup!$B$17,IF(F11="Mewah",E11*Setup!$B$18,0))))
+K11: =IF(A11="","",IF(J11="Ya",I11,0))
+L11: =IF(A11="","",E11+I11)
+M11: =IF(A11="","",MONTH(A11))
+G12: =IF(A12="","",IF(F12="Non-Mewah",E12*11/12,IF(F12="Mewah",E12,0)))
+H12: =IF(A12="","",IF(Setup!$B$11<>"Ya",0,IF(F12="Non-Mewah",Setup!$B$17,IF(F12="Mewah",Setup!$B$18,0))))
+I12: =IF(A12="","",IF(Setup!$B$11<>"Ya",0,IF(F12="Non-Mewah",E12*Setup!$B$17,IF(F12="Mewah",E12*Setup!$B$18,0))))
+K12: =IF(A12="","",IF(J12="Ya",I12,0))
+L12: =IF(A12="","",E12+I12)
+M12: =IF(A12="","",MONTH(A12))
+G13: =IF(A13="","",IF(F13="Non-Mewah",E13*11/12,IF(F13="Mewah",E13,0)))
+H13: =IF(A13="","",IF(Setup!$B$11<>"Ya",0,IF(F13="Non-Mewah",Setup!$B$17,IF(F13="Mewah",Setup!$B$18,0))))
+I13: =IF(A13="","",IF(Setup!$B$11<>"Ya",0,IF(F13="Non-Mewah",E13*Setup!$B$17,IF(F13="Mewah",E13*Setup!$B$18,0))))
+K13: =IF(A13="","",IF(J13="Ya",I13,0))
+L13: =IF(A13="","",E13+I13)
+M13: =IF(A13="","",MONTH(A13))
+G14: =IF(A14="","",IF(F14="Non-Mewah",E14*11/12,IF(F14="Mewah",E14,0)))
+H14: =IF(A14="","",IF(Setup!$B$11<>"Ya",0,IF(F14="Non-Mewah",Setup!$B$17,IF(F14="Mewah",Setup!$B$18,0))))
+I14: =IF(A14="","",IF(Setup!$B$11<>"Ya",0,IF(F14="Non-Mewah",E14*Setup!$B$17,IF(F14="Mewah",E14*Setup!$B$18,0))))
+K14: =IF(A14="","",IF(J14="Ya",I14,0))
+L14: =IF(A14="","",E14+I14)
+M14: =IF(A14="","",MONTH(A14))
+--- Aset Tetap (704 formulas) ---
+I5: =IF(G5="","",IF(G5="Kelompok 1",4,IF(G5="Kelompok 2",8,IF(G5="Kelompok 3",16,IF(G5="Kelompok 4",20,IF(G5="Bangunan Permanen",20,IF(G5="Bangunan Tidak Permanen",10,"")))))))
+J5: =IF(G5="","",IF(H5="Garis Lurus",IF(G5="Kelompok 1",25%,IF(G5="Kelompok 2",12.5%,IF(G5="Kelompok 3",6.25%,IF(G5="Kelompok 4",5%,IF(G5="Bangunan Permanen",5%,IF(G5="Bangunan Tidak Permanen",10%,0)))))),IF(H5="Saldo Menurun",IF(G5="Kelompok 1",50%,IF(G5="Kelompok 2",25%,IF(G5="Kelompok 3",12.5%,IF(G5="Kelompok 4",10%,0)))),0)))
+L5: =IF(C5="","",IF(YEAR(C5)>Setup!$B$5,0,IF(YEAR(C5)<Setup!$B$5,12,13-MONTH(C5))))
+M5: =IF(C5="","",MAX(0,(D5-E5)/F5*L5/12))
+N5: =IF(C5="","",IF(YEAR(C5)=Setup!$B$5,MIN(D5,D5*J5*L5/12),IF(K5<=0,0,IF(H5="Garis Lurus",MIN(K5,D5*J5*L5/12),MIN(K5,K5*J5*L5/12)))))
+O5: =IF(C5="","",MAX(0,IF(YEAR(C5)=Setup!$B$5,D5,K5)-N5))
+P5: =IF(C5="","",M5-N5)
+I6: =IF(G6="","",IF(G6="Kelompok 1",4,IF(G6="Kelompok 2",8,IF(G6="Kelompok 3",16,IF(G6="Kelompok 4",20,IF(G6="Bangunan Permanen",20,IF(G6="Bangunan Tidak Permanen",10,"")))))))
+J6: =IF(G6="","",IF(H6="Garis Lurus",IF(G6="Kelompok 1",25%,IF(G6="Kelompok 2",12.5%,IF(G6="Kelompok 3",6.25%,IF(G6="Kelompok 4",5%,IF(G6="Bangunan Permanen",5%,IF(G6="Bangunan Tidak Permanen",10%,0)))))),IF(H6="Saldo Menurun",IF(G6="Kelompok 1",50%,IF(G6="Kelompok 2",25%,IF(G6="Kelompok 3",12.5%,IF(G6="Kelompok 4",10%,0)))),0)))
+L6: =IF(C6="","",IF(YEAR(C6)>Setup!$B$5,0,IF(YEAR(C6)<Setup!$B$5,12,13-MONTH(C6))))
+M6: =IF(C6="","",MAX(0,(D6-E6)/F6*L6/12))
+N6: =IF(C6="","",IF(YEAR(C6)=Setup!$B$5,MIN(D6,D6*J6*L6/12),IF(K6<=0,0,IF(H6="Garis Lurus",MIN(K6,D6*J6*L6/12),MIN(K6,K6*J6*L6/12)))))
+O6: =IF(C6="","",MAX(0,IF(YEAR(C6)=Setup!$B$5,D6,K6)-N6))
+P6: =IF(C6="","",M6-N6)
+I7: =IF(G7="","",IF(G7="Kelompok 1",4,IF(G7="Kelompok 2",8,IF(G7="Kelompok 3",16,IF(G7="Kelompok 4",20,IF(G7="Bangunan Permanen",20,IF(G7="Bangunan Tidak Permanen",10,"")))))))
+J7: =IF(G7="","",IF(H7="Garis Lurus",IF(G7="Kelompok 1",25%,IF(G7="Kelompok 2",12.5%,IF(G7="Kelompok 3",6.25%,IF(G7="Kelompok 4",5%,IF(G7="Bangunan Permanen",5%,IF(G7="Bangunan Tidak Permanen",10%,0)))))),IF(H7="Saldo Menurun",IF(G7="Kelompok 1",50%,IF(G7="Kelompok 2",25%,IF(G7="Kelompok 3",12.5%,IF(G7="Kelompok 4",10%,0)))),0)))
+L7: =IF(C7="","",IF(YEAR(C7)>Setup!$B$5,0,IF(YEAR(C7)<Setup!$B$5,12,13-MONTH(C7))))
+M7: =IF(C7="","",MAX(0,(D7-E7)/F7*L7/12))
+N7: =IF(C7="","",IF(YEAR(C7)=Setup!$B$5,MIN(D7,D7*J7*L7/12),IF(K7<=0,0,IF(H7="Garis Lurus",MIN(K7,D7*J7*L7/12),MIN(K7,K7*J7*L7/12)))))
+O7: =IF(C7="","",MAX(0,IF(YEAR(C7)=Setup!$B$5,D7,K7)-N7))
+P7: =IF(C7="","",M7-N7)
+I8: =IF(G8="","",IF(G8="Kelompok 1",4,IF(G8="Kelompok 2",8,IF(G8="Kelompok 3",16,IF(G8="Kelompok 4",20,IF(G8="Bangunan Permanen",20,IF(G8="Bangunan Tidak Permanen",10,"")))))))
+J8: =IF(G8="","",IF(H8="Garis Lurus",IF(G8="Kelompok 1",25%,IF(G8="Kelompok 2",12.5%,IF(G8="Kelompok 3",6.25%,IF(G8="Kelompok 4",5%,IF(G8="Bangunan Permanen",5%,IF(G8="Bangunan Tidak Permanen",10%,0)))))),IF(H8="Saldo Menurun",IF(G8="Kelompok 1",50%,IF(G8="Kelompok 2",25%,IF(G8="Kelompok 3",12.5%,IF(G8="Kelompok 4",10%,0)))),0)))
+L8: =IF(C8="","",IF(YEAR(C8)>Setup!$B$5,0,IF(YEAR(C8)<Setup!$B$5,12,13-MONTH(C8))))
+M8: =IF(C8="","",MAX(0,(D8-E8)/F8*L8/12))
+N8: =IF(C8="","",IF(YEAR(C8)=Setup!$B$5,MIN(D8,D8*J8*L8/12),IF(K8<=0,0,IF(H8="Garis Lurus",MIN(K8,D8*J8*L8/12),MIN(K8,K8*J8*L8/12)))))
+O8: =IF(C8="","",MAX(0,IF(YEAR(C8)=Setup!$B$5,D8,K8)-N8))
+P8: =IF(C8="","",M8-N8)
+I9: =IF(G9="","",IF(G9="Kelompok 1",4,IF(G9="Kelompok 2",8,IF(G9="Kelompok 3",16,IF(G9="Kelompok 4",20,IF(G9="Bangunan Permanen",20,IF(G9="Bangunan Tidak Permanen",10,"")))))))
+J9: =IF(G9="","",IF(H9="Garis Lurus",IF(G9="Kelompok 1",25%,IF(G9="Kelompok 2",12.5%,IF(G9="Kelompok 3",6.25%,IF(G9="Kelompok 4",5%,IF(G9="Bangunan Permanen",5%,IF(G9="Bangunan Tidak Permanen",10%,0)))))),IF(H9="Saldo Menurun",IF(G9="Kelompok 1",50%,IF(G9="Kelompok 2",25%,IF(G9="Kelompok 3",12.5%,IF(G9="Kelompok 4",10%,0)))),0)))
+L9: =IF(C9="","",IF(YEAR(C9)>Setup!$B$5,0,IF(YEAR(C9)<Setup!$B$5,12,13-MONTH(C9))))
+M9: =IF(C9="","",MAX(0,(D9-E9)/F9*L9/12))
+N9: =IF(C9="","",IF(YEAR(C9)=Setup!$B$5,MIN(D9,D9*J9*L9/12),IF(K9<=0,0,IF(H9="Garis Lurus",MIN(K9,D9*J9*L9/12),MIN(K9,K9*J9*L9/12)))))
+O9: =IF(C9="","",MAX(0,IF(YEAR(C9)=Setup!$B$5,D9,K9)-N9))
+P9: =IF(C9="","",M9-N9)
+I10: =IF(G10="","",IF(G10="Kelompok 1",4,IF(G10="Kelompok 2",8,IF(G10="Kelompok 3",16,IF(G10="Kelompok 4",20,IF(G10="Bangunan Permanen",20,IF(G10="Bangunan Tidak Permanen",10,"")))))))
+J10: =IF(G10="","",IF(H10="Garis Lurus",IF(G10="Kelompok 1",25%,IF(G10="Kelompok 2",12.5%,IF(G10="Kelompok 3",6.25%,IF(G10="Kelompok 4",5%,IF(G10="Bangunan Permanen",5%,IF(G10="Bangunan Tidak Permanen",10%,0)))))),IF(H10="Saldo Menurun",IF(G10="Kelompok 1",50%,IF(G10="Kelompok 2",25%,IF(G10="Kelompok 3",12.5%,IF(G10="Kelompok 4",10%,0)))),0)))
+L10: =IF(C10="","",IF(YEAR(C10)>Setup!$B$5,0,IF(YEAR(C10)<Setup!$B$5,12,13-MONTH(C10))))
+M10: =IF(C10="","",MAX(0,(D10-E10)/F10*L10/12))
+N10: =IF(C10="","",IF(YEAR(C10)=Setup!$B$5,MIN(D10,D10*J10*L10/12),IF(K10<=0,0,IF(H10="Garis Lurus",MIN(K10,D10*J10*L10/12),MIN(K10,K10*J10*L10/12)))))
+O10: =IF(C10="","",MAX(0,IF(YEAR(C10)=Setup!$B$5,D10,K10)-N10))
+P10: =IF(C10="","",M10-N10)
+I11: =IF(G11="","",IF(G11="Kelompok 1",4,IF(G11="Kelompok 2",8,IF(G11="Kelompok 3",16,IF(G11="Kelompok 4",20,IF(G11="Bangunan Permanen",20,IF(G11="Bangunan Tidak Permanen",10,"")))))))
+J11: =IF(G11="","",IF(H11="Garis Lurus",IF(G11="Kelompok 1",25%,IF(G11="Kelompok 2",12.5%,IF(G11="Kelompok 3",6.25%,IF(G11="Kelompok 4",5%,IF(G11="Bangunan Permanen",5%,IF(G11="Bangunan Tidak Permanen",10%,0)))))),IF(H11="Saldo Menurun",IF(G11="Kelompok 1",50%,IF(G11="Kelompok 2",25%,IF(G11="Kelompok 3",12.5%,IF(G11="Kelompok 4",10%,0)))),0)))
+L11: =IF(C11="","",IF(YEAR(C11)>Setup!$B$5,0,IF(YEAR(C11)<Setup!$B$5,12,13-MONTH(C11))))
+M11: =IF(C11="","",MAX(0,(D11-E11)/F11*L11/12))
+N11: =IF(C11="","",IF(YEAR(C11)=Setup!$B$5,MIN(D11,D11*J11*L11/12),IF(K11<=0,0,IF(H11="Garis Lurus",MIN(K11,D11*J11*L11/12),MIN(K11,K11*J11*L11/12)))))
+O11: =IF(C11="","",MAX(0,IF(YEAR(C11)=Setup!$B$5,D11,K11)-N11))
+P11: =IF(C11="","",M11-N11)
+I12: =IF(G12="","",IF(G12="Kelompok 1",4,IF(G12="Kelompok 2",8,IF(G12="Kelompok 3",16,IF(G12="Kelompok 4",20,IF(G12="Bangunan Permanen",20,IF(G12="Bangunan Tidak Permanen",10,"")))))))
+J12: =IF(G12="","",IF(H12="Garis Lurus",IF(G12="Kelompok 1",25%,IF(G12="Kelompok 2",12.5%,IF(G12="Kelompok 3",6.25%,IF(G12="Kelompok 4",5%,IF(G12="Bangunan Permanen",5%,IF(G12="Bangunan Tidak Permanen",10%,0)))))),IF(H12="Saldo Menurun",IF(G12="Kelompok 1",50%,IF(G12="Kelompok 2",25%,IF(G12="Kelompok 3",12.5%,IF(G12="Kelompok 4",10%,0)))),0)))
+L12: =IF(C12="","",IF(YEAR(C12)>Setup!$B$5,0,IF(YEAR(C12)<Setup!$B$5,12,13-MONTH(C12))))
+M12: =IF(C12="","",MAX(0,(D12-E12)/F12*L12/12))
+N12: =IF(C12="","",IF(YEAR(C12)=Setup!$B$5,MIN(D12,D12*J12*L12/12),IF(K12<=0,0,IF(H12="Garis Lurus",MIN(K12,D12*J12*L12/12),MIN(K12,K12*J12*L12/12)))))
+O12: =IF(C12="","",MAX(0,IF(YEAR(C12)=Setup!$B$5,D12,K12)-N12))
+P12: =IF(C12="","",M12-N12)
+I13: =IF(G13="","",IF(G13="Kelompok 1",4,IF(G13="Kelompok 2",8,IF(G13="Kelompok 3",16,IF(G13="Kelompok 4",20,IF(G13="Bangunan Permanen",20,IF(G13="Bangunan Tidak Permanen",10,"")))))))
+J13: =IF(G13="","",IF(H13="Garis Lurus",IF(G13="Kelompok 1",25%,IF(G13="Kelompok 2",12.5%,IF(G13="Kelompok 3",6.25%,IF(G13="Kelompok 4",5%,IF(G13="Bangunan Permanen",5%,IF(G13="Bangunan Tidak Permanen",10%,0)))))),IF(H13="Saldo Menurun",IF(G13="Kelompok 1",50%,IF(G13="Kelompok 2",25%,IF(G13="Kelompok 3",12.5%,IF(G13="Kelompok 4",10%,0)))),0)))
+L13: =IF(C13="","",IF(YEAR(C13)>Setup!$B$5,0,IF(YEAR(C13)<Setup!$B$5,12,13-MONTH(C13))))
+M13: =IF(C13="","",MAX(0,(D13-E13)/F13*L13/12))
+--- Pajak PotPut (1500 formulas) ---
+D5: =IFERROR(VLOOKUP(C5,Setup!$A$22:$E$30,2,FALSE()),"")
+G5: =IFERROR(VLOOKUP(C5,Setup!$A$22:$E$30,3,FALSE()),"")
+I5: =IF(A5="","",IF(H5<>"",H5,G5))
+J5: =IF(A5="","",IF(I5="",0,F5*I5))
+K5: =IFERROR(VLOOKUP(C5,Setup!$A$22:$E$30,4,FALSE()),"Tidak")
+D6: =IFERROR(VLOOKUP(C6,Setup!$A$22:$E$30,2,FALSE()),"")
+G6: =IFERROR(VLOOKUP(C6,Setup!$A$22:$E$30,3,FALSE()),"")
+I6: =IF(A6="","",IF(H6<>"",H6,G6))
+J6: =IF(A6="","",IF(I6="",0,F6*I6))
+K6: =IFERROR(VLOOKUP(C6,Setup!$A$22:$E$30,4,FALSE()),"Tidak")
+D7: =IFERROR(VLOOKUP(C7,Setup!$A$22:$E$30,2,FALSE()),"")
+G7: =IFERROR(VLOOKUP(C7,Setup!$A$22:$E$30,3,FALSE()),"")
+I7: =IF(A7="","",IF(H7<>"",H7,G7))
+J7: =IF(A7="","",IF(I7="",0,F7*I7))
+K7: =IFERROR(VLOOKUP(C7,Setup!$A$22:$E$30,4,FALSE()),"Tidak")
+D8: =IFERROR(VLOOKUP(C8,Setup!$A$22:$E$30,2,FALSE()),"")
+G8: =IFERROR(VLOOKUP(C8,Setup!$A$22:$E$30,3,FALSE()),"")
+I8: =IF(A8="","",IF(H8<>"",H8,G8))
+J8: =IF(A8="","",IF(I8="",0,F8*I8))
+K8: =IFERROR(VLOOKUP(C8,Setup!$A$22:$E$30,4,FALSE()),"Tidak")
+D9: =IFERROR(VLOOKUP(C9,Setup!$A$22:$E$30,2,FALSE()),"")
+G9: =IFERROR(VLOOKUP(C9,Setup!$A$22:$E$30,3,FALSE()),"")
+I9: =IF(A9="","",IF(H9<>"",H9,G9))
+J9: =IF(A9="","",IF(I9="",0,F9*I9))
+K9: =IFERROR(VLOOKUP(C9,Setup!$A$22:$E$30,4,FALSE()),"Tidak")
+D10: =IFERROR(VLOOKUP(C10,Setup!$A$22:$E$30,2,FALSE()),"")
+G10: =IFERROR(VLOOKUP(C10,Setup!$A$22:$E$30,3,FALSE()),"")
+I10: =IF(A10="","",IF(H10<>"",H10,G10))
+J10: =IF(A10="","",IF(I10="",0,F10*I10))
+K10: =IFERROR(VLOOKUP(C10,Setup!$A$22:$E$30,4,FALSE()),"Tidak")
+D11: =IFERROR(VLOOKUP(C11,Setup!$A$22:$E$30,2,FALSE()),"")
+G11: =IFERROR(VLOOKUP(C11,Setup!$A$22:$E$30,3,FALSE()),"")
+I11: =IF(A11="","",IF(H11<>"",H11,G11))
+J11: =IF(A11="","",IF(I11="",0,F11*I11))
+K11: =IFERROR(VLOOKUP(C11,Setup!$A$22:$E$30,4,FALSE()),"Tidak")
+D12: =IFERROR(VLOOKUP(C12,Setup!$A$22:$E$30,2,FALSE()),"")
+G12: =IFERROR(VLOOKUP(C12,Setup!$A$22:$E$30,3,FALSE()),"")
+I12: =IF(A12="","",IF(H12<>"",H12,G12))
+J12: =IF(A12="","",IF(I12="",0,F12*I12))
+K12: =IFERROR(VLOOKUP(C12,Setup!$A$22:$E$30,4,FALSE()),"Tidak")
+D13: =IFERROR(VLOOKUP(C13,Setup!$A$22:$E$30,2,FALSE()),"")
+G13: =IFERROR(VLOOKUP(C13,Setup!$A$22:$E$30,3,FALSE()),"")
+I13: =IF(A13="","",IF(H13<>"",H13,G13))
+J13: =IF(A13="","",IF(I13="",0,F13*I13))
+K13: =IFERROR(VLOOKUP(C13,Setup!$A$22:$E$30,4,FALSE()),"Tidak")
+D14: =IFERROR(VLOOKUP(C14,Setup!$A$22:$E$30,2,FALSE()),"")
+G14: =IFERROR(VLOOKUP(C14,Setup!$A$22:$E$30,3,FALSE()),"")
+I14: =IF(A14="","",IF(H14<>"",H14,G14))
+J14: =IF(A14="","",IF(I14="",0,F14*I14))
+K14: =IFERROR(VLOOKUP(C14,Setup!$A$22:$E$30,4,FALSE()),"Tidak")
+D15: =IFERROR(VLOOKUP(C15,Setup!$A$22:$E$30,2,FALSE()),"")
+G15: =IFERROR(VLOOKUP(C15,Setup!$A$22:$E$30,3,FALSE()),"")
+I15: =IF(A15="","",IF(H15<>"",H15,G15))
+J15: =IF(A15="","",IF(I15="",0,F15*I15))
+K15: =IFERROR(VLOOKUP(C15,Setup!$A$22:$E$30,4,FALSE()),"Tidak")
+D16: =IFERROR(VLOOKUP(C16,Setup!$A$22:$E$30,2,FALSE()),"")
+G16: =IFERROR(VLOOKUP(C16,Setup!$A$22:$E$30,3,FALSE()),"")
+I16: =IF(A16="","",IF(H16<>"",H16,G16))
+J16: =IF(A16="","",IF(I16="",0,F16*I16))
+K16: =IFERROR(VLOOKUP(C16,Setup!$A$22:$E$30,4,FALSE()),"Tidak")
+--- Payroll (600 formulas) ---
+J5: =IF(C5="","",D5+E5+F5-G5-H5-I5)
+L5: =IF(C5="","",D5+E5+F5+K5)
+J6: =IF(C6="","",D6+E6+F6-G6-H6-I6)
+L6: =IF(C6="","",D6+E6+F6+K6)
+J7: =IF(C7="","",D7+E7+F7-G7-H7-I7)
+L7: =IF(C7="","",D7+E7+F7+K7)
+J8: =IF(C8="","",D8+E8+F8-G8-H8-I8)
+L8: =IF(C8="","",D8+E8+F8+K8)
+J9: =IF(C9="","",D9+E9+F9-G9-H9-I9)
+L9: =IF(C9="","",D9+E9+F9+K9)
+J10: =IF(C10="","",D10+E10+F10-G10-H10-I10)
+L10: =IF(C10="","",D10+E10+F10+K10)
+J11: =IF(C11="","",D11+E11+F11-G11-H11-I11)
+L11: =IF(C11="","",D11+E11+F11+K11)
+J12: =IF(C12="","",D12+E12+F12-G12-H12-I12)
+L12: =IF(C12="","",D12+E12+F12+K12)
+J13: =IF(C13="","",D13+E13+F13-G13-H13-I13)
+L13: =IF(C13="","",D13+E13+F13+K13)
+J14: =IF(C14="","",D14+E14+F14-G14-H14-I14)
+L14: =IF(C14="","",D14+E14+F14+K14)
+J15: =IF(C15="","",D15+E15+F15-G15-H15-I15)
+L15: =IF(C15="","",D15+E15+F15+K15)
+J16: =IF(C16="","",D16+E16+F16-G16-H16-I16)
+L16: =IF(C16="","",D16+E16+F16+K16)
+J17: =IF(C17="","",D17+E17+F17-G17-H17-I17)
+L17: =IF(C17="","",D17+E17+F17+K17)
+J18: =IF(C18="","",D18+E18+F18-G18-H18-I18)
+L18: =IF(C18="","",D18+E18+F18+K18)
+J19: =IF(C19="","",D19+E19+F19-G19-H19-I19)
+L19: =IF(C19="","",D19+E19+F19+K19)
+J20: =IF(C20="","",D20+E20+F20-G20-H20-I20)
+L20: =IF(C20="","",D20+E20+F20+K20)
+J21: =IF(C21="","",D21+E21+F21-G21-H21-I21)
+L21: =IF(C21="","",D21+E21+F21+K21)
+J22: =IF(C22="","",D22+E22+F22-G22-H22-I22)
+L22: =IF(C22="","",D22+E22+F22+K22)
+J23: =IF(C23="","",D23+E23+F23-G23-H23-I23)
+L23: =IF(C23="","",D23+E23+F23+K23)
+J24: =IF(C24="","",D24+E24+F24-G24-H24-I24)
+L24: =IF(C24="","",D24+E24+F24+K24)
+J25: =IF(C25="","",D25+E25+F25-G25-H25-I25)
+L25: =IF(C25="","",D25+E25+F25+K25)
+J26: =IF(C26="","",D26+E26+F26-G26-H26-I26)
+L26: =IF(C26="","",D26+E26+F26+K26)
+J27: =IF(C27="","",D27+E27+F27-G27-H27-I27)
+L27: =IF(C27="","",D27+E27+F27+K27)
+J28: =IF(C28="","",D28+E28+F28-G28-H28-I28)
+L28: =IF(C28="","",D28+E28+F28+K28)
+J29: =IF(C29="","",D29+E29+F29-G29-H29-I29)
+L29: =IF(C29="","",D29+E29+F29+K29)
+J30: =IF(C30="","",D30+E30+F30-G30-H30-I30)
+L30: =IF(C30="","",D30+E30+F30+K30)
+J31: =IF(C31="","",D31+E31+F31-G31-H31-I31)
+L31: =IF(C31="","",D31+E31+F31+K31)
+J32: =IF(C32="","",D32+E32+F32-G32-H32-I32)
+L32: =IF(C32="","",D32+E32+F32+K32)
+J33: =IF(C33="","",D33+E33+F33-G33-H33-I33)
+L33: =IF(C33="","",D33+E33+F33+K33)
+J34: =IF(C34="","",D34+E34+F34-G34-H34-I34)
+L34: =IF(C34="","",D34+E34+F34+K34)
+--- Neraca Saldo (662 formulas) ---
+A5: =COA!A5
+B5: =COA!B5
+C5: =COA!C5
+D5: =COA!D5
+E5: =COA!E5
+F5: =COA!F5
+G5: =IF(A5="","",IF(OR(F5="Debit",F5="D"),COA!H5-COA!I5,COA!I5-COA!H5))
+H5: =IF(A5="","",SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$D$5:$D$304,A5))
+I5: =IF(A5="","",SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$D$5:$D$304,A5))
+J5: =IF(A5="","",IF(OR(F5="Debit",F5="D"),G5+H5-I5,G5+I5-H5))
+K5: =COA!G5
+A6: =COA!A6
+B6: =COA!B6
+C6: =COA!C6
+D6: =COA!D6
+E6: =COA!E6
+F6: =COA!F6
+G6: =IF(A6="","",IF(OR(F6="Debit",F6="D"),COA!H6-COA!I6,COA!I6-COA!H6))
+H6: =IF(A6="","",SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$D$5:$D$304,A6))
+I6: =IF(A6="","",SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$D$5:$D$304,A6))
+J6: =IF(A6="","",IF(OR(F6="Debit",F6="D"),G6+H6-I6,G6+I6-H6))
+K6: =COA!G6
+A7: =COA!A7
+B7: =COA!B7
+C7: =COA!C7
+D7: =COA!D7
+E7: =COA!E7
+F7: =COA!F7
+G7: =IF(A7="","",IF(OR(F7="Debit",F7="D"),COA!H7-COA!I7,COA!I7-COA!H7))
+H7: =IF(A7="","",SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$D$5:$D$304,A7))
+I7: =IF(A7="","",SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$D$5:$D$304,A7))
+J7: =IF(A7="","",IF(OR(F7="Debit",F7="D"),G7+H7-I7,G7+I7-H7))
+K7: =COA!G7
+A8: =COA!A8
+B8: =COA!B8
+C8: =COA!C8
+D8: =COA!D8
+E8: =COA!E8
+F8: =COA!F8
+G8: =IF(A8="","",IF(OR(F8="Debit",F8="D"),COA!H8-COA!I8,COA!I8-COA!H8))
+H8: =IF(A8="","",SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$D$5:$D$304,A8))
+I8: =IF(A8="","",SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$D$5:$D$304,A8))
+J8: =IF(A8="","",IF(OR(F8="Debit",F8="D"),G8+H8-I8,G8+I8-H8))
+K8: =COA!G8
+A9: =COA!A9
+B9: =COA!B9
+C9: =COA!C9
+D9: =COA!D9
+E9: =COA!E9
+F9: =COA!F9
+G9: =IF(A9="","",IF(OR(F9="Debit",F9="D"),COA!H9-COA!I9,COA!I9-COA!H9))
+H9: =IF(A9="","",SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$D$5:$D$304,A9))
+I9: =IF(A9="","",SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$D$5:$D$304,A9))
+J9: =IF(A9="","",IF(OR(F9="Debit",F9="D"),G9+H9-I9,G9+I9-H9))
+K9: =COA!G9
+A10: =COA!A10
+B10: =COA!B10
+C10: =COA!C10
+D10: =COA!D10
+E10: =COA!E10
+--- Laba Rugi (20 formulas) ---
+B5: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$D$5:$D$64,"Pendapatan Usaha")
+C5: =IFERROR(B5/$B$5,0)
+B6: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$D$5:$D$64,"HPP")
+C6: =IFERROR(B6/$B$5,0)
+B7: =B5-B6
+C7: =IFERROR(B7/$B$5,0)
+B8: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$D$5:$D$64,"Beban Operasional")
+C8: =IFERROR(B8/$B$5,0)
+B9: =B7-B8
+C9: =IFERROR(B9/$B$5,0)
+B10: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$D$5:$D$64,"Pendapatan Lain")
+C10: =IFERROR(B10/$B$5,0)
+B11: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$D$5:$D$64,"Beban Lain")
+C11: =IFERROR(B11/$B$5,0)
+B12: =B9+B10-B11
+C12: =IFERROR(B12/$B$5,0)
+B13: ='PPh Badan'!B19
+C13: =IFERROR(B13/$B$5,0)
+B14: =B12-B13
+C14: =IFERROR(B14/$B$5,0)
+--- Rekonsiliasi Fiskal (11 formulas) ---
+B5: ='Laba Rugi'!B12
+E5: =COUNTIF('Neraca Saldo'!$K$5:$K$64,"Review Fiskal")&" akun COA berstatus Review Fiskal"
+B6: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$K$5:$K$64,"Non-Deductible (+)")
+B7: =MAX(0,'Aset Tetap'!P107)
+B8: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$K$5:$K$64,"Non-Taxable (-)")+SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$K$5:$K$64,"Final Income (-)")
+B9: =MAX(0,-'Aset Tetap'!P107)
+B10: =SUMIFS(B20:B39,C20:C39,"Positif")
+B11: =SUMIFS(B20:B39,C20:C39,"Negatif")
+B12: =B5+B6+B7-B8-B9+B10-B11
+B14: =MAX(0,B12-B13)
+B15: =ROUNDDOWN(B14/1000,0)*1000
+--- PPh Badan (16 formulas) ---
+B5: ='Laba Rugi'!B5
+D5: =IF(B7>Setup!$B$12,"ALERT: omzet melewati Rp4,8 miliar; cek PKP dan porsi 31E non-fasilitas.","Omzet tidak melewati ambang Rp4,8 miliar.")
+B7: =IF(B6>0,B6,B5)
+B8: =Setup!$B$12
+B9: ='Rekonsiliasi Fiskal'!B15
+B10: =IF(B7<=0,0,MIN(B9,B9*MIN(B7,B8)/B7))
+B11: =MAX(0,B9-B10)
+B12: =IF(B9<=0,0,B10*Setup!$B$15+B11*Setup!$B$14)
+B13: =IF(AND(Setup!$B$9="Final 0,5% (jika eligible)",Setup!$B$10="Ya",B7<=B8),B7*Setup!$B$13,0)
+D13: =IF(AND(Setup!$B$9="Final 0,5% (jika eligible)",Setup!$B$10<>"Ya"),"FINAL TIDAK DIPAKAI: eligibility belum Ya",IF(AND(Setup!$B$9="Final 0,5% (jika eligible)",B7>Setup!$B$12),"FINAL TIDAK DIPAKAI: omzet melewati ambang",""))
+B14: =IF(B13>0,"Final 0,5%","Ketentuan Umum/Pasal 31E")
+B15: =IF(B14="Final 0,5%",B13,B12)
+B16: =SUMIFS('Pajak PotPut'!$J$5:$J$304,'Pajak PotPut'!$K$5:$K$304,"Ya")
+B17: =IF(B14="Final 0,5%",B15-SUMIFS('Pajak PotPut'!$J$5:$J$304,'Pajak PotPut'!$C$5:$C$304,"PPh-FINAL05"),B15-B16)
+B18: =IF(B14="Final 0,5%",0,MAX(0,(B12-SUMIFS('Pajak PotPut'!$J$5:$J$304,'Pajak PotPut'!$C$5:$C$304,"PPh22")-SUMIFS('Pajak PotPut'!$J$5:$J$304,'Pajak PotPut'!$C$5:$C$304,"PPh23-KREDIT")-SUMIFS('Pajak PotPut'!$J$5:$J$304,'Pajak PotPut'!$C$5:$C$304,"PPh24"))/12))
+B19: =B15
+--- PPN (63 formulas) ---
+B5: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Penjualan!$I$5:$I$304,Penjualan!$M$5:$M$304,1))
+C5: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Pembelian!$K$5:$K$304,Pembelian!$M$5:$M$304,1))
+D5: =B5-C5
+E5: =Setup!$B$11
+F5: =IF(AND(Setup!$B$11="Tidak",'PPh Badan'!$B$7>Setup!$B$12),"ALERT: omzet > Rp4,8 miliar; cek kewajiban pengukuhan PKP.","")
+B6: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Penjualan!$I$5:$I$304,Penjualan!$M$5:$M$304,2))
+C6: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Pembelian!$K$5:$K$304,Pembelian!$M$5:$M$304,2))
+D6: =B6-C6
+E6: =Setup!$B$11
+F6: =IF(AND(Setup!$B$11="Tidak",'PPh Badan'!$B$7>Setup!$B$12),"ALERT: omzet > Rp4,8 miliar; cek kewajiban pengukuhan PKP.","")
+B7: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Penjualan!$I$5:$I$304,Penjualan!$M$5:$M$304,3))
+C7: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Pembelian!$K$5:$K$304,Pembelian!$M$5:$M$304,3))
+D7: =B7-C7
+E7: =Setup!$B$11
+F7: =IF(AND(Setup!$B$11="Tidak",'PPh Badan'!$B$7>Setup!$B$12),"ALERT: omzet > Rp4,8 miliar; cek kewajiban pengukuhan PKP.","")
+B8: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Penjualan!$I$5:$I$304,Penjualan!$M$5:$M$304,4))
+C8: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Pembelian!$K$5:$K$304,Pembelian!$M$5:$M$304,4))
+D8: =B8-C8
+E8: =Setup!$B$11
+F8: =IF(AND(Setup!$B$11="Tidak",'PPh Badan'!$B$7>Setup!$B$12),"ALERT: omzet > Rp4,8 miliar; cek kewajiban pengukuhan PKP.","")
+B9: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Penjualan!$I$5:$I$304,Penjualan!$M$5:$M$304,5))
+C9: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Pembelian!$K$5:$K$304,Pembelian!$M$5:$M$304,5))
+D9: =B9-C9
+E9: =Setup!$B$11
+F9: =IF(AND(Setup!$B$11="Tidak",'PPh Badan'!$B$7>Setup!$B$12),"ALERT: omzet > Rp4,8 miliar; cek kewajiban pengukuhan PKP.","")
+B10: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Penjualan!$I$5:$I$304,Penjualan!$M$5:$M$304,6))
+C10: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Pembelian!$K$5:$K$304,Pembelian!$M$5:$M$304,6))
+D10: =B10-C10
+E10: =Setup!$B$11
+F10: =IF(AND(Setup!$B$11="Tidak",'PPh Badan'!$B$7>Setup!$B$12),"ALERT: omzet > Rp4,8 miliar; cek kewajiban pengukuhan PKP.","")
+B11: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Penjualan!$I$5:$I$304,Penjualan!$M$5:$M$304,7))
+C11: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Pembelian!$K$5:$K$304,Pembelian!$M$5:$M$304,7))
+D11: =B11-C11
+E11: =Setup!$B$11
+F11: =IF(AND(Setup!$B$11="Tidak",'PPh Badan'!$B$7>Setup!$B$12),"ALERT: omzet > Rp4,8 miliar; cek kewajiban pengukuhan PKP.","")
+B12: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Penjualan!$I$5:$I$304,Penjualan!$M$5:$M$304,8))
+C12: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Pembelian!$K$5:$K$304,Pembelian!$M$5:$M$304,8))
+D12: =B12-C12
+E12: =Setup!$B$11
+F12: =IF(AND(Setup!$B$11="Tidak",'PPh Badan'!$B$7>Setup!$B$12),"ALERT: omzet > Rp4,8 miliar; cek kewajiban pengukuhan PKP.","")
+B13: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Penjualan!$I$5:$I$304,Penjualan!$M$5:$M$304,9))
+C13: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Pembelian!$K$5:$K$304,Pembelian!$M$5:$M$304,9))
+D13: =B13-C13
+E13: =Setup!$B$11
+F13: =IF(AND(Setup!$B$11="Tidak",'PPh Badan'!$B$7>Setup!$B$12),"ALERT: omzet > Rp4,8 miliar; cek kewajiban pengukuhan PKP.","")
+B14: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Penjualan!$I$5:$I$304,Penjualan!$M$5:$M$304,10))
+C14: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Pembelian!$K$5:$K$304,Pembelian!$M$5:$M$304,10))
+D14: =B14-C14
+E14: =Setup!$B$11
+F14: =IF(AND(Setup!$B$11="Tidak",'PPh Badan'!$B$7>Setup!$B$12),"ALERT: omzet > Rp4,8 miliar; cek kewajiban pengukuhan PKP.","")
+B15: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Penjualan!$I$5:$I$304,Penjualan!$M$5:$M$304,11))
+C15: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Pembelian!$K$5:$K$304,Pembelian!$M$5:$M$304,11))
+D15: =B15-C15
+E15: =Setup!$B$11
+F15: =IF(AND(Setup!$B$11="Tidak",'PPh Badan'!$B$7>Setup!$B$12),"ALERT: omzet > Rp4,8 miliar; cek kewajiban pengukuhan PKP.","")
+B16: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Penjualan!$I$5:$I$304,Penjualan!$M$5:$M$304,12))
+C16: =IF(Setup!$B$11<>"Ya",0,SUMIFS(Pembelian!$K$5:$K$304,Pembelian!$M$5:$M$304,12))
+D16: =B16-C16
+E16: =Setup!$B$11
+F16: =IF(AND(Setup!$B$11="Tidak",'PPh Badan'!$B$7>Setup!$B$12),"ALERT: omzet > Rp4,8 miliar; cek kewajiban pengukuhan PKP.","")
+--- Neraca (20 formulas) ---
+B5: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Kas & Bank")
+D5: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Utang Usaha")
+B6: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Piutang Usaha")
+D6: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Utang Pajak")
+B7: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Persediaan")
+D7: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Pinjaman Jangka Pendek")
+B8: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Aset Lancar Lain")
+D8: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Pinjaman Jangka Panjang")
+B9: =SUM(B5:B8)
+D9: =SUM(D5:D8)
+B10: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Aset Tetap")
+D10: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Modal")
+B11: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Akumulasi Penyusutan")
+D11: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Saldo Laba")
+B12: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Aset Lain")
+D12: ='Laba Rugi'!B14
+B13: =B9+B10-B11+B12
+D13: =SUM(D10:D12)
+B14: =B13-D14
+D14: =D9+D13
+--- Arus Kas (17 formulas) ---
+B5: ='Laba Rugi'!B14
+B6: ='Aset Tetap'!M107
+B7: =-(SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Piutang Usaha")-SUMIFS('Neraca Saldo'!$G$5:$G$64,'Neraca Saldo'!$E$5:$E$64,"Piutang Usaha"))
+B8: =-(SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Persediaan")-SUMIFS('Neraca Saldo'!$G$5:$G$64,'Neraca Saldo'!$E$5:$E$64,"Persediaan"))
+B9: =-(SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Aset Lancar Lain")-SUMIFS('Neraca Saldo'!$G$5:$G$64,'Neraca Saldo'!$E$5:$E$64,"Aset Lancar Lain"))
+B10: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Utang Usaha")-SUMIFS('Neraca Saldo'!$G$5:$G$64,'Neraca Saldo'!$E$5:$E$64,"Utang Usaha")
+B11: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Utang Pajak")-SUMIFS('Neraca Saldo'!$G$5:$G$64,'Neraca Saldo'!$E$5:$E$64,"Utang Pajak")
+B12: =SUM(B5:B11)
+B13: =-(SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Aset Tetap")-SUMIFS('Neraca Saldo'!$G$5:$G$64,'Neraca Saldo'!$E$5:$E$64,"Aset Tetap"))
+B14: =B13
+B15: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Pinjaman Jangka Pendek")-SUMIFS('Neraca Saldo'!$G$5:$G$64,'Neraca Saldo'!$E$5:$E$64,"Pinjaman Jangka Pendek")+SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Pinjaman Jangka Panjang")-SUMIFS('Neraca Saldo'!$G$5:$G$64,'Neraca Saldo'!$E$5:$E$64,"Pinjaman Jangka Panjang")
+B16: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Modal")-SUMIFS('Neraca Saldo'!$G$5:$G$64,'Neraca Saldo'!$E$5:$E$64,"Modal")
+B17: =B15+B16
+B18: =B12+B14+B17
+B19: =SUMIFS('Neraca Saldo'!$G$5:$G$64,'Neraca Saldo'!$E$5:$E$64,"Kas & Bank")
+B20: =SUMIFS('Neraca Saldo'!$J$5:$J$64,'Neraca Saldo'!$E$5:$E$64,"Kas & Bank")
+B21: =B20-B19-B18
+--- Ringkasan Bulanan (130 formulas) ---
+B5: =SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Pendapatan Usaha",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,1,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,2,1))-SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Pendapatan Usaha",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,1,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,2,1))
+C5: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"HPP",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,1,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,2,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"HPP",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,1,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,2,1))
+D5: =B5-C5
+E5: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Beban Operasional",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,1,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,2,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Beban Operasional",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,1,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,2,1))
+F5: =D5-E5
+G5: =SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Pendapatan Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,1,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,2,1))-SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Pendapatan Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,1,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,2,1))
+H5: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Beban Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,1,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,2,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Beban Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,1,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,2,1))
+I5: =F5+G5-H5
+J5: =SUMIFS('Pajak PotPut'!$J$5:$J$304,'Pajak PotPut'!$A$5:$A$304,">="&DATE(Setup!$B$5,1,1),'Pajak PotPut'!$A$5:$A$304,"<"&DATE(Setup!$B$5,2,1),'Pajak PotPut'!$E$5:$E$304,"Dibayar sendiri")
+K5: =PPN!D5
+B6: =SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Pendapatan Usaha",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,2,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,3,1))-SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Pendapatan Usaha",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,2,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,3,1))
+C6: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"HPP",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,2,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,3,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"HPP",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,2,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,3,1))
+D6: =B6-C6
+E6: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Beban Operasional",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,2,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,3,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Beban Operasional",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,2,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,3,1))
+F6: =D6-E6
+G6: =SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Pendapatan Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,2,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,3,1))-SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Pendapatan Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,2,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,3,1))
+H6: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Beban Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,2,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,3,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Beban Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,2,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,3,1))
+I6: =F6+G6-H6
+J6: =SUMIFS('Pajak PotPut'!$J$5:$J$304,'Pajak PotPut'!$A$5:$A$304,">="&DATE(Setup!$B$5,2,1),'Pajak PotPut'!$A$5:$A$304,"<"&DATE(Setup!$B$5,3,1),'Pajak PotPut'!$E$5:$E$304,"Dibayar sendiri")
+K6: =PPN!D6
+B7: =SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Pendapatan Usaha",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,3,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,4,1))-SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Pendapatan Usaha",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,3,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,4,1))
+C7: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"HPP",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,3,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,4,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"HPP",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,3,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,4,1))
+D7: =B7-C7
+E7: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Beban Operasional",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,3,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,4,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Beban Operasional",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,3,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,4,1))
+F7: =D7-E7
+G7: =SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Pendapatan Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,3,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,4,1))-SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Pendapatan Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,3,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,4,1))
+H7: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Beban Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,3,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,4,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Beban Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,3,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,4,1))
+I7: =F7+G7-H7
+J7: =SUMIFS('Pajak PotPut'!$J$5:$J$304,'Pajak PotPut'!$A$5:$A$304,">="&DATE(Setup!$B$5,3,1),'Pajak PotPut'!$A$5:$A$304,"<"&DATE(Setup!$B$5,4,1),'Pajak PotPut'!$E$5:$E$304,"Dibayar sendiri")
+K7: =PPN!D7
+B8: =SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Pendapatan Usaha",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,4,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,5,1))-SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Pendapatan Usaha",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,4,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,5,1))
+C8: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"HPP",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,4,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,5,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"HPP",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,4,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,5,1))
+D8: =B8-C8
+E8: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Beban Operasional",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,4,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,5,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Beban Operasional",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,4,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,5,1))
+F8: =D8-E8
+G8: =SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Pendapatan Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,4,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,5,1))-SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Pendapatan Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,4,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,5,1))
+H8: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Beban Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,4,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,5,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Beban Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,4,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,5,1))
+I8: =F8+G8-H8
+J8: =SUMIFS('Pajak PotPut'!$J$5:$J$304,'Pajak PotPut'!$A$5:$A$304,">="&DATE(Setup!$B$5,4,1),'Pajak PotPut'!$A$5:$A$304,"<"&DATE(Setup!$B$5,5,1),'Pajak PotPut'!$E$5:$E$304,"Dibayar sendiri")
+K8: =PPN!D8
+B9: =SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Pendapatan Usaha",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,5,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,6,1))-SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Pendapatan Usaha",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,5,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,6,1))
+C9: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"HPP",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,5,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,6,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"HPP",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,5,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,6,1))
+D9: =B9-C9
+E9: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Beban Operasional",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,5,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,6,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Beban Operasional",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,5,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,6,1))
+F9: =D9-E9
+G9: =SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Pendapatan Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,5,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,6,1))-SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Pendapatan Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,5,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,6,1))
+H9: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Beban Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,5,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,6,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Beban Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,5,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,6,1))
+I9: =F9+G9-H9
+J9: =SUMIFS('Pajak PotPut'!$J$5:$J$304,'Pajak PotPut'!$A$5:$A$304,">="&DATE(Setup!$B$5,5,1),'Pajak PotPut'!$A$5:$A$304,"<"&DATE(Setup!$B$5,6,1),'Pajak PotPut'!$E$5:$E$304,"Dibayar sendiri")
+K9: =PPN!D9
+B10: =SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Pendapatan Usaha",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,6,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,7,1))-SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Pendapatan Usaha",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,6,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,7,1))
+C10: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"HPP",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,6,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,7,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"HPP",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,6,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,7,1))
+D10: =B10-C10
+E10: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Beban Operasional",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,6,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,7,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Beban Operasional",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,6,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,7,1))
+F10: =D10-E10
+G10: =SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Pendapatan Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,6,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,7,1))-SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Pendapatan Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,6,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,7,1))
+H10: =SUMIFS(Jurnal!$J$5:$J$304,Jurnal!$G$5:$G$304,"Beban Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,6,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,7,1))-SUMIFS(Jurnal!$K$5:$K$304,Jurnal!$G$5:$G$304,"Beban Lain",Jurnal!$A$5:$A$304,">="&DATE(Setup!$B$5,6,1),Jurnal!$A$5:$A$304,"<"&DATE(Setup!$B$5,7,1))
+I10: =F10+G10-H10
+J10: =SUMIFS('Pajak PotPut'!$J$5:$J$304,'Pajak PotPut'!$A$5:$A$304,">="&DATE(Setup!$B$5,6,1),'Pajak PotPut'!$A$5:$A$304,"<"&DATE(Setup!$B$5,7,1),'Pajak PotPut'!$E$5:$E$304,"Dibayar sendiri")
+K10: =PPN!D10
+--- Dashboard (11 formulas) ---
+B5: ='Laba Rugi'!B5
+C5: =IF(B5>5000000000,"Di luar target workbook (> Rp5 miliar)",IF(B5>Setup!$B$12,"PERHATIAN: masih < Rp5 miliar, tetapi sudah melewati ambang Rp4,8 miliar.","Di bawah/≤ Rp4,8 miliar"))
+B6: ='Laba Rugi'!B7
+B7: ='Laba Rugi'!B12
+B8: ='Laba Rugi'!B14
+B9: =IFERROR(B8/B5,0)
+B10: ='PPh Badan'!B15
+B11: ='PPh Badan'!B17
+B12: =PPN!D17
+B13: =Neraca!B14
+B14: ='Neraca Saldo'!J68-'Neraca Saldo'!J69
