@@ -246,6 +246,14 @@
                     Unduh pemasang sekarang
                 </a>
 
+                <a class="selesai-tombol garis" id="ke-kwitansi" href="#" style="display: none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6M9 13h6M9 17h4"/>
+                    </svg>
+                    Lihat kwitansi pembelian
+                </a>
+
                 <a class="selesai-tombol garis" id="ulang" href="#" style="display: none;">
                     Coba periksa lagi
                 </a>
@@ -289,6 +297,7 @@
     var elKunci = document.getElementById("kunci");
     var tombolSalin = document.getElementById("salin");
     var keUnduh = document.getElementById("ke-unduh");
+    var keKwitansi = document.getElementById("ke-kwitansi");
     var ulang = document.getElementById("ulang");
     var catatan = document.getElementById("catatan");
 
@@ -317,6 +326,8 @@
         elKunci.textContent = data.kunci;
         kunciKotak.style.display = "block";
         keUnduh.style.display = "flex";
+        keKwitansi.href = "kwitansi.html?pesanan=" + encodeURIComponent(kode);
+        keKwitansi.style.display = "flex";
         ulang.style.display = "none";
         catatan.textContent =
             "Simpan kunci ini di tempat aman. Kunci juga dikirim ke email Anda. " +

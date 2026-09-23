@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kwitansi Pembelian AkunTuntas</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="logo-32.png" type="image/png">
+<style>
+    /* Halaman ini berdiri sendiri karena tata letaknya mengikuti ukuran
+       kertas, bukan tata letak situs. */
+    :root {
+        --tinta: #16222E;
+        --tinta-abu: #556577;
+        --garis: #D7DFE8;
+        --biru: #1B4F8A;
+        --biru-tua: #123A66;
+        --hijau: #047857;
+        --latar: #EDF1F5;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        background: var(--latar);
+        color: var(--tinta);
+        font-size: 14px;
+        line-height: 1.55;
+        padding: 26px 16px 60px;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .alat {
+        max-width: 820px;
+        margin: 0 auto 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .alat-kiri { display: flex; align-items: center; gap: 10px; }
+
+    .alat a.kembali {
+        color: var(--tinta-abu);
+        text-decoration: none;
+        font-size: 13.5px;
+    }
+
+    .alat a.kembali:hover { color: var(--biru); text-decoration: underline; }
+
+    .alat button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 20px;
+        border: none;
+        border-radius: 9px;
+        font-size: 14.5px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        background: var(--biru);
+        color: #FFFFFF;
+    }
+
+    .alat button:hover { background: var(--biru-tua); }
+    .alat button.garis {
+        background: #FFFFFF;
+        color: var(--biru);
+        border: 1.5px solid var(--garis);
+    }
+    .alat button.garis:hover { background: #F5F7FA; border-color: var(--biru); }
+    .alat button svg { width: 17px; height: 17px; stroke: currentColor; }
+    .alat button:disabled { background: #94A3B8; cursor: wait; }
+
+    /* ---------------------------------------------------------- kertas */
+    .kertas {
+        max-width: 820px;
+        margin: 0 auto;
+        background: #FFFFFF;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(15, 36, 56, 0.09);
+        padding: 46px 52px 52px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* pita status */
+    .pita {
+        position: absolute;
+        top: 26px;
+        right: -48px;
+        transform: rotate(38deg);
+        background: var(--hijau);
+        color: #FFFFFF;
+        font-size: 12.5px;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        padding: 7px 56px;
+        text-transform: uppercase;
+    }
+
+    .pita.menunggu { background: #B45309; }
+    .pita.batal { background: #B91C1C; }
+
+    /* ---------------------------------------------------------- kepala */
+    .kepala {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 28px;
+        padding-bottom: 24px;
+        border-bottom: 2px solid var(--tinta);
+        margin-bottom: 26px;
+    }
+
+    .merek {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+    }
+
+    .merek img {
+        width: 54px;
+        height: 54px;
+        border-radius: 12px;
+        border: 1px solid var(--garis);
+        padding: 5px;
+        box-sizing: border-box;
+    }
+
+    .merek-nama {
+        font-size: 21px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: var(--biru-tua);
+        line-height: 1.2;
+    }
+
+    .merek-ket {
+        font-size: 12.5px;
+        color: var(--tinta-abu);
+        line-height: 1.5;
+        margin-top: 2px;
+    }
+
+    .dokumen { text-align: right; }
+
+    .dokumen h1 {
+        font-size: 25px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--tinta);
+        margin-bottom: 5px;
+    }
+
+    .dokumen .nomor {
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--biru);
+        letter-spacing: 0.5px;
+    }
+
+    .dokumen .tanggal {
+        font-size: 13px;
+        color: var(--tinta-abu);
+        margin-top: 3px;
+    }
+
+    /* ---------------------------------------------------------- pihak */
+    .pihak-kisi {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 28px;
+    }
+
+    .pihak h3 {
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        color: var(--tinta-abu);
+        font-weight: 700;
+        margin-bottom: 9px;
+    }
+
+    .pihak .nama {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 3px;
+        color: var(--tinta);
+    }
+
+    .pihak p {
+        font-size: 13.5px;
+        color: var(--tinta-abu);
+        line-height: 1.6;
+        word-break: break-word;
+    }
+
+    /* ---------------------------------------------------------- rincian */
+    table.rincian {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 22px;
+    }
+
+    table.rincian thead th {
+        background: #F1F5F9;
+        color: var(--tinta);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        text-align: left;
+        padding: 11px 14px;
+        border-bottom: 1.5px solid var(--garis);
+        font-weight: 700;
+    }
+
+    table.rincian thead th.kanan { text-align: right; }
+
+    table.rincian tbody td {
+        padding: 13px 14px;
+        border-bottom: 1px solid #EDF1F5;
+        font-size: 14px;
+        vertical-align: top;
+    }
+
+    table.rincian tbody td.kanan {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .item-nama { font-weight: 600; color: var(--tinta); }
+    .item-ket { font-size: 12.5px; color: var(--tinta-abu); margin-top: 3px; line-height: 1.5; }
+
+    .jumlah-baris {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 26px;
+    }
+
+    .jumlah-kotak {
+        min-width: 290px;
+        border: 1.5px solid var(--garis);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .jumlah-baris-dalam {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 16px;
+        font-size: 14px;
+        border-bottom: 1px solid #EDF1F5;
+    }
+
+    .jumlah-baris-dalam span:first-child { color: var(--tinta-abu); }
+    .jumlah-baris-dalam span:last-child { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+    .jumlah-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 16px;
+        background: var(--biru);
+        color: #FFFFFF;
+    }
+
+    .jumlah-total span:first-child { font-size: 13.5px; font-weight: 600; }
+    .jumlah-total span:last-child { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    /* ---------------------------------------------------------- kunci */
+    .kunci-kotak {
+        background: #ECFDF5;
+        border: 1.5px solid #6EE7B7;
+        border-radius: 10px;
+        padding: 16px 18px;
+        margin-bottom: 24px;
+    }
+
+    .kunci-kotak h3 {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #065F46;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .kunci-kotak .kunci {
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 19px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: #064E3B;
+        word-break: break-all;
+    }
+
+    .kunci-kotak p {
+        font-size: 12.5px;
+        color: #047857;
+        margin-top: 7px;
+        line-height: 1.5;
+    }
+
+    /* ---------------------------------------------------------- catatan */
+    .catatan-kotak {
+        background: #F8FAFC;
+        border-left: 4px solid var(--biru);
+        border-radius: 0 8px 8px 0;
+        padding: 14px 18px;
+        margin-bottom: 26px;
+    }
+
+    .catatan-kotak h4 {
+        font-size: 13px;
+        margin-bottom: 7px;
+        color: var(--tinta);
+    }
+
+    .catatan-kotak ol {
+        padding-left: 19px;
+        font-size: 13px;
+        color: var(--tinta-abu);
+        line-height: 1.65;
+    }
+
+    .catatan-kotak li { margin-bottom: 4px; }
+
+    /* ---------------------------------------------------------- tanda tangan */
+    .tanda {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 40px;
+        padding-top: 26px;
+        border-top: 1px solid var(--garis);
+    }
+
+    .tanda-ket {
+        font-size: 12.5px;
+        color: var(--tinta-abu);
+        line-height: 1.6;
+        max-width: 380px;
+    }
+
+    .tanda-tangan { text-align: center; min-width: 200px; }
+
+    .tanda-tangan .garis-tanda {
+        border-bottom: 1.5px solid var(--tinta);
+        height: 52px;
+        margin-bottom: 7px;
+    }
+
+    .tanda-tangan .nama-ttd {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--tinta);
+    }
+
+    .tanda-tangan .jabatan {
+        font-size: 12px;
+        color: var(--tinta-abu);
+    }
+
+    .kaki-kertas {
+        margin-top: 30px;
+        padding-top: 16px;
+        border-top: 1px solid var(--garis);
+        text-align: center;
+        font-size: 11.5px;
+        color: var(--tinta-abu);
+        line-height: 1.6;
+    }
+
+    .pesan {
+        max-width: 820px;
+        margin: 0 auto;
+        background: #FFFFFF;
+        border: 1px solid var(--garis);
+        border-radius: 12px;
+        padding: 52px 30px;
+        text-align: center;
+    }
+
+    .pesan h2 { font-size: 20px; margin-bottom: 10px; }
+    .pesan p { color: var(--tinta-abu); font-size: 14.5px; line-height: 1.65; }
+
+    .muat {
+        display: inline-block;
+        width: 17px;
+        height: 17px;
+        border: 2.5px solid var(--biru);
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: putar 0.85s linear infinite;
+        margin-right: 9px;
+        vertical-align: -3px;
+    }
+
+    @keyframes putar { to { transform: rotate(360deg); } }
+
+    /* ---------------------------------------------------------- cetak */
+    @page {
+        size: A4;
+        margin: 13mm;
+    }
+
+    @media print {
+        body {
+            background: #FFFFFF;
+            padding: 0;
+            font-size: 12px;
+        }
+
+        .alat { display: none !important; }
+
+        .kertas {
+            max-width: none;
+            border-radius: 0;
+            box-shadow: none;
+            padding: 0;
+            overflow: visible;
+        }
+
+        .pita {
+            position: static;
+            transform: none;
+            display: inline-block;
+            padding: 5px 14px;
+            border-radius: 6px;
+            margin-bottom: 14px;
+        }
+
+        .kepala { padding-bottom: 16px; margin-bottom: 18px; }
+        .merek img { width: 46px; height: 46px; }
+        .merek-nama { font-size: 18px; }
+        .dokumen h1 { font-size: 21px; }
+        .pihak-kisi { margin-bottom: 20px; gap: 24px; }
+        table.rincian tbody td { padding: 10px 12px; }
+        .jumlah-kotak { min-width: 250px; }
+        .catatan-kotak, .kunci-kotak { break-inside: avoid; }
+        .tanda { break-inside: avoid; }
+    }
+
+    @media (max-width: 640px) {
+        body { padding: 14px 10px 44px; }
+        .kertas { padding: 26px 20px 32px; }
+        .kepala { flex-direction: column; gap: 16px; }
+        .dokumen { text-align: left; }
+        .pita { position: static; transform: none; display: inline-block; padding: 5px 14px; border-radius: 6px; margin-bottom: 14px; }
+        .pihak-kisi { grid-template-columns: 1fr; gap: 18px; }
+        .tanda { flex-direction: column; align-items: flex-start; }
+        .jumlah-baris { justify-content: stretch; }
+        .jumlah-kotak { min-width: 0; width: 100%; }
+        .alat { justify-content: stretch; }
+        .alat-kiri { width: 100%; }
+        .alat button { flex: 1; justify-content: center; }
+    }
+</style>
+</head>
+<body>
+
+<div class="alat" id="alat" style="display: none;">
+    <div class="alat-kiri">
+        <a class="kembali" href="selesai.html" id="tautan-kembali">&larr; Kembali ke pesanan</a>
+    </div>
+    <div class="alat-kiri">
+        <button class="garis" id="tombol-salin" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Salin teks
+        </button>
+        <button id="tombol-cetak" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+            Cetak atau Simpan PDF
+        </button>
+    </div>
+</div>
+
+<div id="isi">
+    <div class="pesan">
+        <h2><span class="muat"></span> Menyiapkan kwitansi</h2>
+        <p>Mohon tunggu sebentar.</p>
+    </div>
+</div>
+
+<script>
+(function () {
+    var ALAMAT = "https://cumirppxywzkbrzlvknr.supabase.co/functions/v1/license";
+    var isi = document.getElementById("isi");
+    var alat = document.getElementById("alat");
+
+    var kode = new URLSearchParams(window.location.search).get("pesanan") || "";
+
+    function rupiah(n) {
+        return "Rp" + Number(n || 0).toLocaleString("id-ID");
+    }
+
+    function terbilang(n) {
+        var satuan = ["", "satu", "dua", "tiga", "empat", "lima", "enam",
+                      "tujuh", "delapan", "sembilan", "sepuluh", "sebelas"];
+        n = Math.floor(Number(n) || 0);
+
+        function hitung(x) {
+            if (x < 12) return satuan[x];
+            if (x < 20) return hitung(x - 10) + " belas";
+            if (x < 100) return hitung(Math.floor(x / 10)) + " puluh " + hitung(x % 10);
+            if (x < 200) return "seratus " + hitung(x - 100);
+            if (x < 1000) return hitung(Math.floor(x / 100)) + " ratus " + hitung(x % 100);
+            if (x < 2000) return "seribu " + hitung(x - 1000);
+            if (x < 1000000) return hitung(Math.floor(x / 1000)) + " ribu " + hitung(x % 1000);
+            if (x < 1000000000) return hitung(Math.floor(x / 1000000)) + " juta " + hitung(x % 1000000);
+            return hitung(Math.floor(x / 1000000000)) + " miliar " + hitung(x % 1000000000);
+        }
+
+        // Setiap bagian dipisah satu spasi saja supaya hasilnya rapi.
+        return hitung(n).replace(/\s+/g, " ").trim();
+    }
+
+    function tanggalPanjang(iso) {
+        if (!iso) return "-";
+        var d = new Date(iso);
+        if (isNaN(d)) return "-";
+        return d.toLocaleDateString("id-ID", {
+            day: "numeric", month: "long", year: "numeric"
+        });
+    }
+
+    function tanggalJam(iso) {
+        if (!iso) return "-";
+        var d = new Date(iso);
+        if (isNaN(d)) return "-";
+        return d.toLocaleDateString("id-ID", {
+            day: "2-digit", month: "short", year: "numeric"
+        }) + ", " + d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function aman(t) {
+        return String(t == null ? "" : t)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function gagal(judul, keterangan) {
+        isi.innerHTML = '<div class="pesan"><h2>' + aman(judul) + '</h2><p>' + aman(keterangan) + '</p></div>';
+    }
+
+    if (!kode) {
+        gagal("Kode pesanan tidak ada",
+              "Halaman ini memerlukan kode pesanan. Buka lewat tautan pada halaman pesanan Anda.");
+        return;
+    }
+
+    fetch(ALAMAT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aksi: "status", pesanan: kode })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+        if (!d.ok) {
+            gagal("Pesanan tidak ditemukan", d.pesan || "Kode pesanan tidak dikenali.");
+            return;
+        }
+
+        var r = d.rincian || {};
+        var lunas = d.status === "dibayar";
+        var batal = d.status === "dibatalkan";
+
+        var namaPaket = r.nama_paket || "AkunTuntas";
+        var jumlah = r.jumlah || d.jumlah || 0;
+        var nomorKwitansi = "KW/" + String(kode).replace(/^AT-/, "") + "/" + new Date().getFullYear();
+
+        var pitaKelas = lunas ? "" : (batal ? "batal" : "menunggu");
+        var pitaTeks = lunas ? "Lunas" : (batal ? "Dibatalkan" : "Belum Lunas");
+
+        var html = '';
+
+        html += '<div class="kertas">';
+        html += '<div class="pita ' + pitaKelas + '">' + pitaTeks + '</div>';
+
+        // ------------------------------------------------ kepala
+        html += '<div class="kepala">';
+        html += '<div class="merek"><img src="logo.png" alt="">';
+        html += '<div><div class="merek-nama">AkunTuntas</div>';
+        html += '<div class="merek-ket">Software Pembukuan &amp; Pajak<br>Xinet Group &middot; akuntuntas@gmail.com</div></div></div>';
+        html += '<div class="dokumen">';
+        html += '<h1>Kwitansi</h1>';
+        html += '<div class="nomor">' + aman(nomorKwitansi) + '</div>';
+        html += '<div class="tanggal">' + tanggalPanjang(lunas ? r.dibayar_pada : r.dibuat_pada) + '</div>';
+        html += '</div></div>';
+
+        // ------------------------------------------------ pihak
+        html += '<div class="pihak-kisi">';
+        html += '<div class="pihak"><h3>Diterima dari</h3>';
+        html += '<div class="nama">' + aman(r.nama_pembeli || d.nama_pembeli || "-") + '</div>';
+        if (r.nama_usaha) html += '<p>' + aman(r.nama_usaha) + '</p>';
+        if (r.email_pembeli) html += '<p>' + aman(r.email_pembeli) + '</p>';
+        if (r.whatsapp) html += '<p>WhatsApp: ' + aman(r.whatsapp) + '</p>';
+        html += '</div>';
+
+        html += '<div class="pihak"><h3>Keterangan pesanan</h3>';
+        html += '<div class="nama">' + aman(kode) + '</div>';
+        html += '<p>Dipesan: ' + tanggalJam(r.dibuat_pada) + '</p>';
+        if (lunas) html += '<p>Dibayar: ' + tanggalJam(r.dibayar_pada) + '</p>';
+        if (r.trx_pembayaran) html += '<p>Nomor transaksi: ' + aman(r.trx_pembayaran) + '</p>';
+        html += '</div></div>';
+
+        // ------------------------------------------------ rincian
+        html += '<table class="rincian"><thead><tr>';
+        html += '<th>Uraian</th><th class="kanan">Jumlah</th>';
+        html += '</tr></thead><tbody>';
+        html += '<tr><td>';
+        html += '<div class="item-nama">Lisensi ' + aman(namaPaket) + '</div>';
+        html += '<div class="item-ket">Lisensi sekali bayar, berlaku selamanya. ';
+        html += 'Berlaku untuk ' + (r.max_device || 1) + ' perangkat.</div>';
+        html += '</td><td class="kanan">' + rupiah(jumlah) + '</td></tr>';
+        html += '</tbody></table>';
+
+        // ------------------------------------------------ jumlah
+        html += '<div class="jumlah-baris"><div class="jumlah-kotak">';
+        html += '<div class="jumlah-baris-dalam"><span>Subtotal</span><span>' + rupiah(jumlah) + '</span></div>';
+        html += '<div class="jumlah-total"><span>TOTAL</span><span>' + rupiah(jumlah) + '</span></div>';
+        html += '</div></div>';
+
+        if (lunas) {
+            html += '<p style="font-size:13px;color:var(--tinta-abu);margin-bottom:24px;text-align:right;">';
+            html += 'Terbilang: <strong style="color:var(--tinta);">' + terbilang(jumlah) + ' rupiah</strong></p>';
+        }
+
+        // ------------------------------------------------ kunci lisensi
+        if (lunas && d.kunci) {
+            html += '<div class="kunci-kotak"><h3>Kunci Lisensi</h3>';
+            html += '<div class="kunci">' + aman(d.kunci) + '</div>';
+            html += '<p>Simpan kunci ini. Kunci yang sama dipakai saat memasang aplikasi di komputer Anda.</p>';
+            html += '</div>';
+        }
+
+        // ------------------------------------------------ catatan
+        html += '<div class="catatan-kotak">';
+        if (lunas) {
+            html += '<h4>Yang perlu Anda lakukan</h4><ol>';
+            html += '<li>Unduh pemasang Windows dari halaman unduhan.</li>';
+            html += '<li>Jalankan pemasang, lalu masukkan kunci lisensi di atas pada layar aktivasi.</li>';
+            html += '<li>Aktivasi memerlukan internet sebentar saja. Setelah aktif, aplikasi berjalan penuh tanpa internet.</li>';
+            html += '</ol>';
+        } else if (batal) {
+            html += '<h4>Pesanan dibatalkan</h4>';
+            html += '<p style="font-size:13px;color:var(--tinta-abu);">Pesanan ini sudah dibatalkan dan tidak ada biaya yang dikenakan.</p>';
+        } else {
+            html += '<h4>Menunggu pembayaran</h4>';
+            html += '<p style="font-size:13px;color:var(--tinta-abu);">Kwitansi ini akan berstatus lunas setelah pembayaran terkonfirmasi. Kunci lisensi akan muncul di halaman pesanan Anda.</p>';
+        }
+        html += '</div>';
+
+        // ------------------------------------------------ tanda tangan
+        html += '<div class="tanda">';
+        html += '<div class="tanda-ket">';
+        html += 'Kwitansi ini dibuat otomatis oleh sistem dan sah tanpa tanda tangan basah. ';
+        html += 'Simpan sebagai bukti pembelian yang sah.<br><br>';
+        html += 'Butuh faktur pajak? Hubungi akuntuntas@gmail.com dengan menyebutkan nomor pesanan di atas.';
+        html += '</div>';
+        html += '<div class="tanda-tangan">';
+        html += '<div class="garis-tanda"></div>';
+        html += '<div class="nama-ttd">Xinet Group</div>';
+        html += '<div class="jabatan">Penerbit lisensi</div>';
+        html += '</div></div>';
+
+        // ------------------------------------------------ kaki
+        html += '<div class="kaki-kertas">';
+        html += 'Dokumen ini dihasilkan pada ' + tanggalJam(new Date().toISOString()) + '. ';
+        html += 'Hak cipta &copy; 2026 Xinet Group. Seluruh hak cipta dilindungi.';
+        html += '</div>';
+
+        html += '</div>';
+
+        isi.innerHTML = html;
+        alat.style.display = "flex";
+
+        document.getElementById("tautan-kembali").href = "selesai.html?pesanan=" + encodeURIComponent(kode);
+
+        document.getElementById("tombol-cetak").addEventListener("click", function () {
+            window.print();
+        });
+
+        document.getElementById("tombol-salin").addEventListener("click", function () {
+            var tombol = this;
+            var baris = [
+                "KWITANSI PEMBELIAN AKUNTUNTAS",
+                "Nomor      : " + nomorKwitansi,
+                "Tanggal    : " + tanggalPanjang(lunas ? r.dibayar_pada : r.dibuat_pada),
+                "Pesanan    : " + kode,
+                "Pembeli    : " + (r.nama_pembeli || d.nama_pembeli || "-"),
+                r.nama_usaha ? "Usaha      : " + r.nama_usaha : "",
+                r.email_pembeli ? "Email      : " + r.email_pembeli : "",
+                "",
+                "Uraian     : Lisensi " + namaPaket + " (" + (r.max_device || 1) + " perangkat)",
+                "Jumlah     : " + rupiah(jumlah),
+                "Terbilang  : " + terbilang(jumlah) + " rupiah",
+                "Status     : " + pitaTeks,
+                d.kunci ? "Kunci      : " + d.kunci : "",
+                "",
+                "Penerbit   : Xinet Group - akuntuntas@gmail.com"
+            ].filter(function (x) { return x !== ""; }).join("\n");
+
+            var selesai = function () {
+                tombol.textContent = "Tersalin";
+                setTimeout(function () {
+                    tombol.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;stroke:currentColor"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Salin teks';
+                }, 2000);
+            };
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(baris).then(selesai, function () { alert("Gagal menyalin."); });
+            } else {
+                var t = document.createElement("textarea");
+                t.value = baris;
+                document.body.appendChild(t);
+                t.select();
+                document.execCommand("copy");
+                document.body.removeChild(t);
+                selesai();
+            }
+        });
+    })
+    .catch(function () {
+        gagal("Tidak dapat memuat kwitansi",
+              "Periksa sambungan internet Anda, lalu muat ulang halaman ini.");
+    });
+})();
+</script>
+
+</body>
+</html>

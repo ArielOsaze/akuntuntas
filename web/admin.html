@@ -929,7 +929,7 @@
             } else {
                 html += '<div class="admin-tabel-wadah"><table class="admin-tabel"><thead><tr>' +
                     '<th>Kode</th><th>Pembeli</th><th>Paket</th><th>Jumlah</th>' +
-                    '<th>Status</th><th>Dibuat</th><th>Dibayar</th></tr></thead><tbody>';
+                    '<th>Status</th><th>Dibuat</th><th>Dibayar</th><th></th></tr></thead><tbody>';
                 daftar.forEach(function (p) {
                     var kelas = p.status === "dibayar" ? "dibayar" : (p.status === "dibatalkan" ? "dibatalkan" : "menunggu");
                     html += '<tr><td class="kunci">' + aman(p.order_code) + '</td>' +
@@ -938,7 +938,8 @@
                         '<td class="kanan">' + rupiah(p.jumlah) + '</td>' +
                         '<td><span class="admin-pil ' + kelas + '">' + aman(p.status) + '</span></td>' +
                         '<td>' + tanggal(p.dibuat_pada) + '</td>' +
-                        '<td>' + tanggal(p.dibayar_pada) + '</td></tr>';
+                        '<td>' + tanggal(p.dibayar_pada) + '</td>' +
+                        '<td><a class="admin-tombol garis kecil" style="text-decoration:none;" href="kwitansi.html?pesanan=' + encodeURIComponent(p.order_code) + '" target="_blank" rel="noopener">Kwitansi</a></td></tr>';
                 });
                 html += '</tbody></table></div>';
             }
