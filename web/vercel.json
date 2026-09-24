@@ -17,13 +17,13 @@
       ]
     },
     {
-      "source": "/logo.svg",
+      "source": "/styles.css",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=604800" }
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
       ]
     },
     {
-      "source": "/styles.css",
+      "source": "/logo.svg",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=604800" }
       ]

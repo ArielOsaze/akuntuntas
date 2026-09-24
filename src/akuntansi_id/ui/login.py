@@ -44,9 +44,18 @@ def capslock_menyala() -> bool:
 class BrandPanel(QFrame):
     """Panel gelap berisi nama aplikasi dan penjelasan singkat."""
 
+    # Lebar panel merek: dipakai bila jendela lapang.
+    LEBAR_INGIN = 452
+
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedWidth(452)
+        # Panel merek memakai lebar 452 piksel bila ruang mencukupi, tetapi
+        # boleh menyusut sampai 380 piksel pada jendela sempit. Di bawah
+        # 380 piksel teks penjelasannya mulai terpotong, jadi batas itu
+        # tidak diturunkan.
+        self.setMinimumWidth(380)
+        self.setMaximumWidth(452)
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         theme.latar(self, f"background: {C.SIDEBAR_BG}; border: none;")
 
         lay = QVBoxLayout(self)
@@ -181,6 +190,19 @@ class BrandPanel(QFrame):
                               "line-height: 145%;")
         lay.addWidget(catatan)
 
+    def sizeHint(self):
+        """
+        Lebar yang diinginkan panel merek.
+
+        Qt memakai isyarat ini untuk membagi ruang antara panel merek dan
+        formulir. Tanpa isyarat ini, panel akan memakai ukuran minimumnya
+        (380 piksel) meskipun jendela lapang, sehingga panel merek tampak
+        lebih sempit daripada rancangannya.
+        """
+        ukuran = super().sizeHint()
+        ukuran.setWidth(self.LEBAR_INGIN)
+        return ukuran
+
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
@@ -211,7 +233,10 @@ class LoginPage(QWidget):
         kanan = QWidget()
         theme.latar(kanan, f"background: {C.SURFACE};")
         kl = QVBoxLayout(kanan)
-        kl.setContentsMargins(64, 60, 64, 60)
+        # Bantalan samping form menyesuaikan lebar jendela: 64 piksel bila
+        # lapang, dan menyusut sampai 36 piksel pada jendela sempit supaya
+        # formulir selebar 400 piksel tetap mendapat ruang penuh.
+        kl.setContentsMargins(36, 40, 36, 40)
         kl.setSpacing(0)
         kl.addStretch()
 

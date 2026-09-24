@@ -516,7 +516,25 @@ body {
     color: var(--teks-abu);
     font-size: 15px;
     max-width: 620px;
-    margin: 0 auto 28px;
+    margin: 0 auto 16px;
+}
+
+/* Keterangan lambang, supaya pengunjung langsung tahu arti centang
+   dan silang tanpa harus menebak. */
+.banding-legenda {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px 26px;
+    margin: 0 0 26px;
+    font-size: 14px;
+    color: var(--teks-abu);
+}
+
+.banding-legenda > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .banding-tabel-wadah {
@@ -530,7 +548,7 @@ body {
 .banding-tabel {
     width: 100%;
     border-collapse: collapse;
-    min-width: 640px;
+    min-width: 660px;
 }
 
 .banding-tabel thead th {
@@ -539,28 +557,30 @@ body {
     font-weight: 700;
     color: var(--teks);
     text-align: left;
-    padding: 16px 20px;
+    padding: 18px 22px;
     border-bottom: 1.5px solid var(--garis);
 }
 
 .banding-tabel thead th.kolom-fitur {
-    width: 46%;
+    width: 52%;
 }
 
 .banding-tabel thead th.kolom-paket {
-    width: 27%;
+    width: 24%;
     text-align: center;
     font-size: 15px;
 }
 
 .banding-tabel thead th.kolom-paket.unggulan {
     color: var(--biru);
-    background: rgba(27, 79, 138, 0.07);
+    background: rgba(27, 79, 138, 0.09);
+    box-shadow: inset 0 3px 0 var(--biru);
 }
 
 .banding-tabel tbody td {
-    padding: 13px 20px;
-    font-size: 14.5px;
+    padding: 15px 22px;
+    font-size: 15px;
+    line-height: 1.55;
     color: var(--teks);
     border-bottom: 1px solid var(--garis);
     vertical-align: middle;
@@ -573,7 +593,55 @@ body {
 }
 
 .banding-tabel tbody td:nth-child(3) {
-    background: rgba(27, 79, 138, 0.035);
+    background: rgba(27, 79, 138, 0.04);
+}
+
+/* Tanda ketersediaan: bulatan berisi centang atau silang.
+   Lambangnya dari huruf, bukan gambar, agar tetap tajam di semua ukuran
+   layar dan tetap terbaca oleh pembaca layar lewat aria-label. */
+.banding-tabel .tanda,
+.banding-legenda .tanda {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.banding-tabel td.ada .tanda,
+.banding-legenda .ada-tanda {
+    background: #E3F3EA;
+    color: #05663F;
+}
+
+.banding-tabel td.tidak .tanda,
+.banding-legenda .tidak-tanda {
+    background: #EFF2F5;
+    color: #6B7A8A;
+}
+
+.banding-tabel td.ada {
+    color: #05663F;
+    font-weight: 600;
+}
+
+.banding-tabel td.tidak {
+    color: #5A6B7D;
+}
+
+/* Belang baris tipis membantu mata tetap pada baris yang sama saat
+   bergerak dari nama fitur ke kolom paket di seberangnya. Ditulis
+   sebelum aturan judul kelompok supaya warna judul tidak tertimpa. */
+.banding-tabel tbody tr:nth-child(even) td {
+    background: #FBFCFD;
+}
+
+.banding-tabel tbody tr:nth-child(even) td:nth-child(3) {
+    background: rgba(27, 79, 138, 0.07);
 }
 
 .banding-tabel tbody tr:hover td {
@@ -581,33 +649,22 @@ body {
 }
 
 .banding-tabel tbody tr:hover td:nth-child(3) {
-    background: rgba(27, 79, 138, 0.09);
+    background: rgba(27, 79, 138, 0.11);
 }
 
-.banding-tabel tr.baris-kelompok td {
+/* Judul kelompok ditulis paling akhir agar warnanya tidak tertimpa
+   belang baris maupun sorotan saat penunjuk melintas. */
+.banding-tabel tr.baris-kelompok td,
+.banding-tabel tr.baris-kelompok:hover td {
     background: var(--navy);
     color: var(--putih);
     font-size: 12.5px;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    padding: 10px 20px;
-}
-
-.banding-tabel tr.baris-kelompok:hover td { background: var(--navy); }
-
-.banding-tabel td.ada {
-    color: var(--hijau);
-    font-weight: 600;
-}
-
-.banding-tabel td.tidak {
-    color: #6B7A8A;
-}
-
-.banding-tabel td.tidak::before {
-    content: "\2014\00a0";
-    color: #A9B4C0;
+    padding: 11px 22px;
+    border-bottom: none;
+    text-align: left;
 }
 
 .banding-catatan {

@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import Optional
 
 from PySide6.QtCore import Qt, Signal, QSize
-from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtGui import QAction, QKeySequence, QGuiApplication
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QStackedWidget, QFrame, QScrollArea, QStatusBar, QMessageBox, QApplication,
@@ -1166,8 +1166,7 @@ class JendelaAplikasi(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(config.APP_LONG_NAME)
-        self.resize(1120, 720)
-        self.setMinimumSize(920, 620)
+        self._pasang_ukuran()
 
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
@@ -1213,6 +1212,47 @@ class JendelaAplikasi(QMainWindow):
         """Dipanggil setelah lisensi berhasil diaktifkan."""
         self.lisensi = lisensi
         self._siapkan_login()
+
+    def _pasang_ukuran(self):
+        """
+        Tentukan ukuran jendela masuk menurut besar layar yang tersedia.
+
+        Jendela masuk memuat dua panel berdampingan: panel merek selebar
+        452 piksel dan formulir selebar 400 piksel beserta bantalannya,
+        sehingga memerlukan sekitar 980 piksel. Pada layar kecil, jendela
+        yang dipaksa selebar 1120 piksel akan melewati tepi layar dan
+        bagian kanannya tidak terjangkau.
+
+        Karena itu ukurannya disesuaikan: dipakai 1120x720 bila layar
+        mencukupi, dan diperkecil hingga paling sempit 920x620 bila layar
+        lebih kecil. Tinggi jendela tidak pernah melebihi ruang yang
+        tersedia setelah dikurangi bilah tugas Windows.
+        """
+        sempit, tinggi_kecil = 920, 620
+        lebar_baku, tinggi_baku = 1120, 720
+
+        layar = QGuiApplication.primaryScreen()
+        if layar is None:
+            self.resize(lebar_baku, tinggi_baku)
+            self.setMinimumSize(sempit, tinggi_kecil)
+            return
+
+        ruang = layar.availableGeometry()
+        # Sisakan sedikit tepi supaya jendela tidak menempel ke pinggir.
+        lebar_muat = min(lebar_baku, max(1, ruang.width() - 40))
+        tinggi_muat = min(tinggi_baku, max(1, ruang.height() - 40))
+
+        # Ukuran minimum tidak boleh melebihi ruang layar. Pada layar yang
+        # lebih kecil dari ukuran baku, batas minimum diturunkan mengikuti
+        # ruang yang ada, karena jendela yang lebih besar dari layar tidak
+        # dapat dijangkau pengguna. Halaman masuk sendiri sudah diuji muat
+        # pada ukuran 920x620, dan pada layar yang lebih kecil isinya
+        # digulirkan oleh tata letak Qt.
+        lebar_min = min(sempit, lebar_muat)
+        tinggi_min = min(tinggi_kecil, tinggi_muat)
+
+        self.resize(lebar_muat, tinggi_muat)
+        self.setMinimumSize(lebar_min, tinggi_min)
 
     def _siapkan_login(self):
         """Siapkan halaman masuk, sekali saja."""
