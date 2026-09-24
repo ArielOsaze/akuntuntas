@@ -51,6 +51,11 @@ from .pages.tata_kelola import (PenggunaPage, AuditPage, RecycleBinPage,
 from .pages.entitas import (DimensiPage, KonsolidasiPage, PeriodePage, LanPage)
 
 
+# Alamat halaman kebijakan privasi. Alamat ini juga didaftarkan ke Microsoft
+# Store, jadi bila situsnya berpindah, ubah di sini dan di web/privasi.html.
+ALAMAT_PRIVASI = "https://akuntuntas.xinet.id/privasi"
+
+
 # ==========================================================================
 # KONTEKS APLIKASI
 # ==========================================================================
@@ -937,7 +942,19 @@ class MainWindow(QMainWindow):
         aksi(m_bantuan, "Pencarian Global", lambda: self._navigasi("pencarian"),
              "Ctrl+F", "pencarian")
         m_bantuan.addSeparator()
+        aksi(m_bantuan, "Kebijakan Privasi", self._buka_privasi, None, "info")
         aksi(m_bantuan, f"Tentang {config.APP_NAME}", self._tentang, None, "info")
+
+    def _buka_privasi(self):
+        """
+        Buka halaman kebijakan privasi di peramban bawaan pengguna.
+
+        Halaman ini juga menjadi alamat yang didaftarkan ke Microsoft Store,
+        jadi isinya harus sama dengan yang ada di situs.
+        """
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices
+        QDesktopServices.openUrl(QUrl(ALAMAT_PRIVASI))
 
     def _tentang(self):
         QMessageBox.about(
@@ -949,6 +966,8 @@ class MainWindow(QMainWindow):
             f"menengah, hingga perseroan terbatas di Indonesia.</p>"
             f"<p><b>Data tersimpan lokal:</b> {config.DATA_DIR}<br>"
             f"Tidak ada data yang dikirim ke internet.</p>"
+            f"<p>Kebijakan privasi:<br>"
+            f"<a href='{ALAMAT_PRIVASI}'>{ALAMAT_PRIVASI}</a></p>"
             f"<p style='color:#64748B;font-size:11px'>Aplikasi ini membantu "
             f"administrasi dan estimasi. Transaksi khusus dan interpretasi regulasi "
             f"tetap perlu diverifikasi sesuai fakta dan ketentuan terbaru.</p>")

@@ -1,6 +1,12 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/api/lisensi",
+      "destination": "https://cumirppxywzkbrzlvknr.supabase.co/functions/v1/license"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
