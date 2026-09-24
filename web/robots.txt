@@ -1,0 +1,16 @@
+# Arahan untuk mesin pencari situs AkunTuntas.
+# Situs ini terbuka untuk umum, jadi seluruh halaman boleh didata.
+
+User-agent: *
+Allow: /
+
+# Halaman yang isinya bergantung pada sesi pengunjung tidak perlu didata:
+# halaman admin, halaman kwitansi pesanan, dan halaman hasil pembayaran.
+Disallow: /admin
+Disallow: /kwitansi
+Disallow: /selesai
+Disallow: /batal
+Disallow: /api/
+
+# Alamat sitemap, supaya mesin pencari dapat menemukan daftar halaman.
+Sitemap: https://akuntuntas.xinet.id/sitemap.xml

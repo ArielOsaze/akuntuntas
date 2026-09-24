@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+    <!--
+        Daftar halaman situs AkunTuntas untuk mesin pencari.
+        Halaman admin, kwitansi, dan halaman hasil pembayaran tidak
+        didaftarkan karena isinya bergantung pada sesi pengunjung dan
+        tidak layak muncul di hasil pencarian.
+    -->
+
+    <url>
+        <loc>https://akuntuntas.xinet.id/</loc>
+        <lastmod>2026-09-24</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+        <image:image>
+            <image:loc>https://akuntuntas.xinet.id/pratinjau.png</image:loc>
+            <image:title>AkunTuntas - Pembukuan dan Pajak Perusahaan Indonesia</image:title>
+        </image:image>
+    </url>
+
+    <url>
+        <loc>https://akuntuntas.xinet.id/unduh</loc>
+        <lastmod>2026-09-24</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <url>
+        <loc>https://akuntuntas.xinet.id/beli</loc>
+        <lastmod>2026-09-24</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <url>
+        <loc>https://akuntuntas.xinet.id/privasi</loc>
+        <lastmod>2026-09-24</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.4</priority>
+    </url>
+
+</urlset>

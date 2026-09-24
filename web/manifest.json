@@ -1,0 +1,41 @@
+{
+  "name": "AkunTuntas - Pembukuan & Pajak Perusahaan Indonesia",
+  "short_name": "AkunTuntas",
+  "description": "Aplikasi pembukuan dan perpajakan untuk UMKM, PT Perorangan, dan PT di Indonesia.",
+  "lang": "id",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0F2942",
+  "theme_color": "#1B4F8A",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    {
+      "src": "logo-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "logo-64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "logo-128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "logo-256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
