@@ -782,6 +782,16 @@
     }
 
     // ------------------------------------------------------------ lisensi
+    // Alasan pencabutan dipilih dari daftar, bukan diketik bebas, supaya
+    // jejaknya seragam dan mudah ditelusuri saat ada sengketa.
+    var ALASAN_CABUT = [
+        "Penyalahgunaan lisensi",
+        "Lisensi diperjualbelikan kembali",
+        "Pembayaran dibatalkan atau dikembalikan",
+        "Permintaan pemilik lisensi",
+        "Pelanggaran ketentuan pemakaian"
+    ];
+
     function muatLisensi(cari) {
         panggil({ aksi: "admin-lisensi", token: token, cari: cari || "" }).then(function (d) {
             if (!d.ok) { if (!gagalSesi(d)) isi.innerHTML = '<div class="admin-kosong">' + aman(d.pesan) + '</div>'; return; }
@@ -800,13 +810,16 @@
                     '<th>Status</th><th>Diterbitkan</th><th></th></tr></thead><tbody>';
                 daftar.forEach(function (l) {
                     var kelas = l.status === "aktif" ? "aktif" : (l.status === "dicabut" ? "dicabut" : "ditangguhkan");
+                    var aksi = l.status === "aktif"
+                        ? '<button class="admin-tombol kecil bahaya" data-cabut="' + aman(l.kunci) + '" type="button">Cabut</button>'
+                        : '<button class="admin-tombol garis kecil" data-aktifkan="' + aman(l.kunci) + '" type="button">Aktifkan</button>';
                     html += '<tr><td class="kunci">' + aman(l.kunci) + '</td>' +
                         '<td>' + aman(l.product_code) + '</td>' +
                         '<td>' + aman(l.pemilik_nama || "-") + '<br><span style="color:#7E8FA3;font-size:12.5px;">' + aman(l.pemilik_email || "") + '</span></td>' +
                         '<td class="kanan">' + (l.perangkat_terpakai || 0) + '</td>' +
                         '<td><span class="admin-pil ' + kelas + '">' + aman(l.status) + '</span></td>' +
                         '<td>' + tanggal(l.diterbitkan_pada) + '</td>' +
-                        '<td><button class="admin-tombol garis kecil" data-ubah="' + aman(l.kunci) + '" data-status="' + aman(l.status) + '" type="button">Ubah</button></td></tr>';
+                        '<td>' + aksi + '</td></tr>';
                 });
                 html += '</tbody></table></div>';
             }
@@ -820,9 +833,14 @@
                 if (e.key === "Enter") muatLisensi(inp.value.trim());
             });
 
-            isi.querySelectorAll("[data-ubah]").forEach(function (b) {
+            isi.querySelectorAll("[data-cabut]").forEach(function (b) {
                 b.addEventListener("click", function () {
-                    ubahLisensi(b.dataset.ubah, b.dataset.status);
+                    bukaCabut(b.dataset.cabut);
+                });
+            });
+            isi.querySelectorAll("[data-aktifkan]").forEach(function (b) {
+                b.addEventListener("click", function () {
+                    ubahStatus(b.dataset.aktifkan, "aktif", "");
                 });
             });
         }).catch(function () {
@@ -830,29 +848,74 @@
         });
     }
 
-    function ubahLisensi(kunci, statusSekarang) {
-        var pilihan = statusSekarang === "aktif"
-            ? "dicabut|dicabut (perangkat dilepas)"
-            : "aktif|aktifkan kembali";
-        var jawab = window.prompt(
-            "Ubah status lisensi " + kunci + "\n\nKetik salah satu:\n" +
-            "  aktif          - lisensi berlaku\n" +
-            "  ditangguhkan   - sementara tidak berlaku\n" +
-            "  dicabut        - tidak berlaku selamanya\n\n" +
-            "Status sekarang: " + statusSekarang,
-            statusSekarang
-        );
-        if (!jawab) return;
-        jawab = jawab.trim().toLowerCase();
-        if (["aktif", "ditangguhkan", "dicabut"].indexOf(jawab) < 0) {
-            alert("Status harus salah satu dari: aktif, ditangguhkan, dicabut.");
-            return;
-        }
-        panggil({ aksi: "admin-ubah-lisensi", token: token, kunci: kunci, status: jawab })
-            .then(function (d) {
-                if (!d.ok) { if (!gagalSesi(d)) alert(d.pesan || "Gagal mengubah status."); return; }
+    // ------------------------------------------------------- cabut lisensi
+    function bukaCabut(kunci) {
+        var opsi = ALASAN_CABUT.map(function (a, i) {
+            return '<option value="' + aman(a) + '">' + aman(a) + '</option>';
+        }).join("");
+
+        var html = '<div class="admin-panel"><div class="admin-panel-kepala">' +
+            '<h2>Cabut Lisensi</h2></div>' +
+            '<div class="admin-panel-isi">' +
+            '<p style="margin:0 0 18px;line-height:1.65;color:#3C4E60;">' +
+            'Lisensi <strong>' + aman(kunci) + '</strong> akan dicabut. ' +
+            'Setelah dicabut, pemakainya tidak dapat membuka aplikasi lagi. ' +
+            'Saat aplikasi dibuka dan menyambung ke server, lisensi ini akan ' +
+            'ditolak dan pemakainya melihat keterangan pencabutan.' +
+            '</p>' +
+            '<div style="margin-bottom:16px;">' +
+            '<label style="display:block;font-size:13.5px;font-weight:600;margin-bottom:6px;">Alasan pencabutan</label>' +
+            '<select class="admin-pilih" id="cabut-alasan">' + opsi + '</select></div>' +
+            '<div style="margin-bottom:20px;">' +
+            '<label style="display:block;font-size:13.5px;font-weight:600;margin-bottom:6px;">Catatan tambahan (boleh dikosongkan)</label>' +
+            '<input class="admin-isian" id="cabut-catatan" type="text" placeholder="mis. nomor tiket atau tanggal kejadian"></div>' +
+            '<div class="admin-aksi">' +
+            '<button class="admin-tombol bahaya" id="cabut-jadi" type="button">Cabut Lisensi</button>' +
+            '<button class="admin-tombol garis" id="cabut-batal" type="button">Batal</button>' +
+            '</div></div></div>';
+
+        isi.innerHTML = html;
+
+        document.getElementById("cabut-batal").addEventListener("click", function () {
+            muatLisensi();
+        });
+        document.getElementById("cabut-jadi").addEventListener("click", function () {
+            var alasan = document.getElementById("cabut-alasan").value;
+            var catatan = document.getElementById("cabut-catatan").value.trim();
+            var penuh = catatan ? alasan + " - " + catatan : alasan;
+
+            var tombol = document.getElementById("cabut-jadi");
+            tombol.disabled = true;
+            tombol.textContent = "Mencabut...";
+
+            ubahStatus(kunci, "dicabut", penuh, function () {
                 muatLisensi();
+            }, function () {
+                tombol.disabled = false;
+                tombol.textContent = "Cabut Lisensi";
             });
+        });
+    }
+
+    // ------------------------------------------------------ ubah status
+    function ubahStatus(kunci, status, catatan, selesai, gagal) {
+        panggil({
+            aksi: "admin-ubah-lisensi",
+            token: token,
+            kunci: kunci,
+            status: status,
+            catatan: catatan || ""
+        }).then(function (d) {
+            if (!d.ok) {
+                if (!gagalSesi(d)) alert(d.pesan || "Gagal mengubah status.");
+                if (gagal) gagal();
+                return;
+            }
+            if (selesai) selesai();
+        }).catch(function () {
+            alert("Tidak dapat menghubungi server.");
+            if (gagal) gagal();
+        });
     }
 
     // ------------------------------------------------------------ buat

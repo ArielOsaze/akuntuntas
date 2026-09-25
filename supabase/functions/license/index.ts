@@ -1019,6 +1019,10 @@ async function tangani(req: Request): Promise<Response> {
 
     const kunci = normalisasiKunci(isi.kunci || "");
     const statusBaru = (isi.status || "").trim().toLowerCase();
+    // Catatan diisi alasan pencabutan dari dashboard. Isinya ikut
+    // tersimpan di jejak supaya alasan pencabutan dapat ditelusuri
+    // kembali saat ada sengketa.
+    const catatan = (isi.catatan || "").trim().slice(0, 300);
 
     if (!kunci || !["aktif", "ditangguhkan", "dicabut"].includes(statusBaru)) {
       return balas({ ok: false, pesan: "Kunci dan status wajib diisi dengan benar." }, 400);
@@ -1044,7 +1048,8 @@ async function tangani(req: Request): Promise<Response> {
 
     await catatJejak(
       db, akun.email, "ubah-lisensi",
-      `${tampilkanKunci(kunci)} menjadi ${statusBaru}`,
+      `${tampilkanKunci(kunci)} menjadi ${statusBaru}` +
+        (catatan ? ` (${catatan})` : ""),
     );
 
     return balas({ ok: true, pesan: `Status lisensi diubah menjadi ${statusBaru}.` });

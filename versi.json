@@ -1,6 +1,6 @@
 {
-  "versi": "1.0.4",
+  "versi": "1.0.5",
   "build": "2026.09",
   "tanggal": "2026-09-25",
-  "catatan": "Perbaikan tampilan: keterangan tabel kosong, penilaian kesehatan saat belum ada transaksi, dan grafik tanpa data"
+  "catatan": "Validasi lisensi senyap saat masuk dan pencabutan lisensi dari dashboard admin"
 }

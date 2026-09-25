@@ -1258,6 +1258,7 @@ class JendelaAplikasi(QMainWindow):
         """Siapkan halaman masuk, sekali saja."""
         if self.halaman_login is not None:
             self.stack.setCurrentWidget(self.halaman_login)
+            self._periksa_lisensi_senyap()
             return
 
         from .login import LoginPage
@@ -1265,6 +1266,72 @@ class JendelaAplikasi(QMainWindow):
         self.halaman_login.berhasil.connect(self._setelah_login)
         self.stack.addWidget(self.halaman_login)
         self.stack.setCurrentWidget(self.halaman_login)
+        self._periksa_lisensi_senyap()
+
+    def _periksa_lisensi_senyap(self):
+        """
+        Periksa lisensi ke server saat halaman masuk dibuka.
+
+        Pemeriksaan berjalan di latar belakang sehingga jendela masuk tidak
+        pernah menunggu. Inilah yang membuat pencabutan lisensi berlaku:
+        tanpa pemeriksaan ini, lisensi yang sudah dicabut tetap dapat
+        dipakai karena aplikasi tidak pernah menghubungi server.
+
+        Bila internet tidak tersedia, aplikasi tetap dapat dipakai. Yang
+        dihentikan hanya lisensi yang memang ditolak server.
+        """
+        # Mode uji coba tidak diperiksa, karena memang tidak memakai lisensi.
+        from ..core import uji_coba
+        if uji_coba.aktif(config.DATA_DIR):
+            return
+
+        # Jangan periksa dua kali bila pemeriksaan sebelumnya belum selesai.
+        if getattr(self, "_pemeriksa", None) is not None:
+            if self._pemeriksa.isRunning():
+                return
+
+        from .periksa_lisensi import PemeriksaLisensi
+
+        self._pemeriksa = PemeriksaLisensi(config.DATA_DIR, self)
+        self._pemeriksa.selesai.connect(self._hasil_periksa_lisensi)
+        self._pemeriksa.start()
+
+    def _hasil_periksa_lisensi(self, berlaku: bool, pesan: str,
+                               ditolak: bool):
+        """Tindak lanjuti hasil pemeriksaan lisensi."""
+        if berlaku:
+            # Lisensi masih sah. Bila ada keterangan, hanya dicatat, karena
+            # gangguan sambungan bukan alasan menghentikan pengguna.
+            if pesan:
+                try:
+                    LIS._catat(f"Pemeriksaan lisensi saat masuk: {pesan}")
+                except Exception:
+                    pass
+            return
+
+        if not ditolak:
+            return
+
+        # Lisensi dicabut atau ditangguhkan server. Tampilkan keterangannya
+        # lalu kembalikan ke layar aktivasi, supaya pengguna tahu sebabnya
+        # dan dapat menempuh langkah berikutnya.
+        from PySide6.QtWidgets import QMessageBox
+
+        QMessageBox.critical(
+            self, "Lisensi tidak berlaku lagi",
+            f"{pesan}\n\n"
+            "Aplikasi tidak dapat dipakai dengan lisensi ini.\n\n"
+            "Langkah yang dapat ditempuh:\n"
+            "1. Hubungi penjual untuk memeriksa keadaan lisensi Anda\n"
+            "2. Bila lisensi diaktifkan kembali, masuk kembali ke aplikasi\n"
+            "3. Bila Anda memindahkan aplikasi ke komputer lain, lepas dulu\n"
+            "   perangkat lama melalui menu Pengaturan")
+
+        # Bersihkan halaman masuk supaya tidak ada sisa data sesi lama.
+        self.halaman_login = None
+        if hasattr(self, "_pemeriksa"):
+            self._pemeriksa = None
+        self._tampilkan_aktivasi(pesan)
 
     def _setelah_login(self, hasil: sec.LoginResult):
         # belum ada perusahaan  tetap ke pemilihan mode dulu
