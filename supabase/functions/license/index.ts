@@ -1229,6 +1229,11 @@ async function tangani(req: Request): Promise<Response> {
 
   const kunciLisensi = normalisasiKunci(isi.kunci || "");
   const sidik = (isi.sidik || "").trim();
+  // Sidik versi lama ikut diterima agar lisensi yang sudah terbit dan
+  // sudah terdaftar sebelum nomor seri cakram dipakai tidak dianggap
+  // sebagai perangkat baru. Tanpa ini, pelanggan lama akan ditolak saat
+  // memperbarui aplikasi.
+  const sidikLama = (isi.sidik_lama || "").trim();
   const namaPerangkat = (isi.nama_perangkat || "").slice(0, 120);
   const osInfo = (isi.os_info || "").slice(0, 120);
   const versiApp = (isi.versi_app || "").slice(0, 40);
@@ -1236,6 +1241,11 @@ async function tangani(req: Request): Promise<Response> {
   if (!kunciLisensi || !sidik) {
     return balas({ ok: false, pesan: "Kunci lisensi dan sidik perangkat wajib" }, 400);
   }
+
+  /** Apakah baris aktivasi mewakili perangkat ini. */
+  const perangkatIni = (d: { device_fingerprint: string }) =>
+    d.device_fingerprint === sidik ||
+    (!!sidikLama && d.device_fingerprint === sidikLama);
 
   // ---------------------------------------------------------- cari lisensi
   const { data: lisensi, error: galatLisensi } = await db
@@ -1297,7 +1307,7 @@ async function tangani(req: Request): Promise<Response> {
     .eq("aktif", true);
 
   const daftar = terdaftar || [];
-  const iniSudahAda = daftar.find((d) => d.device_fingerprint === sidik);
+  const iniSudahAda = daftar.find(perangkatIni);
   const terpakai = daftar.length;
 
   // ---------------------------------------------------------- lepas perangkat
@@ -1327,14 +1337,23 @@ async function tangani(req: Request): Promise<Response> {
 
   // ---------------------------------------------------------- daftarkan
   if (iniSudahAda) {
+    // Bila perangkat dikenali lewat sidik versi lama, sidiknya dinaikkan
+    // ke versi baru supaya pengikatan berikutnya memakai ciri perangkat
+    // yang lebih sukar ditiru.
+    const naikkanSidik = iniSudahAda.device_fingerprint !== sidik;
     await db.from("activations")
       .update({
         terakhir_dilihat: new Date().toISOString(),
         app_version: versiApp,
         device_name: namaPerangkat,
         os_info: osInfo,
+        ...(naikkanSidik ? { device_fingerprint: sidik } : {}),
       })
       .eq("id", iniSudahAda.id);
+    if (naikkanSidik) {
+      await catat("sidik_diperbarui",
+        `Sidik perangkat dinaikkan ke versi baru: ${namaPerangkat}`);
+    }
   } else {
     const { error: galatDaftar } = await db.from("activations").insert({
       license_id: lisensi.id,

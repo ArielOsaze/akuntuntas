@@ -65,3 +65,5 @@ sertifikat.json
 _*.json
 _*.txt
 _*.log
+_backup_user/
+supabase/.temp/

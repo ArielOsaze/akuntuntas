@@ -76,19 +76,73 @@ def _nomor_volume() -> str:
 
 
 def _nomor_prosesor() -> str:
+    """
+    Nomor prosesor.
+
+    Sejak Windows 11 versi 24H2, perintah wmic sudah dihapus, sehingga
+    pembacaan lewat wmic menghasilkan kosong. PowerShell dipakai lebih
+    dulu, dan wmic hanya sebagai cadangan untuk Windows lama.
+    """
     if sys.platform != "win32":
         return platform.processor()
 
+    # Cara utama: PowerShell (tersedia di seluruh Windows yang didukung).
     try:
         keluaran = subprocess.run(
-            ["cmd", "/c", "wmic cpu get ProcessorId"],
-            capture_output=True, text=True, timeout=6,
+            ["powershell", "-NoProfile", "-Command",
+             "(Get-CimInstance Win32_Processor).ProcessorId"],
+            capture_output=True, text=True, timeout=10,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        ).stdout.strip()
+        if keluaran:
+            return keluaran.splitlines()[0].strip()
+    except Exception:
+        pass
+
+    # Cadangan: wmic, untuk Windows versi lama yang belum punya PowerShell
+    # atau bila PowerShell diblokir kebijakan.
+    try:
+        keluaran = subprocess.run(
+            ["wmic", "cpu", "get", "ProcessorId"],
+            capture_output=True, text=True, timeout=8,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         ).stdout
         baris = [b.strip() for b in keluaran.splitlines() if b.strip()]
-        return baris[1] if len(baris) > 1 else ""
+        if len(baris) > 1:
+            return baris[1]
     except Exception:
+        pass
+
+    return ""
+
+
+def _nomor_disk() -> str:
+    """
+    Nomor seri fisik cakram sistem.
+
+    Ciri ini melekat pada perangkat keras, bukan pada pemasangan Windows,
+    sehingga jauh lebih sukar ditiru daripada nama komputer. Bila cakram
+    sistem berupa cakram virtual, nomor ini dapat berubah setelah mesin
+    dipulihkan; karena itu kegagalan pembacaan tidak dianggap penolakan,
+    hanya membuat sidik perangkat berubah.
+    """
+    if sys.platform != "win32":
         return ""
+
+    try:
+        keluaran = subprocess.run(
+            ["powershell", "-NoProfile", "-Command",
+             "(Get-CimInstance Win32_DiskDrive | Where-Object {$_.Index -eq 0})"
+             ".SerialNumber"],
+            capture_output=True, text=True, timeout=10,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        ).stdout.strip()
+        if keluaran:
+            return keluaran.splitlines()[0].strip()
+    except Exception:
+        pass
+
+    return ""
 
 
 def _alamat_mac() -> str:
@@ -99,6 +153,11 @@ def _alamat_mac() -> str:
         return ""
 
 
+def _sidik_dari(ciri: list[str]) -> str:
+    bahan = "|".join(ciri)
+    return hashlib.sha256(bahan.encode("utf-8")).hexdigest()[:40]
+
+
 def sidik_perangkat() -> str:
     """
     Sidik yang mewakili satu komputer.
@@ -106,23 +165,113 @@ def sidik_perangkat() -> str:
     Gabungan beberapa ciri perangkat diambil sidiknya, sehingga perangkat
     yang sama selalu menghasilkan sidik yang sama, sedangkan komputer lain
     menghasilkan sidik berbeda.
+
+    Ciri dipilih dari yang paling sukar ditiru. Nama komputer dan alamat
+    MAC ikut disertakan, tetapi keduanya mudah diubah pengguna, sehingga
+    tidak diandalkan sendirian. Nomor seri cakram dan nomor prosesor
+    melekat pada perangkat keras dan menjadi penentu utama.
     """
-    bahan = "|".join([
+    return _sidik_dari([
+        _nomor_disk(),
+        _nomor_volume(),
+        _nomor_prosesor(),
+        _nama_komputer(),
+        _alamat_mac(),
+        platform.machine(),
+    ])
+
+
+def sidik_perangkat_versi_lama() -> str:
+    """
+    Sidik perangkat sebagaimana dihitung sebelum nomor seri cakram dipakai.
+
+    Dihitung hanya untuk mengenali lisensi yang sudah terbit dan sudah
+    terdaftar di server dengan sidik versi lama. Tanpa ini, seluruh
+    pelanggan yang sudah mengaktifkan lisensi akan ditolak setelah aplikasi
+    diperbarui, dan perangkat mereka akan terhitung sebagai perangkat baru
+    di server.
+    """
+    return _sidik_dari([
         _nama_komputer(),
         _nomor_volume(),
         _nomor_prosesor(),
         _alamat_mac(),
         platform.machine(),
     ])
-    return hashlib.sha256(bahan.encode("utf-8")).hexdigest()[:40]
+
+
+def sidik_cocok(sidik_tersimpan: str) -> bool:
+    """
+    Apakah sidik tersimpan mewakili perangkat ini.
+
+    Sidik versi lama tetap diterima agar lisensi yang sudah terbit tidak
+    perlu diaktifkan ulang. Pemeriksaan ini tidak melonggarkan keamanan:
+    keduanya sama-sama memerlukan ciri perangkat yang sama, hanya berbeda
+    pada ikut sertanya nomor seri cakram.
+    """
+    if not sidik_tersimpan:
+        return False
+    return sidik_tersimpan in (sidik_perangkat(), sidik_perangkat_versi_lama())
+
+
+def nama_windows() -> str:
+    """
+    Nama Windows yang benar, termasuk membedakan Windows 10 dan 11.
+
+    platform.release() selalu mengembalikan "10" untuk Windows 11, karena
+    Windows 11 memakai nomor versi yang sama (10.0). Yang membedakan adalah
+    nomor build: Windows 11 dimulai dari build 22000. Tanpa pemeriksaan
+    build, seluruh pengguna Windows 11 terdeteksi sebagai Windows 10.
+    """
+    if sys.platform != "win32":
+        return f"{platform.system()} {platform.release()}"
+
+    versi = platform.version()  # mis. "10.0.26200"
+    build = 0
+    try:
+        bagian = versi.split(".")
+        if len(bagian) >= 3:
+            build = int(bagian[2])
+    except (ValueError, IndexError):
+        build = 0
+
+    if build >= 22000:
+        nama = "Windows 11"
+    elif build >= 10240:
+        nama = "Windows 10"
+    else:
+        nama = f"Windows {platform.release()}"
+
+    # Edisi (Home, Pro, Enterprise) diambil dari registry, karena hanya
+    # tersedia di sana. Kegagalan pembacaan tidak dianggap masalah.
+    edisi = ""
+    try:
+        import winreg
+        with winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\Microsoft\Windows NT\CurrentVersion",
+        ) as k:
+            edisi = str(winreg.QueryValueEx(k, "EditionID")[0])
+    except Exception:
+        edisi = ""
+
+    edisi_rapi = {
+        "Core": "Home",
+        "CoreSingleLanguage": "Home",
+        "Professional": "Pro",
+        "Enterprise": "Enterprise",
+        "Education": "Education",
+    }.get(edisi, edisi)
+
+    return f"{nama} {edisi_rapi}".strip()
 
 
 def nama_perangkat() -> str:
-    return f"{_nama_komputer()} ({platform.system()} {platform.release()})"
+    return f"{_nama_komputer()} ({nama_windows()})"
 
 
 def info_sistem() -> str:
-    return f"{platform.system()} {platform.release()} {platform.machine()}"
+    return f"{nama_windows()} {platform.machine()}"
 
 
 # ==========================================================================
@@ -303,7 +452,7 @@ def lisensi_sah(data_dir: Path) -> tuple[bool, str, Lisensi | None]:
         return False, ("Berkas lisensi tidak sah. Berkas ini mungkin sudah "
                        "diubah. Aktifkan ulang dengan kunci lisensi Anda."), None
 
-    if lisensi.sidik != sidik_perangkat():
+    if not sidik_cocok(lisensi.sidik):
         return False, ("Lisensi ini terdaftar untuk perangkat lain. "
                        "Aktifkan ulang dengan kunci lisensi Anda."), None
 
@@ -390,6 +539,7 @@ def aktivasi(data_dir: Path, kunci: str) -> tuple[bool, str, Lisensi | None]:
         "aksi": "aktivasi",
         "kunci": kunci_bersih,
         "sidik": sidik_perangkat(),
+        "sidik_lama": sidik_perangkat_versi_lama(),
         "nama_perangkat": nama_perangkat(),
         "os_info": info_sistem(),
         "versi_app": _versi_app(),
@@ -428,6 +578,7 @@ def perbarui(data_dir: Path) -> tuple[bool, str]:
         "aksi": "verifikasi",
         "kunci": lisensi.kunci,
         "sidik": sidik_perangkat(),
+        "sidik_lama": sidik_perangkat_versi_lama(),
         "nama_perangkat": nama_perangkat(),
         "os_info": info_sistem(),
         "versi_app": _versi_app(),

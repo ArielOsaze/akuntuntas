@@ -1,6 +1,6 @@
 {
-  "versi": "1.0.1",
+  "versi": "1.0.2",
   "build": "2026.09",
   "tanggal": "2026-09-25",
-  "catatan": "Perbaikan jalan pintas sandi, penghapusan data, pemberitahuan kegagalan, dan ikon tombol"
+  "catatan": "Perbaikan halaman Data Perusahaan yang kosong, deteksi Windows 11, dan pengikatan lisensi ke perangkat"
 }

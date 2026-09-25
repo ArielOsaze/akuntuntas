@@ -124,6 +124,9 @@ def combo_bentuk_badan(jenis_entitas: dict) -> QComboBox:
             "sak": info.get("sak", ""),
             "ikon": IKON_BENTUK.get(kode, "perusahaan"),
         }, Qt.UserRole)
+        # Kode bentuk badan disimpan terpisah pada peran tersendiri, karena
+        # peran utama dipakai untuk keterangan tampilan daftar pilihan.
+        c.setItemData(posisi, kode, Qt.UserRole + 1)
 
     # Lebar daftar dihitung dari teks terpanjang yang benar-benar dirender.
     # Memakai perkiraan jumlah huruf membuat nama panjang terpotong.

@@ -82,7 +82,7 @@ def tulis_manifest(identitas: dict) -> pathlib.Path:
                                   "CN=Isi-Dari-Partner-Center")
     nama_paket = identitas.get("nama_paket", "XinetGroup.AkunTuntas")
     nama_tampil = identitas.get("nama_tampil", NAMA_PAKET)
-    versi = identitas.get("versi", "1.0.1.0")
+    versi = identitas.get("versi", "1.0.2.0")
     deskripsi = identitas.get(
         "deskripsi", "Pembukuan dan pajak perusahaan Indonesia")
 
@@ -218,11 +218,11 @@ def siapkan() -> int:
         print('      "penerbit": "CN=ABC12345-6789-ABCD-EF01-234567890ABC",')
         print('      "nama_penerbit_tampil": "Xinet Group",')
         print('      "nama_tampil": "AkunTuntas",')
-        print('      "versi": "1.0.1.0",')
+        print('      "versi": "1.0.2.0",')
         print('      "deskripsi": "Pembukuan dan pajak perusahaan Indonesia"')
         print("    }")
         print()
-        print("  Catatan: 'versi' wajib empat angka (1.0.1.0), bukan 1.0.1.")
+        print("  Catatan: 'versi' wajib empat angka (1.0.2.0), bukan 1.0.2.")
         return 3
 
     MSIX.mkdir(parents=True, exist_ok=True)

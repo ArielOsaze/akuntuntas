@@ -658,8 +658,13 @@ class PerusahaanPage(QWidget):
         return kartu
 
     def _update_bentuk(self):
-        kode = self.cmb_bentuk.currentData()
-        info = config.ENTITY_TYPES.get(kode, {})
+        # currentData() mengembalikan keterangan bentuk badan (sebuah kamus),
+        # bukan kode bentuk badan. Kode diambil dari pilihan itu sendiri
+        # supaya keterangan bentuk badan dapat langsung dipakai tanpa
+        # mencari ulang.
+        info = self.cmb_bentuk.currentData() or {}
+        if not isinstance(info, dict):
+            info = config.ENTITY_TYPES.get(info, {})
         teks = (f"<b>{info.get('nama', '')}</b><br>{info.get('deskripsi', '')}"
                 f"<br><br><b>Standar akuntansi:</b> {info.get('sak', '-')}"
                 f"<br><b>Laporan yang dihasilkan:</b> "
@@ -669,6 +674,17 @@ class PerusahaanPage(QWidget):
             self.lbl_bentuk.setText(teks)
             self.lbl_bentuk.setTextFormat(Qt.RichText)
 
+    def _kode_bentuk(self) -> str:
+        """
+        Kode bentuk badan yang sedang dipilih.
+
+        Daftar pilihan menyimpan keterangan bentuk badan pada datanya, bukan
+        kodenya. Kode diambil dari pilihan yang sedang aktif supaya bentuk
+        badan yang tersimpan sesuai dengan yang terlihat pengguna.
+        """
+        posisi = self.cmb_bentuk.currentIndex()
+        return self.cmb_bentuk.itemData(posisi, Qt.UserRole + 1) or ""
+
     def _buat(self):
         try:
             if not self.inp_nama.text().strip():
@@ -676,7 +692,7 @@ class PerusahaanPage(QWidget):
                 return
             cid = services.create_company(
                 self.inp_nama.text().strip(),
-                self.cmb_bentuk.currentData(),
+                self._kode_bentuk(),
                 npwp=self.inp_npwp.text().strip(),
                 nama_pemilik=self.inp_pemilik.text().strip(),
                 alamat=self.inp_alamat.text().strip(),
