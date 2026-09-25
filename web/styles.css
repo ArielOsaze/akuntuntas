@@ -837,6 +837,10 @@ body {
    memakai warna terang supaya terbaca jelas di atas latar gelap. */
 .kontak-baris {
     margin: 26px 0 30px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .kontak-form {
@@ -908,6 +912,17 @@ body {
 
 .kontak-form .tombol:hover { background: #E8F0F9; }
 .kontak-form .tombol:disabled { opacity: 0.65; cursor: default; }
+
+/* Tombol WhatsApp dan Batal memakai gaya bergaris supaya terlihat sebagai
+   pilihan kedua, bukan tindakan utama. */
+.tombol-garis {
+    background: transparent;
+    color: var(--putih);
+    border: 1px solid #4A6B8C;
+}
+
+.tombol-garis:hover { background: #1B3A57; }
+
 
 .kontak-kabar {
     margin: 0;

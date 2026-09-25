@@ -43,7 +43,7 @@ import sys
 
 AKAR = pathlib.Path(__file__).resolve().parent.parent
 SETELAN = AKAR / "sertifikat.json"
-INSTALLER = AKAR / "installer_output" / "AkunTuntas-1.0.6-Setup.exe"
+INSTALLER = AKAR / "installer_output" / "AkunTuntas-1.0.7-Setup.exe"
 APLIKASI = AKAR / "dist" / "AkunTuntas" / "AkunTuntas.exe"
 
 

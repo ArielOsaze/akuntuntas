@@ -39,7 +39,7 @@
   "applicationCategory": "BusinessApplication",
   "applicationSubCategory": "Accounting",
   "operatingSystem": "Windows 10, Windows 11",
-  "softwareVersion": "1.0.6",
+  "softwareVersion": "1.0.7",
   "description": "Aplikasi pembukuan dan perpajakan untuk UMKM, PT Perorangan, dan PT di Indonesia. Bekerja sepenuhnya offline.",
   "url": "https://akuntuntas.xinet.id/",
   "image": "https://akuntuntas.xinet.id/pratinjau.png",
@@ -737,17 +737,23 @@
     <div class="wadah">
         <h2>Siap menuntaskan pembukuan usaha Anda?</h2>
         <p>
-            Kirim pertanyaan lewat formulir di bawah, atau hubungi kami langsung
-            lewat WhatsApp. Kami balas pada hari kerja.
+            Hubungi kami untuk pembelian lisensi, pertanyaan teknis, atau
+            penawaran khusus untuk kantor akuntan dan konsultan pajak.
         </p>
 
         <div class="kontak-baris">
-            <a class="tombol tombol-besar"
+            <button class="tombol tombol-besar" type="button" id="kontak-buka"
+                    aria-expanded="false" aria-controls="form-kontak">
+                Hubungi Kami
+            </button>
+            <a class="tombol tombol-besar tombol-garis"
                href="https://wa.me/6282224293639?text=Halo%2C%20saya%20ingin%20bertanya%20tentang%20AkunTuntas"
                target="_blank" rel="noopener">WhatsApp</a>
         </div>
 
-        <form class="kontak-form" id="form-kontak" novalidate>
+        <!-- Formulir disembunyikan sampai tombol Hubungi Kami ditekan,
+             supaya bagian ini tetap ringkas saat pertama dilihat. -->
+        <form class="kontak-form" id="form-kontak" novalidate hidden>
             <div class="kontak-dua">
                 <div>
                     <label for="kontak-nama">Nama</label>
@@ -777,6 +783,10 @@
             <div class="kontak-aksi">
                 <button class="tombol tombol-besar" type="submit" id="kontak-kirim">
                     Kirim Pesan
+                </button>
+                <button class="tombol tombol-besar tombol-garis" type="button"
+                        id="kontak-tutup">
+                    Batal
                 </button>
                 <p class="kontak-kabar" id="kontak-kabar" role="status"></p>
             </div>
@@ -839,12 +849,47 @@
     var form = document.getElementById("form-kontak");
     if (!form) return;
 
+    var tombolBuka = document.getElementById("kontak-buka");
+    var tombolTutup = document.getElementById("kontak-tutup");
     var tombol = document.getElementById("kontak-kirim");
     var kabar = document.getElementById("kontak-kabar");
 
     function tampilkan(teks, jenis) {
         kabar.textContent = teks;
         kabar.className = "kontak-kabar " + (jenis || "");
+    }
+
+    // Formulir dibuka saat tombol Hubungi Kami ditekan, dan ditutup lagi
+    // saat Batal ditekan, supaya bagian kontak tetap ringkas.
+    function bukaFormulir() {
+        form.hidden = false;
+        tombolBuka.setAttribute("aria-expanded", "true");
+        tombolBuka.textContent = "Tutup Formulir";
+        // Sorot bidang pertama supaya pengunjung langsung tahu harus mengisi apa.
+        setTimeout(function () {
+            var n = document.getElementById("kontak-nama");
+            if (n) n.focus();
+        }, 60);
+    }
+
+    function tutupFormulir() {
+        form.hidden = true;
+        tombolBuka.setAttribute("aria-expanded", "false");
+        tombolBuka.textContent = "Hubungi Kami";
+        tampilkan("");
+    }
+
+    tombolBuka.addEventListener("click", function () {
+        if (form.hidden) bukaFormulir();
+        else tutupFormulir();
+    });
+
+    tombolTutup.addEventListener("click", tutupFormulir);
+
+    // Bila halaman dibuka dengan #kontak, formulir langsung dibuka supaya
+    // pengunjung yang menuju bagian ini tidak perlu menekan tombol lagi.
+    if (window.location.hash === "#kontak") {
+        bukaFormulir();
     }
 
     form.addEventListener("submit", function (e) {
