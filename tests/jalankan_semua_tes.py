@@ -121,12 +121,22 @@ def baris_hasil(teks: str) -> str:
 
 def _jumlah(teks: str, kata: str) -> int:
     """
-    Ambil angka sebelum kata tertentu dari baris ringkasan terakhir.
+    Hitung pemeriksaan yang lulus atau gagal dari sebuah rangkaian uji.
 
-    Hanya baris ringkasan terakhir yang dihitung, bukan seluruh baris
-    yang memuat kata "hasil". Sebagian rangkaian uji menuliskan hasil
-    antara untuk tiap bagiannya, lalu menutup dengan hasil akhir. Menjumlah
-    seluruhnya akan menghitung pemeriksaan yang sama dua kali.
+    Dua cara dipakai bersama, supaya kegagalan tidak dapat lolos hanya
+    karena kalimatnya tidak memuat kata "GAGAL":
+
+    1. Angka dari baris ringkasan terakhir, misalnya "HASIL: 12 LULUS,
+       1 GAGAL". Hanya baris terakhir yang dipakai, karena sebagian
+       rangkaian menuliskan hasil antara sebelum menutup dengan hasil
+       akhir.
+
+    2. Jumlah baris pemeriksaan yang ditandai gagal, misalnya
+       "[GAGAL] ...". Sebagian rangkaian menuliskan sebab kegagalannya
+       dengan kalimat sendiri, misalnya "1 aturan masih menular ke
+       widget di dalamnya", sehingga angkanya tidak muncul sebagai
+       "N GAGAL". Tanpa cara kedua, kegagalan seperti itu tidak
+       terhitung.
     """
     import re
 
@@ -135,7 +145,18 @@ def _jumlah(teks: str, kata: str) -> int:
     for angka, satuan in re.findall(r"(\d+)\s+([A-Z]+)", baris):
         if satuan == kata:
             total += int(angka)
-    return total
+
+    # Baris pemeriksaan yang ditandai gagal, dihitung langsung.
+    tanda = f"[{kata}]"
+    jumlah_tanda = 0
+    for b in teks.splitlines():
+        naik = b.upper()
+        if naik.strip().startswith(tanda) or f" {tanda}" in naik:
+            jumlah_tanda += 1
+
+    # Ambil yang lebih besar: angkanya mungkin sudah mencakup semuanya,
+    # atau mungkin tidak ada sama sekali.
+    return max(total, jumlah_tanda)
 
 
 def hitung_lulus(teks: str) -> int:
@@ -179,12 +200,16 @@ def main() -> int:
         # baris hasil. Tanpa pemeriksaan ini, rangkaian yang terpotong akan
         # terlihat seperti lulus karena kodenya kebetulan nol.
         ada_hasil = "HASIL" in keluaran.upper()
-        lulus = (hasil.returncode == 0) and ada_hasil
+        ada_gagal = hitung_gagal(keluaran) > 0
+        lulus = (hasil.returncode == 0) and ada_hasil and not ada_gagal
         if not lulus:
             semua_lulus = False
             if not ada_hasil:
                 print("  [GAGAL] rangkaian tidak melaporkan hasil "
                       "(kemungkinan terpotong)")
+            if ada_gagal:
+                print(f"  [GAGAL] rangkaian melaporkan "
+                      f"{hitung_gagal(keluaran)} pemeriksaan gagal")
 
         jumlah_lulus += hitung_lulus(keluaran)
         jumlah_gagal += hitung_gagal(keluaran)
