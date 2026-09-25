@@ -1,0 +1,18 @@
+--- berkas lisensi terpasang ---
+kunci: ATNTM6XKY7H8YXKWWGNY | paket: enterprise
+sidik terdaftar di berkas: 4d9ca121d8bb8030353290ed127203540f3e1dc0
+sidik yang dikirim       : 4d9ca121d8bb8030353290ed127203540f3e1dc0
+sidik_baru yang dikirim  : 463887fc7c4fd02c511fa1c1ce5606ff98d2b488
+--- permintaan (mentah) ---
+{"aksi": "verifikasi", "kunci": "ATNTM6XKY7H8YXKWWGNY", "sidik": "4d9ca121d8bb8030353290ed127203540f3e1dc0", "sidik_baru": "463887fc7c4fd02c511fa1c1ce5606ff98d2b488", "nama_perangkat": "DESKTOP-H6GVIOV (Windows 11 Pro)", "os_info": "Windows 11 Pro AMD64", "versi_app": "1.0.3"}
+--- jawaban HTTP 200 ---
+content-type: application/json
+date: Fri, 25 Sep 2026 05:36:35 GMT
+x-sb-edge-region: ap-southeast-1
+isi mentah:
+{"ok":true,"muatan":"{\"kunci\":\"ATNTM6XKY7H8YXKWWGNY\",\"sidik\":\"4d9ca121d8bb8030353290ed127203540f3e1dc0\",\"paket\":\"enterprise\",\"fitur\":{\"dimensi\":true,\"konsolidasi\":true,\"multi_cabang\":true,\"multi_entitas\":true,\"audit_lanjutan\":true,\"pajak_lanjutan\":true,\"payroll_lanjutan\":true},\"max_device\":10,\"pemilik\":\"Xinet Group\",\"diterbitkan\":\"2026-09-25T05:36:34.624Z\",\"berlaku_sampai\":\"2027-03-24T05:36:34.624Z\",\"tenggang_sampai\":\"2027-09-20T05:36:34.624Z\"}","tanda":"bc3948533cec4c4aa9df366941e19d8cc28cf9e1c0a35bde196b088bcec0120a1c8a6d6a4a1d890468e4fd73508cb504725b229224164ffc3247031fef937d00","paket":"enterprise","nama_paket":"AkunTuntas Enterprise","perangkat_terpakai":2,"max_device":10}
+
+--- pemeriksaan tanda tangan jawaban ---
+muatan ditandatangani: {"kunci":"ATNTM6XKY7H8YXKWWGNY","sidik":"4d9ca121d8bb8030353290ed127203540f3e1dc0","paket":"enterprise","fitur":{"dimensi":true,"konsolidasi":true,"multi_cabang":true,"multi_entitas":true,"audit_lanjutan":true,"pajak_lanjutan":true,"payroll_lanjutan":true},"max_device":10,"pemilik":"Xinet Group","diterbitkan":"2026-09-25T05:36:34.624Z","berlaku_sampai":"2027-03-24T05:36:34.624Z","tenggang_sampai":"2027-09-20T05:36:34.624Z"}
+tanda tangan        : bc3948533cec4c4aa9df366941e19d8cc28cf9e1c0a35bde196b088bcec0120a1c8a6d6a4a1d890468e4fd73508cb504725b229224164ffc3247031fef937d00
+catatan: kunci publik diambil terpisah lewat aksi kunci-publik

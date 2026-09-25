@@ -1,0 +1,8 @@
+--- permintaan (mentah) ---
+{"aksi": "aktivasi", "kunci": "ATNTZZZZZZZZZZZZZZZZ", "sidik": "uji-deploy-palsu"}
+--- jawaban HTTP 404 ---
+content-type: application/json
+date: Fri, 25 Sep 2026 05:36:36 GMT
+x-sb-edge-region: ap-southeast-1
+isi mentah:
+{"ok":false,"pesan":"Kunci lisensi tidak dikenal."}

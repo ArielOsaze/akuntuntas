@@ -1229,16 +1229,11 @@ async function tangani(req: Request): Promise<Response> {
 
   const kunciLisensi = normalisasiKunci(isi.kunci || "");
   const sidik = (isi.sidik || "").trim();
-  // Aplikasi dapat mengirim sidik tambahan supaya perangkat yang sudah
-  // terdaftar tetap dikenali meskipun cara menghitung sidik berubah, dan
-  // pengikatannya dapat dinaikkan ke ciri perangkat yang lebih sukar
-  // ditiru tanpa membuat perangkat lama terhitung sebagai perangkat baru.
-  //
-  // sidik_lama dipakai aplikasi versi 1.0.2 yang mengirim sidik terbaru
-  // sebagai sidik utama. sidik_baru dipakai versi 1.0.3 dan sesudahnya
-  // yang mengirim sidik terdaftar sebagai sidik utama.
+  // Sidik versi lama ikut diterima agar lisensi yang sudah terbit dan
+  // sudah terdaftar sebelum nomor seri cakram dipakai tidak dianggap
+  // sebagai perangkat baru. Tanpa ini, pelanggan lama akan ditolak saat
+  // memperbarui aplikasi.
   const sidikLama = (isi.sidik_lama || "").trim();
-  const sidikBaru = (isi.sidik_baru || "").trim();
   const namaPerangkat = (isi.nama_perangkat || "").slice(0, 120);
   const osInfo = (isi.os_info || "").slice(0, 120);
   const versiApp = (isi.versi_app || "").slice(0, 40);
@@ -1250,11 +1245,7 @@ async function tangani(req: Request): Promise<Response> {
   /** Apakah baris aktivasi mewakili perangkat ini. */
   const perangkatIni = (d: { device_fingerprint: string }) =>
     d.device_fingerprint === sidik ||
-    (!!sidikLama && d.device_fingerprint === sidikLama) ||
-    (!!sidikBaru && d.device_fingerprint === sidikBaru);
-
-  /** Sidik yang disimpan setelah perangkat dikenali. */
-  const sidikSimpan = sidikBaru || sidik;
+    (!!sidikLama && d.device_fingerprint === sidikLama);
 
   // ---------------------------------------------------------- cari lisensi
   const { data: lisensi, error: galatLisensi } = await db
@@ -1349,14 +1340,14 @@ async function tangani(req: Request): Promise<Response> {
     // Bila perangkat dikenali lewat sidik versi lama, sidiknya dinaikkan
     // ke versi baru supaya pengikatan berikutnya memakai ciri perangkat
     // yang lebih sukar ditiru.
-    const naikkanSidik = iniSudahAda.device_fingerprint !== sidikSimpan;
+    const naikkanSidik = iniSudahAda.device_fingerprint !== sidik;
     await db.from("activations")
       .update({
         terakhir_dilihat: new Date().toISOString(),
         app_version: versiApp,
         device_name: namaPerangkat,
         os_info: osInfo,
-        ...(naikkanSidik ? { device_fingerprint: sidikSimpan } : {}),
+        ...(naikkanSidik ? { device_fingerprint: sidik } : {}),
       })
       .eq("id", iniSudahAda.id);
     if (naikkanSidik) {
@@ -1366,7 +1357,7 @@ async function tangani(req: Request): Promise<Response> {
   } else {
     const { error: galatDaftar } = await db.from("activations").insert({
       license_id: lisensi.id,
-      device_fingerprint: sidikSimpan,
+      device_fingerprint: sidik,
       device_name: namaPerangkat,
       os_info: osInfo,
       app_version: versiApp,

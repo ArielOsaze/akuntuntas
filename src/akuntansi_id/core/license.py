@@ -75,6 +75,30 @@ def _nomor_volume() -> str:
     return ""
 
 
+def _nomor_prosesor_wmic() -> str:
+    """
+    Nomor prosesor dengan cara lama, hanya lewat wmic.
+
+    Dipakai untuk menghitung ulang sidik perangkat versi lama. Pada
+    Windows 11 versi 24H2 ke atas perintah wmic sudah dihapus, sehingga
+    hasilnya kosong; keadaan itu memang yang terjadi saat sidik lama
+    dihitung, jadi harus tetap sama persis.
+    """
+    if sys.platform != "win32":
+        return platform.processor()
+
+    try:
+        keluaran = subprocess.run(
+            ["wmic", "cpu", "get", "ProcessorId"],
+            capture_output=True, text=True, timeout=8,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        ).stdout
+        baris = [b.strip() for b in keluaran.splitlines() if b.strip()]
+        return baris[1] if len(baris) > 1 else ""
+    except Exception:
+        return ""
+
+
 def _nomor_prosesor() -> str:
     """
     Nomor prosesor.
@@ -194,7 +218,7 @@ def sidik_perangkat_versi_lama() -> str:
     return _sidik_dari([
         _nama_komputer(),
         _nomor_volume(),
-        _nomor_prosesor(),
+        _nomor_prosesor_wmic(),
         _alamat_mac(),
         platform.machine(),
     ])
@@ -523,6 +547,28 @@ def _catat(pesan: str) -> None:
         pass
 
 
+def _sidik_untuk_server(data_dir: Path) -> tuple[str, str]:
+    """
+    Sidik yang dikirim ke server, beserta calon penggantinya.
+
+    Sidik yang sudah terdaftar dipakai lebih dulu supaya perangkat yang
+    sudah terdaftar tetap dikenali server meskipun cara menghitung sidik
+    berubah. Tanpa ini, seluruh pelanggan yang sudah mengaktifkan lisensi
+    akan dianggap perangkat baru setelah memperbarui aplikasi, dan pada
+    paket Standar mereka langsung ditolak karena batas satu perangkat.
+
+    Sidik terbaru ikut dikirim sebagai calon pengganti, sehingga server
+    yang sudah diperbarui dapat menaikkan pengikatan perangkat ke ciri
+    yang lebih sukar ditiru. Server yang belum diperbarui mengabaikan
+    bagian itu tanpa menimbulkan masalah.
+    """
+    baru = sidik_perangkat()
+    lisensi = muat(data_dir)
+    if lisensi is not None and lisensi.sidik:
+        return lisensi.sidik, baru
+    return baru, baru
+
+
 def aktivasi(data_dir: Path, kunci: str) -> tuple[bool, str, Lisensi | None]:
     """
     Aktifkan lisensi di komputer ini.
@@ -535,11 +581,12 @@ def aktivasi(data_dir: Path, kunci: str) -> tuple[bool, str, Lisensi | None]:
         return False, ("Format kunci lisensi tidak sesuai. Contoh yang benar: "
                        "ATNT-XXXX-XXXX-XXXX-XXXX"), None
 
+    sidik_kirim, sidik_baru = _sidik_untuk_server(data_dir)
     terhubung, jawaban = _kirim({
         "aksi": "aktivasi",
         "kunci": kunci_bersih,
-        "sidik": sidik_perangkat(),
-        "sidik_lama": sidik_perangkat_versi_lama(),
+        "sidik": sidik_kirim,
+        "sidik_baru": sidik_baru,
         "nama_perangkat": nama_perangkat(),
         "os_info": info_sistem(),
         "versi_app": _versi_app(),
@@ -574,11 +621,12 @@ def perbarui(data_dir: Path) -> tuple[bool, str]:
     if lisensi is None:
         return False, "Lisensi belum diaktifkan."
 
+    sidik_kirim, sidik_baru = _sidik_untuk_server(data_dir)
     terhubung, jawaban = _kirim({
         "aksi": "verifikasi",
         "kunci": lisensi.kunci,
-        "sidik": sidik_perangkat(),
-        "sidik_lama": sidik_perangkat_versi_lama(),
+        "sidik": sidik_kirim,
+        "sidik_baru": sidik_baru,
         "nama_perangkat": nama_perangkat(),
         "os_info": info_sistem(),
         "versi_app": _versi_app(),

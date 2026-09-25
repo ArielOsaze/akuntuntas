@@ -1,6 +1,6 @@
 {
-  "versi": "1.0.2",
+  "versi": "1.0.3",
   "build": "2026.09",
   "tanggal": "2026-09-25",
-  "catatan": "Perbaikan halaman Data Perusahaan yang kosong, deteksi Windows 11, dan pengikatan lisensi ke perangkat"
+  "catatan": "Halaman Data Perusahaan dapat dipakai, deteksi Windows 11, dan pengikatan lisensi ke perangkat yang lebih kuat"
 }
