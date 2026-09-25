@@ -657,7 +657,7 @@ class PembelianLengkapPage(QWidget):
         b_po.clicked.connect(self._buat_po)
         self.header.tambah_aksi(b_po)
 
-        b_bill = w.tombol("Bill Baru", gaya="primary", ikon="+")
+        b_bill = w.tombol("Bill Baru", gaya="primary", ikon="tambah")
         b_bill.clicked.connect(self._buat_bill)
         self.header.tambah_aksi(b_bill)
 
@@ -766,7 +766,7 @@ class PembelianLengkapPage(QWidget):
         b2 = w.tombol("Buat Bill dari PO", gaya="primary", ikon="")
         b2.clicked.connect(self._bill_dari_po)
         baris.addWidget(b2)
-        b3 = w.tombol("Batalkan PO", gaya="danger", ikon="⊘")
+        b3 = w.tombol("Batalkan PO", gaya="danger", ikon="nonaktif")
         b3.clicked.connect(lambda: self._ubah_status_po("batal"))
         baris.addWidget(b3)
         baris.addStretch()
@@ -787,7 +787,7 @@ class PembelianLengkapPage(QWidget):
         lay.addWidget(self.tabel_bayar, 1)
 
         baris = QHBoxLayout()
-        b = w.tombol("Void Pembayaran", gaya="danger", ikon="⊘")
+        b = w.tombol("Void Pembayaran", gaya="danger", ikon="nonaktif")
         b.clicked.connect(self._void_bayar)
         baris.addWidget(b)
         baris.addStretch()
@@ -825,6 +825,7 @@ class PembelianLengkapPage(QWidget):
 
     def muat(self):
         if not self.ctx.company_id:
+            w.belum_ada_perusahaan(self)
             return
         idx = self.tabs.currentIndex()
         if idx == 0:

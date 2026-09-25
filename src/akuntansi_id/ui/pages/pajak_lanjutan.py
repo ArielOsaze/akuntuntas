@@ -781,7 +781,7 @@ class PajakLanjutanPage(QWidget):
             "info", "Jurnal Balik"))
 
         baris = QHBoxLayout()
-        b = w.tombol("Jalankan Jurnal Balik", gaya="primary", ikon="proses")
+        b = w.tombol("Jalankan Jurnal Balik", gaya="primary", ikon="transfer")
         b.clicked.connect(self._jalankan_balik)
         baris.addWidget(b)
         baris.addStretch(1)

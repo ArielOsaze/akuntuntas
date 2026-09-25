@@ -179,7 +179,7 @@ class DialogJurnal(QDialog):
         # --- tombol tambah baris
         baris_tombol = QHBoxLayout()
         baris_tombol.setSpacing(9)
-        b_tambah = w.tombol("Tambah Baris", ikon="+")
+        b_tambah = w.tombol("Tambah Baris", ikon="tambah")
         b_tambah.clicked.connect(lambda: self._tambah_baris())
         baris_tombol.addWidget(b_tambah)
 
@@ -495,7 +495,7 @@ class JurnalPage(HalamanDasar):
         super().__init__(ctx, "Jurnal Umum",
                          "Sumber utama seluruh laporan keuangan. Setiap transaksi "
                          "harus seimbang antara debit dan kredit.")
-        b = w.tombol("Entri Jurnal Baru", gaya="primary", ikon="+")
+        b = w.tombol("Entri Jurnal Baru", gaya="primary", ikon="tambah")
         b.clicked.connect(self._baru)
         self.header.tambah_aksi(b)
 

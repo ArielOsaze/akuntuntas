@@ -289,7 +289,7 @@ class MitraPage(QWidget):
             "Data pelanggan dan pemasok beserta riwayat transaksi, piutang, "
             "dan utangnya.")
 
-        b_tambah = w.tombol("Tambah Mitra", gaya="primary", ikon="+")
+        b_tambah = w.tombol("Tambah Mitra", gaya="primary", ikon="tambah")
         b_tambah.clicked.connect(self._tambah)
         self.header.tambah_aksi(b_tambah)
 

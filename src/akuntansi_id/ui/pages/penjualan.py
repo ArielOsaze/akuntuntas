@@ -260,7 +260,7 @@ class PanelItem(QWidget):
         lay.addWidget(self.tabel)
 
         baris = QHBoxLayout()
-        b_tambah = w.tombol("Tambah Baris", ikon="+")
+        b_tambah = w.tombol("Tambah Baris", ikon="tambah")
         b_tambah.clicked.connect(lambda: self._tambah_baris())
         baris.addWidget(b_tambah)
         baris.addStretch()
@@ -1108,7 +1108,7 @@ class PenjualanLengkapPage(QWidget):
         b_so.clicked.connect(self._buat_so)
         self.header.tambah_aksi(b_so)
 
-        b_inv = w.tombol("Invoice Baru", gaya="primary", ikon="+")
+        b_inv = w.tombol("Invoice Baru", gaya="primary", ikon="tambah")
         b_inv.clicked.connect(self._buat_invoice)
         self.header.tambah_aksi(b_inv)
 
@@ -1200,7 +1200,7 @@ class PenjualanLengkapPage(QWidget):
         b4 = w.tombol("Nota Kredit", ikon="")
         b4.clicked.connect(self._nota_dari_invoice)
         baris2.addWidget(b4)
-        b5 = w.tombol("Void", gaya="danger", ikon="⊘")
+        b5 = w.tombol("Void", gaya="danger", ikon="nonaktif")
         b5.clicked.connect(self._void_invoice)
         baris2.addWidget(b5)
         baris2.addStretch()
@@ -1226,7 +1226,7 @@ class PenjualanLengkapPage(QWidget):
         b2 = w.tombol("Buat Invoice dari SO", gaya="primary", ikon="")
         b2.clicked.connect(self._invoice_dari_so)
         baris.addWidget(b2)
-        b3 = w.tombol("Batalkan SO", gaya="danger", ikon="⊘")
+        b3 = w.tombol("Batalkan SO", gaya="danger", ikon="nonaktif")
         b3.clicked.connect(lambda: self._ubah_status_so("batal"))
         baris.addWidget(b3)
         baris.addStretch()
@@ -1252,7 +1252,7 @@ class PenjualanLengkapPage(QWidget):
         b1 = w.tombol("Lihat Alokasi", ikon="")
         b1.clicked.connect(self._detail_penerimaan)
         baris.addWidget(b1)
-        b2 = w.tombol("Void Penerimaan", gaya="danger", ikon="⊘")
+        b2 = w.tombol("Void Penerimaan", gaya="danger", ikon="nonaktif")
         b2.clicked.connect(self._void_penerimaan)
         baris.addWidget(b2)
         baris.addStretch()
@@ -1273,7 +1273,7 @@ class PenjualanLengkapPage(QWidget):
         lay.addWidget(self.tabel_nota, 1)
 
         baris = QHBoxLayout()
-        b = w.tombol("Buat Nota Kredit", gaya="primary", ikon="+")
+        b = w.tombol("Buat Nota Kredit", gaya="primary", ikon="tambah")
         b.clicked.connect(self._buat_nota)
         baris.addWidget(b)
         baris.addStretch()
@@ -1510,6 +1510,7 @@ class PenjualanLengkapPage(QWidget):
 
     def _terima_pembayaran(self):
         if not self.ctx.company_id:
+            w.belum_ada_perusahaan(self, "terima pembayaran")
             return
         d = DialogPenerimaan(self.ctx, self)
         if d.exec():

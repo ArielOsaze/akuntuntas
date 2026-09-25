@@ -173,14 +173,47 @@ def change_password(user_id: int, old_password: str, new_password: str) -> None:
 
 
 def reset_password(user_id: int, new_password: str, actor_id: Optional[int] = None,
-                   actor_name: str = "") -> None:
+                   actor_name: str = "", password_aktor: str = "") -> None:
+    """
+    Ganti password pengguna oleh pengelola akun.
+
+    Password pengelola yang sedang masuk wajib disertakan. Tanpa
+    pemeriksaan ini, siapa pun yang sudah masuk dapat mengganti password
+    akun lain, termasuk akun pemilik, sehingga jalan masuk ke aplikasi
+    dapat diambil alih tanpa diketahui pemiliknya.
+
+    Parameter password_aktor diisi password pengelola yang sedang masuk,
+    untuk dipastikan bahwa memang pengelola itu sendiri yang meminta.
+    """
+    if not actor_id:
+        raise ValueError(
+            "Penggantian password harus dilakukan oleh pengelola akun "
+            "yang sedang masuk.")
+
+    if not password_aktor:
+        raise ValueError("Password Anda wajib diisi untuk melanjutkan.")
+
+    baris = db.q1("SELECT username, password_hash, salt, is_active "
+                  "FROM users WHERE id=?", (actor_id,))
+    if baris is None:
+        raise ValueError("Akun pengelola tidak ditemukan.")
+    if not baris["is_active"]:
+        raise ValueError("Akun pengelola sedang dinonaktifkan.")
+    if not verify_password(password_aktor, baris["password_hash"],
+                           baris["salt"]):
+        db.log_login(baris["username"], False, actor_id,
+                     f"Password pengelola salah saat mengganti password "
+                     f"pengguna id {user_id}.")
+        raise ValueError("Password Anda salah. Perubahan dibatalkan.")
+
     ok, issues = is_password_acceptable(new_password)
     if not ok:
         raise ValueError(" ".join(issues))
     h, s = hash_password(new_password)
     db.ex("UPDATE users SET password_hash=?, salt=?, must_change_pw=1, "
           "failed_attempts=0, locked_until=NULL WHERE id=?", (h, s, user_id))
-    db.log_action(actor_id, actor_name, None, "user.reset_password", "users", user_id)
+    db.log_action(actor_id, actor_name, None, "user.reset_password",
+                  "users", user_id)
 
 
 def list_users() -> list:

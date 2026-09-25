@@ -1442,3 +1442,44 @@ def set_combo_by_data(combo: QComboBox, data: str) -> bool:
         combo.setCurrentIndex(idx)
         return True
     return False
+
+
+# ==========================================================================
+# PESAN KEPADA PENGGUNA
+# ==========================================================================
+def belum_ada_perusahaan(parent=None, tindakan: str = "") -> None:
+    """
+    Beri tahu pengguna bahwa tindakan ini memerlukan profil perusahaan.
+
+    Tanpa pesan ini, menekan tombol hanya menghasilkan diam tanpa
+    penjelasan, sehingga pengguna mengira aplikasinya rusak. Pesannya
+    menyebutkan langkah yang harus dilakukan lebih dulu, bukan sekadar
+    menyatakan kegagalan.
+
+    Parameter tindakan diisi nama tindakan yang sedang dicoba, misalnya
+    "menambah karyawan", supaya pesannya menyesuaikan keadaan.
+    """
+    from PySide6.QtWidgets import QMessageBox
+
+    awal = "Lengkapi dulu profil perusahaan."
+    if tindakan:
+        awal = f"Belum dapat {tindakan}, karena profil perusahaan belum ada."
+
+    QMessageBox.information(
+        parent, "Profil perusahaan belum ada",
+        f"{awal}\n\n"
+        "Langkah yang perlu dilakukan:\n"
+        "1. Buka menu Data Usaha, lalu pilih Data Perusahaan\n"
+        "2. Isi nama perusahaan dan bentuk badan usaha\n"
+        "3. Tekan tombol Buat Perusahaan\n\n"
+        "Setelah profil perusahaan dibuat, seluruh menu pembukuan "
+        "langsung dapat dipakai.")
+
+
+def perlu_dipilih(parent=None, apa: str = "satu baris data") -> None:
+    """Beri tahu pengguna bahwa belum ada baris yang dipilih."""
+    from PySide6.QtWidgets import QMessageBox
+
+    QMessageBox.information(
+        parent, "Belum ada yang dipilih",
+        f"Pilih dulu {apa} pada tabel, lalu ulangi tindakannya.")

@@ -312,7 +312,7 @@ class PenggunaPage(QWidget):
             "Pengguna & Hak Akses",
             "Kelola akun pengguna, peran, dan izin per modul.")
 
-        b = w.tombol("Tambah Pengguna", gaya="primary", ikon="+")
+        b = w.tombol("Tambah Pengguna", gaya="primary", ikon="tambah")
         b.clicked.connect(self._tambah)
         self.header.tambah_aksi(b)
 
@@ -475,6 +475,26 @@ class DialogResetPassword(QDialog):
         self.inp2.setEchoMode(QLineEdit.Password)
         lay.addWidget(self.inp2)
 
+        # Kata sandi pengelola diminta sebagai pengaman. Tanpa ini, siapa
+        # pun yang sempat memakai aplikasi dapat mengganti kata sandi akun
+        # lain, termasuk akun pemilik.
+        lay.addSpacing(6)
+        lay.addWidget(w.label("Kata Sandi Anda (pengelola)", objek="FormLabel"))
+        self.inp_admin = QLineEdit()
+        self.inp_admin.setEchoMode(QLineEdit.Password)
+        self.inp_admin.setPlaceholderText(
+            "Masukkan kata sandi akun Anda sendiri untuk mengonfirmasi")
+        lay.addWidget(self.inp_admin)
+
+        catatan = QLabel(
+            "Penggantian kata sandi akun lain dicatat dalam jejak audit "
+            "beserta nama akun yang melakukannya.")
+        catatan.setWordWrap(True)
+        catatan.setStyleSheet(
+            f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
+            "background: transparent;")
+        lay.addWidget(catatan)
+
         self.lbl = QLabel("")
         self.lbl.setWordWrap(True)
         lay.addWidget(self.lbl)
@@ -513,7 +533,8 @@ class DialogResetPassword(QDialog):
             return
         try:
             sec.reset_password(self.pengguna["id"], self.inp1.text(),
-                               self.ctx.user_id, self.ctx.username)
+                               self.ctx.user_id, self.ctx.username,
+                               password_aktor=self.inp_admin.text())
             self.accept()
         except Exception as e:
             QMessageBox.critical(self, "Gagal", str(e))
@@ -693,6 +714,7 @@ class AuditPage(QWidget):
 
     def muat(self):
         if not self.ctx.company_id:
+            w.belum_ada_perusahaan(self)
             return
         if self.tabs.currentIndex() == 3:
             self._muat_riwayat()
@@ -884,6 +906,7 @@ class RecycleBinPage(QWidget):
 
     def muat(self):
         if not self.ctx.company_id:
+            w.belum_ada_perusahaan(self)
             return
 
         tabel_sekarang = self.cmb_tabel.currentData()

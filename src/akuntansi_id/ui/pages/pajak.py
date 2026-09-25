@@ -365,7 +365,7 @@ class PajakPage(QWidget):
 
         baris_aksi = QHBoxLayout()
         baris_aksi.setSpacing(9)
-        b_tambah = w.tombol("Catat Pemotongan Pajak", gaya="primary", ikon="+")
+        b_tambah = w.tombol("Catat Pemotongan Pajak", gaya="primary", ikon="tambah")
         b_tambah.clicked.connect(self._tambah_potput)
         baris_aksi.addWidget(b_tambah)
         b_bayar = w.tombol("Catat Setoran Pajak", gaya="success", ikon="simpan")
@@ -497,7 +497,7 @@ class PajakPage(QWidget):
         lay.addWidget(w.label("Koreksi Manual", objek="SectionTitle"))
         b = QHBoxLayout()
         b.setSpacing(9)
-        b_tambah = w.tombol("Tambah Koreksi Manual", ikon="+")
+        b_tambah = w.tombol("Tambah Koreksi Manual", ikon="tambah")
         b_tambah.clicked.connect(self._tambah_koreksi)
         b.addWidget(b_tambah)
         b.addStretch()

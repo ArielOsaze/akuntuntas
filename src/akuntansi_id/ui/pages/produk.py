@@ -446,7 +446,7 @@ class ProdukPage(QWidget):
 
         # Satu aksi utama saja di header. Aksi lain dipindah ke menu agar
         # baris tombol tidak meluber keluar tepi halaman.
-        b_tambah = w.tombol("Tambah Produk", gaya="primary", ikon="+")
+        b_tambah = w.tombol("Tambah Produk", gaya="primary", ikon="tambah")
         b_tambah.clicked.connect(self._tambah)
         self.header.tambah_aksi(b_tambah)
 
@@ -827,6 +827,7 @@ class ProdukPage(QWidget):
 
     def _opname(self):
         if not self.ctx.company_id:
+            w.belum_ada_perusahaan(self, "opname")
             return
         d = DialogStockOpname(self.ctx, self)
         if d.exec():

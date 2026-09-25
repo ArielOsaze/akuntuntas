@@ -228,7 +228,7 @@ class DialogKontrak(QDialog):
         it.addWidget(self.tabel_item, 1)
 
         baris_it = QHBoxLayout()
-        b_tambah_item = w.tombol("Tambah Baris", gaya="biasa", ikon="+")
+        b_tambah_item = w.tombol("Tambah Baris", gaya="biasa", ikon="tambah")
         b_tambah_item.clicked.connect(self._tambah_item)
         baris_it.addWidget(b_tambah_item)
         b_hapus_item = w.tombol("Hapus Baris", gaya="biasa")
@@ -593,7 +593,7 @@ class KontrakPage(QWidget):
             "Catat perjanjian dengan mitra, pantau masa berlakunya, dan "
             "simpan dokumennya di satu tempat.")
 
-        b_baru = w.tombol("Kontrak Baru", gaya="primary", ikon="+")
+        b_baru = w.tombol("Kontrak Baru", gaya="primary", ikon="tambah")
         b_baru.clicked.connect(self._tambah)
         self.header.tambah_aksi(b_baru)
 

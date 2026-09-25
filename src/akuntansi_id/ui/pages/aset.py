@@ -33,7 +33,7 @@ class AsetPage(HalamanDasar):
         super().__init__(ctx, "Aset Tetap & Penyusutan",
                          "Catat perolehan aset dan hitung penyusutan komersial "
                          "maupun fiskal sesuai PMK 72/2023.")
-        b = w.tombol("Tambah Aset", gaya="primary", ikon="+")
+        b = w.tombol("Tambah Aset", gaya="primary", ikon="tambah")
         b.clicked.connect(self._tambah)
         self.header.tambah_aksi(b)
 
@@ -134,6 +134,7 @@ class AsetPage(HalamanDasar):
 
     def _tambah(self):
         if not self.ctx.company_id:
+            w.belum_ada_perusahaan(self, "menambah data")
             return
         d = DialogAset(self.ctx, self)
         if d.exec():
@@ -452,6 +453,7 @@ class PayrollPage(QWidget):
 
     def muat(self):
         if not self.ctx.company_id:
+            w.belum_ada_perusahaan(self)
             return
         if self.tabs.currentIndex() == 0:
             self._muat_karyawan()
@@ -470,13 +472,13 @@ class PayrollPage(QWidget):
 
         baris = QHBoxLayout()
         baris.setSpacing(9)
-        b = w.tombol("Tambah Karyawan", gaya="primary", ikon="+")
+        b = w.tombol("Tambah Karyawan", gaya="primary", ikon="tambah")
         b.clicked.connect(self._tambah_karyawan)
         baris.addWidget(b)
         b2 = w.tombol("Ubah", ikon="pengaturan")
         b2.clicked.connect(self._ubah_karyawan)
         baris.addWidget(b2)
-        b3 = w.tombol("Nonaktifkan", gaya="danger", ikon="⊘")
+        b3 = w.tombol("Nonaktifkan", gaya="danger", ikon="nonaktif")
         b3.clicked.connect(self._hapus_karyawan)
         baris.addWidget(b3)
         baris.addStretch()
@@ -524,6 +526,7 @@ class PayrollPage(QWidget):
 
     def _tambah_karyawan(self):
         if not self.ctx.company_id:
+            w.belum_ada_perusahaan(self, "menambah karyawan")
             return
         d = DialogKaryawan(self.ctx, self)
         if d.exec():

@@ -376,6 +376,16 @@ def _gambar(nama: str, p: QPainter, u: float) -> None:
         p.drawLine(_p(8.5, 5, u), _p(16, 12, u))
         p.drawLine(_p(16, 12, u), _p(8.5, 19, u))
 
+    elif nama == "nonaktif":
+        # Lingkaran bergaris miring: lambang umum untuk keadaan dimatikan.
+        p.drawEllipse(_r(4, 4, 16, 16, u))
+        p.drawLine(_p(7.6, 7.6, u), _p(16.4, 16.4, u))
+
+    elif nama == "aktif":
+        # Lingkaran dengan tanda centang: keadaan dinyalakan.
+        p.drawEllipse(_r(4, 4, 16, 16, u))
+        p.drawPolyline(_poli([(8, 12.4), (11, 15.4), (16.4, 8.8)], u))
+
     elif nama == "panah_bawah":
         p.drawLine(_p(5, 8.5, u), _p(12, 16, u))
         p.drawLine(_p(12, 16, u), _p(19, 8.5, u))
@@ -394,6 +404,7 @@ _NAMA = {
     "mata", "kalender", "transfer", "peringatan", "info", "uang", "kunci",
     "buka", "dokumen", "waktu", "laporan_kecil",
     "panah_kiri", "panah_kanan", "panah_bawah",
+    "nonaktif", "aktif",
 }
 
 

@@ -269,7 +269,7 @@ class PengaturanPage(QWidget):
             # supaya pengguna paket Standar tahu alasannya.
             from .. import batas_paket
             if batas_paket.boleh_pakai(self.ctx.lisensi, "multi_entitas"):
-                b_tambah = w.tombol("Tambah Perusahaan Baru", ikon="+")
+                b_tambah = w.tombol("Tambah Perusahaan Baru", ikon="tambah")
                 b_tambah.clicked.connect(lambda: self.pindah_halaman.emit("perusahaan"))
                 l2.addWidget(b_tambah, 0, Qt.AlignLeft)
             else:
@@ -393,13 +393,13 @@ class PengaturanPage(QWidget):
 
         baris = QHBoxLayout()
         baris.setSpacing(9)
-        b = w.tombol("Tambah Pengguna", gaya="primary", ikon="+")
+        b = w.tombol("Tambah Pengguna", gaya="primary", ikon="tambah")
         b.clicked.connect(self._tambah_pengguna)
         baris.addWidget(b)
         b2 = w.tombol("Reset Password", ikon="pengguna")
         b2.clicked.connect(self._reset_password)
         baris.addWidget(b2)
-        b3 = w.tombol("Aktifkan / Nonaktifkan", ikon="⊘")
+        b3 = w.tombol("Aktifkan / Nonaktifkan", ikon="nonaktif")
         b3.clicked.connect(self._toggle_pengguna)
         baris.addWidget(b3)
         b4 = w.tombol("Ganti Password Saya", ikon="periode")
@@ -568,7 +568,7 @@ class PengaturanPage(QWidget):
         b.clicked.connect(self._buat_backup)
         baris.addWidget(b)
 
-        b2 = w.tombol("Pulihkan dari Cadangan", ikon="⟲")
+        b2 = w.tombol("Pulihkan dari Cadangan", ikon="segarkan")
         b2.clicked.connect(self._pulihkan_backup)
         baris.addWidget(b2)
 
@@ -677,6 +677,32 @@ class PengaturanPage(QWidget):
                 QMessageBox.information(
                     self, "Dibatalkan",
                     "Data tidak dihapus karena kata konfirmasi tidak sesuai.")
+            return
+
+        # Password pengelola diminta sebagai pengaman terakhir. Menghapus
+        # seluruh pembukuan tidak dapat dibatalkan dari dalam aplikasi,
+        # jadi tindakan ini tidak boleh selesai hanya dengan satu klik.
+        sandi, ok = QInputDialog.getText(
+            self, "Konfirmasi password",
+            "Masukkan password akun Anda untuk memastikan bahwa memang "
+            "Anda yang menghapus data ini:",
+            QLineEdit.Password)
+        if not ok:
+            QMessageBox.information(self, "Dibatalkan",
+                                    "Data tidak dihapus.")
+            return
+
+        try:
+            from ...core import security as sec
+            hasil_login = sec.login(self.ctx.username, sandi)
+            if not hasil_login.ok:
+                QMessageBox.warning(
+                    self, "Password salah",
+                    "Password yang Anda masukkan tidak sesuai. "
+                    "Data tidak dihapus.")
+                return
+        except Exception as e:
+            QMessageBox.critical(self, "Gagal memeriksa password", str(e))
             return
 
         try:
@@ -1125,6 +1151,26 @@ class DialogResetPassword(QDialog):
         self.inp_ulang.setEchoMode(QLineEdit.Password)
         l.addWidget(self.inp_ulang)
 
+        # Password pengelola diminta sebagai pengaman. Tanpa ini, siapa pun
+        # yang sempat memakai aplikasi dapat mengganti password akun lain,
+        # termasuk akun pemilik.
+        l.addSpacing(6)
+        l.addWidget(w.label("Password Anda (pengelola)", objek="FormLabel"))
+        self.inp_admin = QLineEdit()
+        self.inp_admin.setEchoMode(QLineEdit.Password)
+        self.inp_admin.setPlaceholderText(
+            "Masukkan password akun Anda sendiri untuk mengonfirmasi")
+        l.addWidget(self.inp_admin)
+
+        catatan = QLabel(
+            "Penggantian password akun lain dicatat dalam jejak audit "
+            "beserta nama akun yang melakukannya.")
+        catatan.setWordWrap(True)
+        catatan.setStyleSheet(
+            f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
+            "background: transparent;")
+        l.addWidget(catatan)
+
         aksi = QHBoxLayout()
         aksi.addStretch()
         b = w.tombol("Batal")
@@ -1142,7 +1188,8 @@ class DialogResetPassword(QDialog):
                                     "Password dan ulangannya tidak sama.")
                 return
             sec.reset_password(self.user["id"], self.inp_password.text(),
-                               self.ctx.user_id, self.ctx.username)
+                               self.ctx.user_id, self.ctx.username,
+                               password_aktor=self.inp_admin.text())
             QMessageBox.information(
                 self, "Password direset",
                 f"Password pengguna '{self.user['username']}' telah direset.\n\n"
@@ -1251,7 +1298,7 @@ class ChecklistPage(QWidget):
         self.cmb_masa.currentIndexChanged.connect(self.muat)
         self.header.tambah_aksi(self.cmb_masa)
 
-        b = w.tombol("Tambah Item", ikon="+")
+        b = w.tombol("Tambah Item", ikon="tambah")
         b.clicked.connect(self._tambah)
         self.header.tambah_aksi(b)
 

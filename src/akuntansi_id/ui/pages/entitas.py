@@ -326,7 +326,7 @@ class DimensiPage(QWidget):
         lay.addWidget(self.tabel_cc, 1)
 
         baris = QHBoxLayout()
-        b = w.tombol("Tambah Cost Center", gaya="primary", ikon="+")
+        b = w.tombol("Tambah Cost Center", gaya="primary", ikon="tambah")
         b.clicked.connect(self._tambah_cc)
         baris.addWidget(b)
         baris.addStretch()
@@ -348,7 +348,7 @@ class DimensiPage(QWidget):
         lay.addWidget(self.tabel_proyek, 1)
 
         baris = QHBoxLayout()
-        b = w.tombol("Tambah Proyek", gaya="primary", ikon="+")
+        b = w.tombol("Tambah Proyek", gaya="primary", ikon="tambah")
         b.clicked.connect(self._tambah_proyek)
         baris.addWidget(b)
         b2 = w.tombol("Lihat Biaya Proyek", ikon="")
@@ -372,7 +372,7 @@ class DimensiPage(QWidget):
         lay.addWidget(self.tabel_cabang, 1)
 
         baris = QHBoxLayout()
-        b = w.tombol("Tambah Cabang", gaya="primary", ikon="+")
+        b = w.tombol("Tambah Cabang", gaya="primary", ikon="tambah")
         b.clicked.connect(self._tambah_cabang)
         baris.addWidget(b)
         baris.addStretch()
@@ -409,6 +409,7 @@ class DimensiPage(QWidget):
 
     def muat(self):
         if not self.ctx.company_id:
+            w.belum_ada_perusahaan(self)
             return
         idx = self.tabs.currentIndex()
         if idx == 0:
@@ -593,7 +594,7 @@ class KonsolidasiPage(QWidget):
             "Konsolidasi & Multi Entitas",
             "Gabungkan laporan beberapa perusahaan dalam satu grup kepemilikan.")
 
-        b = w.tombol("Grup Baru", gaya="primary", ikon="+")
+        b = w.tombol("Grup Baru", gaya="primary", ikon="tambah")
         b.clicked.connect(self._grup_baru)
         self.header.tambah_aksi(b)
 
@@ -643,7 +644,7 @@ class KonsolidasiPage(QWidget):
         # Baris tombol dipisah supaya tidak meluber saat jendela menyempit.
         baris_aksi = QHBoxLayout()
         baris_aksi.setSpacing(11)
-        b2 = w.tombol("Tambah Anggota", ikon="+")
+        b2 = w.tombol("Tambah Anggota", ikon="tambah")
         b2.clicked.connect(self._tambah_anggota)
         baris_aksi.addWidget(b2)
 
@@ -994,7 +995,7 @@ class PeriodePage(QWidget):
 
         baris = QHBoxLayout()
         baris.setSpacing(9)
-        b1 = w.tombol("Template Baru", gaya="primary", ikon="+")
+        b1 = w.tombol("Template Baru", gaya="primary", ikon="tambah")
         b1.clicked.connect(self._template_baru)
         baris.addWidget(b1)
         b2 = w.tombol("Jalankan Sekarang", gaya="success", ikon="simpan")
@@ -1046,6 +1047,7 @@ class PeriodePage(QWidget):
 
     def muat(self):
         if not self.ctx.company_id:
+            w.belum_ada_perusahaan(self)
             return
         idx = self.tabs.currentIndex()
         if idx == 0:

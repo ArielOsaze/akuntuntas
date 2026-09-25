@@ -138,8 +138,6 @@ def reset_data(company_id: int, catat_ke_log: bool = True,
     Mengembalikan keterangan berisi jumlah baris yang terhapus dan lokasi
     berkas cadangan.
     """
-    from ..core import security as sec
-
     sebelum = ringkasan(company_id)
 
     # Cadangan sebelum menghapus. Tanpa ini, kesalahan memilih perusahaan
@@ -195,14 +193,16 @@ def reset_data(company_id: int, catat_ke_log: bool = True,
         gagal_dihapus.append(f"number_sequences ({e})")
 
     if catat_ke_log:
-        try:
-            sec.log_action(user_id, username, "data.reset",
-                           f"Reset data usaha. Terhapus: "
-                           f"{sum(terhapus.values())} baris. "
-                           f"Cadangan: {berkas.name}")
-        except Exception as e:
-            logging.getLogger("akuntansiid").warning(
-                "Riwayat reset gagal dicatat: %s", e)
+        # Pencatatan riwayat memakai db.log_action, bukan sec.log_action.
+        # Fungsi itu tidak pernah ada di modul security, sehingga
+        # pencatatannya selalu gagal dan penghapusan data tidak meninggalkan
+        # jejak audit sama sekali.
+        db.log_action(user_id, username, company_id, "data.reset",
+                      "companies", company_id,
+                      f"Reset data usaha. Terhapus: "
+                      f"{sum(terhapus.values())} baris. "
+                      f"Cadangan: {berkas.name}",
+                      db.KATEGORI_DATA)
 
     return {
         "sebelum": sebelum,

@@ -225,7 +225,7 @@ class BiayaPage(QWidget):
             "Catat biaya operasional dengan alur pengajuan, persetujuan, dan "
             "pembayaran.")
 
-        b = w.tombol("Ajukan Biaya", gaya="primary", ikon="+")
+        b = w.tombol("Ajukan Biaya", gaya="primary", ikon="tambah")
         b.clicked.connect(self._tambah)
         self.header.tambah_aksi(b)
 
@@ -631,7 +631,7 @@ class DialogKategoriBiaya(QDialog):
 
         baris = QHBoxLayout()
         baris.setSpacing(9)
-        b = w.tombol("Tambah Kategori", gaya="primary", ikon="+")
+        b = w.tombol("Tambah Kategori", gaya="primary", ikon="tambah")
         b.clicked.connect(self._tambah)
         baris.addWidget(b)
         b2 = w.tombol("Hapus", gaya="danger", ikon="hapus")
@@ -1045,10 +1045,10 @@ class DialogRekonsiliasi(QDialog):
 
         aksi = QHBoxLayout()
         aksi.setSpacing(9)
-        b1 = w.tombol("Buat Jurnal dari Mutasi", gaya="primary", ikon="+")
+        b1 = w.tombol("Buat Jurnal dari Mutasi", gaya="primary", ikon="tambah")
         b1.clicked.connect(self._jurnal_dari_mutasi)
         aksi.addWidget(b1)
-        b2 = w.tombol("Tandai Dikecualikan", ikon="⊘")
+        b2 = w.tombol("Tandai Dikecualikan", ikon="nonaktif")
         b2.clicked.connect(self._kecualikan)
         aksi.addWidget(b2)
         aksi.addStretch()
@@ -1292,7 +1292,7 @@ class BankPage(QWidget):
             "Kelola rekening kas, bank, dan dompet digital; impor mutasi rekening "
             "koran dan lakukan rekonsiliasi.")
 
-        b1 = w.tombol("Rekening Baru", gaya="primary", ikon="+")
+        b1 = w.tombol("Rekening Baru", gaya="primary", ikon="tambah")
         b1.clicked.connect(self._rekening_baru)
         self.header.tambah_aksi(b1)
 
@@ -1394,10 +1394,10 @@ class BankPage(QWidget):
         lay.addWidget(self.tabel_mutasi, 1)
 
         baris2 = QHBoxLayout()
-        b1 = w.tombol("Buat Jurnal", gaya="primary", ikon="+")
+        b1 = w.tombol("Buat Jurnal", gaya="primary", ikon="tambah")
         b1.clicked.connect(self._jurnal_mutasi)
         baris2.addWidget(b1)
-        b2 = w.tombol("Dikecualikan", ikon="⊘")
+        b2 = w.tombol("Dikecualikan", ikon="nonaktif")
         b2.clicked.connect(self._kecualikan_mutasi)
         baris2.addWidget(b2)
         baris2.addStretch()

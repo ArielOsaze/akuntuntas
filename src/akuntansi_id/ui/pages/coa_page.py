@@ -43,7 +43,7 @@ class CoaPage(QWidget):
             "Daftar akun yang dipakai untuk mencatat transaksi. Aplikasi menyiapkan "
             "template sesuai bentuk badan usaha Anda.")
 
-        b = w.tombol("Tambah Akun", gaya="primary", ikon="+")
+        b = w.tombol("Tambah Akun", gaya="primary", ikon="tambah")
         b.clicked.connect(self._tambah)
         self.header.tambah_aksi(b)
 
@@ -170,6 +170,7 @@ class CoaPage(QWidget):
 
     def _tambah(self):
         if not self.ctx.company_id:
+            w.belum_ada_perusahaan(self, "menambah data")
             return
         d = DialogAkun(self.ctx, self)
         if d.exec():
@@ -189,6 +190,7 @@ class CoaPage(QWidget):
 
     def _saldo_awal(self):
         if not self.ctx.company_id:
+            w.belum_ada_perusahaan(self, "saldo awal")
             return
         d = DialogSaldoAwal(self.ctx, self)
         if d.exec():
