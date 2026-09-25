@@ -17,7 +17,7 @@ from pathlib import Path
 
 AKAR = Path(__file__).resolve().parent.parent
 PASANG = Path(r"C:\Users\ariel\AkunTuntas")
-SETUP = AKAR / "installer_output" / "AkunTuntas-1.1.1-Setup.exe"
+SETUP = AKAR / "installer_output" / "AkunTuntas-1.1.2-Setup.exe"
 DATA = Path(os.environ.get("LOCALAPPDATA", "")) / "AkunTuntas"
 
 

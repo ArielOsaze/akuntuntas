@@ -787,7 +787,10 @@ class DashboardPage(QWidget):
             lencana = QLabel(nomor)
             lencana.setFixedSize(24, 24)
             lencana.setAlignment(Qt.AlignCenter)
-            lencana.setStyleSheet(
+            # Gaya ditulis lewat theme.latar() supaya hanya berlaku pada
+            # label ini, tidak menular ke widget di dalamnya.
+            theme.latar(
+                lencana,
                 f"background: {C.PRIMARY_SOFT}; color: {C.PRIMARY_DARK}; "
                 f"border-radius: 12px; font-size: {theme.FS_SMALL}px; "
                 f"font-weight: 700;")
