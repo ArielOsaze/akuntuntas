@@ -67,3 +67,5 @@ _*.txt
 _*.log
 _backup_user/
 supabase/.temp/
+_cek.exe
+_deploy/
