@@ -17,7 +17,7 @@ from PySide6.QtCore import Qt, Signal, QRectF
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QBrush, QLinearGradient
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QFrame,
-    QComboBox, QSizePolicy,
+    QComboBox, QSizePolicy, QPushButton,
 )
 
 from ... import config, services
@@ -483,6 +483,15 @@ class DashboardPage(QWidget):
             self.isi_lay.addWidget(self._panel_kpi(kpi, comp, tahun))
 
         # ============================================================
+        # 1b. PANDUAN LANGKAH AWAL
+        #     Saat pembukuan masih kosong, seluruh kartu menampilkan nol.
+        #     Angka nol tidak memberi tahu apa yang harus dilakukan, jadi
+        #     panduan ini ditampilkan hanya pada keadaan itu.
+        # ============================================================
+        if kpi and kpi.get("jumlah_jurnal_total", 0) == 0:
+            self.isi_lay.addWidget(self._panel_mulai(comp))
+
+        # ============================================================
         # 2. SKOR KESEHATAN + GRAFIK — berdampingan agar keduanya
         #    terlihat tanpa menggulir.
         # ============================================================
@@ -704,6 +713,130 @@ class DashboardPage(QWidget):
         bl.addWidget(btn)
         lay.addWidget(bawah)
         return kartu
+
+    # ==================================================================
+    # PANEL: PANDUAN LANGKAH AWAL
+    # ==================================================================
+    def _panel_mulai(self, comp) -> QWidget:
+        """
+        Panduan singkat saat pembukuan masih kosong.
+
+        Seluruh kartu di dasbor menampilkan nol saat belum ada transaksi.
+        Angka nol tidak memberi tahu apa yang harus dilakukan, sehingga
+        pengguna baru berhenti di layar kosong. Panel ini hanya muncul pada
+        keadaan itu, dan hilang sendiri begitu ada transaksi pertama.
+        """
+        wadah = QWidget()
+        wadah.setStyleSheet("background: transparent;")
+        lay = QVBoxLayout(wadah)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(0)
+
+        kartu = w.Card()
+        isi = kartu.body()
+        isi.setSpacing(14)
+
+        kepala = QHBoxLayout()
+        kepala.setSpacing(10)
+        ikon = QLabel()
+        ikon.setPixmap(icons.pixmap("bantuan", C.PRIMARY, 20))
+        ikon.setFixedSize(20, 20)
+        ikon.setStyleSheet("background: transparent;")
+        kepala.addWidget(ikon)
+
+        judul = QLabel("Langkah pertama menyiapkan pembukuan")
+        judul.setObjectName("SectionTitle")
+        judul.setWordWrap(True)
+        kepala.addWidget(judul, 1)
+        isi.addLayout(kepala)
+
+        nama = comp.get("nama") if isinstance(comp, dict) else None
+        keterangan = QLabel(
+            f"Bagan akun untuk {nama or 'usaha Anda'} sudah disiapkan otomatis. "
+            "Dasbor masih menampilkan nol karena belum ada transaksi yang "
+            "dicatat. Ikuti langkah berikut supaya laporan keuangan Anda "
+            "mulai terisi." if nama else
+            "Bagan akun sudah disiapkan otomatis. Dasbor masih menampilkan "
+            "nol karena belum ada transaksi yang dicatat. Ikuti langkah "
+            "berikut supaya laporan keuangan Anda mulai terisi.")
+        keterangan.setWordWrap(True)
+        keterangan.setStyleSheet(
+            f"color: {C.TEXT_MUTED}; font-size: {theme.FS_BODY}px; "
+            f"background: transparent;")
+        isi.addWidget(keterangan)
+
+        langkah = [
+            ("1", "Catat data usaha",
+             "Nama, NPWP, dan bentuk badan usaha dipakai untuk menghitung "
+             "pajak dan menyusun laporan."),
+            ("2", "Daftarkan pelanggan dan pemasok",
+             "Daftar ini mengisi pilihan pada formulir penjualan dan "
+             "pembelian, sehingga pencatatan berikutnya lebih cepat."),
+            ("3", "Daftarkan produk atau jasa",
+             "Produk memuat harga jual, harga beli, dan persediaan. Bagian "
+             "ini dapat dilewati bila usaha Anda berupa jasa."),
+            ("4", "Catat penjualan atau pembelian pertama",
+             "Satu transaksi sudah cukup untuk mengisi dasbor, laporan, dan "
+             "penilaian kesehatan keuangan."),
+        ]
+
+        for nomor, judul_langkah, penjelasan in langkah:
+            b = QHBoxLayout()
+            b.setSpacing(11)
+
+            lencana = QLabel(nomor)
+            lencana.setFixedSize(24, 24)
+            lencana.setAlignment(Qt.AlignCenter)
+            lencana.setStyleSheet(
+                f"background: {C.PRIMARY_SOFT}; color: {C.PRIMARY_DARK}; "
+                f"border-radius: 12px; font-size: {theme.FS_SMALL}px; "
+                f"font-weight: 700;")
+
+            teks = QVBoxLayout()
+            teks.setSpacing(2)
+            jl = QLabel(judul_langkah)
+            jl.setStyleSheet(
+                f"color: {C.TEXT}; font-size: {theme.FS_BODY}px; "
+                f"font-weight: 600; background: transparent;")
+            jl.setWordWrap(True)
+            pl = QLabel(penjelasan)
+            pl.setStyleSheet(
+                f"color: {C.TEXT_MUTED}; font-size: {theme.FS_SMALL}px; "
+                f"background: transparent;")
+            pl.setWordWrap(True)
+            teks.addWidget(jl)
+            teks.addWidget(pl)
+
+            b.addWidget(lencana, 0, Qt.AlignTop)
+            b.addLayout(teks, 1)
+            isi.addLayout(b)
+
+        isi.addWidget(w.label(
+            "Tombol di bawah membuka halaman yang bersangkutan. Setelah "
+            "transaksi pertama tercatat, panduan ini tidak ditampilkan lagi.",
+            objek="Muted"))
+
+        tombol_baris = QHBoxLayout()
+        tombol_baris.setSpacing(10)
+
+        for teks_tombol, kode_halaman, keterangan_tombol in (
+            ("Catat Penjualan", "penjualan",
+             "Buka halaman penjualan untuk mencatat transaksi pertama"),
+            ("Lihat Bagan Akun", "coa",
+             "Periksa akun yang sudah disiapkan otomatis"),
+        ):
+            t = QPushButton(teks_tombol)
+            t.setCursor(Qt.PointingHandCursor)
+            t.setToolTip(keterangan_tombol)
+            t.clicked.connect(
+                lambda _=False, k=kode_halaman: self.pindah_halaman.emit(k))
+            tombol_baris.addWidget(t)
+
+        tombol_baris.addStretch()
+        isi.addLayout(tombol_baris)
+
+        lay.addWidget(kartu)
+        return wadah
 
     # ==================================================================
     # PANEL: KPI
