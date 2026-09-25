@@ -119,6 +119,35 @@ def baris_hasil(teks: str) -> str:
     return "(ringkasan tidak ditemukan)"
 
 
+def _jumlah(teks: str, kata: str) -> int:
+    """
+    Ambil angka sebelum kata tertentu dari baris ringkasan terakhir.
+
+    Hanya baris ringkasan terakhir yang dihitung, bukan seluruh baris
+    yang memuat kata "hasil". Sebagian rangkaian uji menuliskan hasil
+    antara untuk tiap bagiannya, lalu menutup dengan hasil akhir. Menjumlah
+    seluruhnya akan menghitung pemeriksaan yang sama dua kali.
+    """
+    import re
+
+    baris = baris_hasil(teks).upper()
+    total = 0
+    for angka, satuan in re.findall(r"(\d+)\s+([A-Z]+)", baris):
+        if satuan == kata:
+            total += int(angka)
+    return total
+
+
+def hitung_lulus(teks: str) -> int:
+    """Total pemeriksaan yang lulus pada satu rangkaian uji."""
+    return _jumlah(teks, "LULUS")
+
+
+def hitung_gagal(teks: str) -> int:
+    """Total pemeriksaan yang gagal pada satu rangkaian uji."""
+    return _jumlah(teks, "GAGAL")
+
+
 def main() -> int:
     print("=" * 74)
     print("AKUNTANSIID — RANGKAIAN PENGUJIAN LENGKAP")
@@ -126,6 +155,8 @@ def main() -> int:
 
     ringkasan = []
     semua_lulus = True
+    jumlah_lulus = 0
+    jumlah_gagal = 0
 
     for nama, berkas, keterangan in RANGKAIAN:
         print(f"\n[{nama}] {keterangan}")
@@ -141,9 +172,23 @@ def main() -> int:
         ringkas = baris_hasil(keluaran)
         print(f"  {ringkas}")
         print(f"  berkas hasil: {berkas_hasil.name}")
-        ringkasan.append((nama, ringkas, hasil.returncode == 0))
-        if hasil.returncode != 0:
+
+        # Sebuah rangkaian dianggap lulus hanya bila kodenya keluar dengan
+        # nol DAN keluarannya benar benar memuat angka hasil. Rangkaian yang
+        # berhenti di tengah, misalnya karena kehabisan waktu, tidak memuat
+        # baris hasil. Tanpa pemeriksaan ini, rangkaian yang terpotong akan
+        # terlihat seperti lulus karena kodenya kebetulan nol.
+        ada_hasil = "HASIL" in keluaran.upper()
+        lulus = (hasil.returncode == 0) and ada_hasil
+        if not lulus:
             semua_lulus = False
+            if not ada_hasil:
+                print("  [GAGAL] rangkaian tidak melaporkan hasil "
+                      "(kemungkinan terpotong)")
+
+        jumlah_lulus += hitung_lulus(keluaran)
+        jumlah_gagal += hitung_gagal(keluaran)
+        ringkasan.append((nama, ringkas, lulus))
 
     print("\n" + "=" * 74)
     print("RINGKASAN")
@@ -188,6 +233,9 @@ def main() -> int:
                 if "GAGAL" in b or "TUMPANG" in b or "terpotong" in b:
                     print(f"           {b.strip()[:110]}")
 
+    print("\n" + "=" * 74)
+    print(f"TOTAL: {jumlah_lulus} LULUS, {jumlah_gagal} GAGAL")
+    print("=" * 74)
     print("\n" + "=" * 74)
     print("SEMUA RANGKAIAN LULUS" if semua_lulus else "ADA RANGKAIAN YANG GAGAL")
     print("=" * 74)
