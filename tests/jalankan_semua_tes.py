@@ -195,11 +195,16 @@ def main() -> int:
         print(f"  berkas hasil: {berkas_hasil.name}")
 
         # Sebuah rangkaian dianggap lulus hanya bila kodenya keluar dengan
-        # nol DAN keluarannya benar benar memuat angka hasil. Rangkaian yang
-        # berhenti di tengah, misalnya karena kehabisan waktu, tidak memuat
-        # baris hasil. Tanpa pemeriksaan ini, rangkaian yang terpotong akan
-        # terlihat seperti lulus karena kodenya kebetulan nol.
-        ada_hasil = "HASIL" in keluaran.upper()
+        # nol DAN keluarannya memuat ringkasan hasil. Rangkaian yang berhenti
+        # di tengah, misalnya karena kehabisan waktu, tidak memuatnya.
+        # Tanpa pemeriksaan ini, rangkaian yang terpotong akan terlihat
+        # seperti lulus karena kodenya kebetulan nol.
+        #
+        # Sebagian rangkaian menutup laporannya dengan kata "HASIL", sebagian
+        # lagi dengan "RINGKASAN". Keduanya harus dikenali, karena kalau
+        # tidak, rangkaian yang sebenarnya selesai akan ditandai terpotong.
+        naik = keluaran.upper()
+        ada_hasil = "HASIL" in naik or "RINGKASAN" in naik
         ada_gagal = hitung_gagal(keluaran) > 0
         lulus = (hasil.returncode == 0) and ada_hasil and not ada_gagal
         if not lulus:
@@ -233,6 +238,8 @@ def main() -> int:
             print(f"  {baris.strip()}")
     if hasil.returncode != 0:
         semua_lulus = False
+    jumlah_lulus += hitung_lulus(keluaran)
+    jumlah_gagal += hitung_gagal(keluaran)
 
     # pemeriksaan antarmuka tambahan
     print("\n[antarmuka] Pemeriksaan tambahan")
@@ -248,6 +255,8 @@ def main() -> int:
             [sys.executable, str(path)], cwd=str(AKAR),
             capture_output=True, text=True, timeout=1800)
         keluaran = hasil.stdout + hasil.stderr
+        jumlah_lulus += hitung_lulus(keluaran)
+        jumlah_gagal += hitung_gagal(keluaran)
         ringkas = baris_hasil(keluaran)
         tanda = "LULUS" if hasil.returncode == 0 else "GAGAL"
         print(f"  [{tanda:5s}] {keterangan}")
