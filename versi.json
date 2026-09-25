@@ -1,6 +1,6 @@
 {
-  "versi": "1.0.5",
+  "versi": "1.0.6",
   "build": "2026.09",
   "tanggal": "2026-09-25",
-  "catatan": "Validasi lisensi senyap saat masuk dan pencabutan lisensi dari dashboard admin"
+  "catatan": "Formulir kontak di situs dan pesan masuk di dashboard admin"
 }

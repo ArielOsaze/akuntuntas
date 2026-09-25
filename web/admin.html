@@ -512,6 +512,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12l2 6H4z"/><path d="M4 8v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M9 13h6"/></svg>
                 Pembelian
             </button>
+            <button data-hal="pesan" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Pesan Masuk
+            </button>
             <button data-hal="perangkat" type="button">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
                 Perangkat
@@ -736,9 +740,83 @@
         if (halaman === "lisensi") return muatLisensi();
         if (halaman === "buat") return muatBuat();
         if (halaman === "pesanan") return muatPesanan();
+        if (halaman === "pesan") return muatPesan();
         if (halaman === "perangkat") return muatPerangkat();
         if (halaman === "jejak") return muatJejak();
         if (halaman === "sandi") return muatSandi();
+    }
+
+    // -------------------------------------------------------- pesan masuk
+    // Pesan dari formulir kontak di situs. Situs hanya berkas statis,
+    // sehingga pesannya disimpan di server lalu dibaca dari sini.
+    function muatPesan() {
+        panggil({ aksi: "admin-kontak", token: token }).then(function (d) {
+            if (!d.ok) {
+                if (!gagalSesi(d)) {
+                    isi.innerHTML = '<div class="admin-kosong">' + aman(d.pesan) + '</div>';
+                }
+                return;
+            }
+
+            var daftar = d.pesan || [];
+            var belumDibaca = daftar.filter(function (p) { return !p.dibaca; }).length;
+
+            var html = '<div class="admin-panel"><div class="admin-panel-kepala">' +
+                '<h2>Pesan Masuk</h2>' +
+                '<span style="color:#7E8FA3;font-size:13.5px;">' +
+                daftar.length + ' pesan' +
+                (belumDibaca ? ', ' + belumDibaca + ' belum dibaca' : '') +
+                '</span></div>';
+
+            if (!daftar.length) {
+                html += '<div class="admin-kosong">Belum ada pesan dari formulir kontak.</div>';
+            } else {
+                html += '<div class="admin-tabel-wadah"><table class="admin-tabel"><thead><tr>' +
+                    '<th>Waktu</th><th>Nama</th><th>Kontak</th><th>Pesan</th><th></th>' +
+                    '</tr></thead><tbody>';
+
+                daftar.forEach(function (p) {
+                    var kontak = [];
+                    if (p.email) kontak.push(aman(p.email));
+                    if (p.telepon) kontak.push(aman(p.telepon));
+                    var tebal = p.dibaca ? "" : ' style="font-weight:600;"';
+                    var tanda = p.dibaca ? "" :
+                        ' <span class="admin-pil ditangguhkan">baru</span>';
+
+                    html += '<tr' + tebal + '>' +
+                        '<td style="white-space:nowrap;">' + tanggal(p.dibuat_pada) + '</td>' +
+                        '<td>' + aman(p.nama) + tanda + '</td>' +
+                        '<td>' + (kontak.join("<br>") || "-") + '</td>' +
+                        '<td style="max-width:420px;">' +
+                            aman(p.pesan).replace(/\n/g, "<br>") + '</td>' +
+                        '<td>' + (p.dibaca ? "" :
+                            '<button class="admin-tombol garis kecil" data-baca="' +
+                            aman(p.id) + '" type="button">Tandai dibaca</button>') +
+                        '</td></tr>';
+                });
+                html += '</tbody></table></div>';
+            }
+            html += '</div>';
+            isi.innerHTML = html;
+
+            isi.querySelectorAll("[data-baca]").forEach(function (b) {
+                b.addEventListener("click", function () {
+                    panggil({
+                        aksi: "admin-kontak-dibaca",
+                        token: token,
+                        id: b.dataset.baca
+                    }).then(function (d) {
+                        if (!d.ok) {
+                            if (!gagalSesi(d)) alert(d.pesan || "Gagal menandai pesan.");
+                            return;
+                        }
+                        muatPesan();
+                    });
+                });
+            });
+        }).catch(function () {
+            isi.innerHTML = '<div class="admin-kosong">Tidak dapat memuat pesan.</div>';
+        });
     }
 
     // ------------------------------------------------------------ ikhtisar

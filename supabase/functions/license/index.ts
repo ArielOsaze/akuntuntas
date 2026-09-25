@@ -1164,6 +1164,72 @@ async function tangani(req: Request): Promise<Response> {
     return balas({ ok: true, kunci_publik: kunci.publik });
   }
 
+  // ------------------------------------------------------- formulir kontak
+  // Dipakai formulir kontak di situs. Situs hanya berkas statis, sehingga
+  // tidak dapat mengirim email sendiri; pesannya disimpan di sini lalu
+  // dibaca dari dashboard admin.
+  if (aksi === "kontak") {
+    const nama = (isi.nama || "").trim().slice(0, 120);
+    const email = (isi.email || "").trim().slice(0, 160);
+    const telepon = (isi.telepon || "").trim().slice(0, 40);
+    const pesan = (isi.pesan || "").trim().slice(0, 4000);
+
+    if (!nama || !pesan) {
+      return balas({ ok: false, pesan: "Nama dan pesan wajib diisi." }, 400);
+    }
+    if (!email && !telepon) {
+      return balas({
+        ok: false,
+        pesan: "Isi email atau nomor WhatsApp supaya kami dapat membalas.",
+      }, 400);
+    }
+
+    const { error: galatSimpan } = await db.from("kontak_masuk").insert({
+      nama, email, telepon, pesan,
+    });
+    if (galatSimpan) {
+      return balas({ ok: false, pesan: "Pesan gagal disimpan. Coba lagi." }, 500);
+    }
+
+    return balas({
+      ok: true,
+      pesan: "Pesan Anda sudah kami terima. Kami balas lewat email atau WhatsApp.",
+    });
+  }
+
+  // -------------------------------------------------------- daftar kontak
+  // Dipakai dashboard admin untuk membaca pesan yang masuk.
+  if (aksi === "admin-kontak") {
+    const akun = await periksaSesi(db, (isi.token || "").trim());
+    if (!akun) {
+      return balas({ ok: false, pesan: "Sesi sudah berakhir. Masuk ulang." }, 401);
+    }
+
+    const { data: pesan } = await db
+      .from("kontak_masuk")
+      .select("id, nama, email, telepon, pesan, dibaca, dibuat_pada")
+      .order("dibuat_pada", { ascending: false })
+      .limit(200);
+
+    return balas({ ok: true, pesan: pesan || [] });
+  }
+
+  // ------------------------------------------------- tandai kontak dibaca
+  if (aksi === "admin-kontak-dibaca") {
+    const akun = await periksaSesi(db, (isi.token || "").trim());
+    if (!akun) {
+      return balas({ ok: false, pesan: "Sesi sudah berakhir. Masuk ulang." }, 401);
+    }
+
+    const id = (isi.id || "").trim();
+    if (!id) {
+      return balas({ ok: false, pesan: "Pesan yang ditandai tidak disebutkan." }, 400);
+    }
+
+    await db.from("kontak_masuk").update({ dibaca: true }).eq("id", id);
+    return balas({ ok: true });
+  }
+
   // ---------------------------------------------------------- periksa kunci
   // Dipakai halaman unduhan di situs. Tujuannya hanya memastikan kunci benar
   // benar terdaftar sebelum tautan berkas pemasang diberikan. Perangkat tidak

@@ -833,13 +833,102 @@ body {
 
 .ajakan .tombol:hover { background: #E8F0F9; }
 
-.ajakan-kontak {
-    margin-top: 22px;
-    color: #A8BED4;
-    font-size: 14.5px;
+/* Formulir kontak di bagian ajakan. Latarnya navy, jadi seluruh bidang
+   memakai warna terang supaya terbaca jelas di atas latar gelap. */
+.kontak-baris {
+    margin: 26px 0 30px;
 }
 
-.ajakan-kontak a { color: var(--putih); }
+.kontak-form {
+    max-width: 560px;
+    margin: 0 auto;
+    text-align: left;
+    display: grid;
+    gap: 16px;
+}
+
+.kontak-dua {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.kontak-form label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #D6E3F0;
+}
+
+.kontak-form input,
+.kontak-form textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #34506E;
+    border-radius: 9px;
+    background: #17324C;
+    color: var(--putih);
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.kontak-form input::placeholder,
+.kontak-form textarea::placeholder {
+    color: #7E99B4;
+}
+
+.kontak-form input:focus,
+.kontak-form textarea:focus {
+    outline: none;
+    border-color: #6FA8DC;
+    background: #1B3A57;
+}
+
+.kontak-form textarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.kontak-aksi {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.kontak-form .tombol {
+    background: var(--putih);
+    color: var(--navy);
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.kontak-form .tombol:hover { background: #E8F0F9; }
+.kontak-form .tombol:disabled { opacity: 0.65; cursor: default; }
+
+.kontak-kabar {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.5;
+    flex: 1;
+    min-width: 200px;
+}
+
+.kontak-kabar.benar { color: #7FE0B0; }
+.kontak-kabar.salah { color: #FFB4B4; }
+
+.kontak-catatan {
+    margin: 0;
+    font-size: 13.5px;
+    color: #A8BED4;
+}
+
+@media (max-width: 620px) {
+    .kontak-dua { grid-template-columns: 1fr; }
+}
 
 /* ------------------------------------------------------------------ kaki */
 .kaki {

@@ -39,7 +39,7 @@
   "applicationCategory": "BusinessApplication",
   "applicationSubCategory": "Accounting",
   "operatingSystem": "Windows 10, Windows 11",
-  "softwareVersion": "1.0.5",
+  "softwareVersion": "1.0.6",
   "description": "Aplikasi pembukuan dan perpajakan untuk UMKM, PT Perorangan, dan PT di Indonesia. Bekerja sepenuhnya offline.",
   "url": "https://akuntuntas.xinet.id/",
   "image": "https://akuntuntas.xinet.id/pratinjau.png",
@@ -737,13 +737,53 @@
     <div class="wadah">
         <h2>Siap menuntaskan pembukuan usaha Anda?</h2>
         <p>
-            Hubungi kami untuk pembelian lisensi, pertanyaan teknis, atau
-            penawaran khusus untuk kantor akuntan dan konsultan pajak.
+            Kirim pertanyaan lewat formulir di bawah, atau hubungi kami langsung
+            lewat WhatsApp. Kami balas pada hari kerja.
         </p>
-        <a class="tombol tombol-besar" href="mailto:akuntuntas@gmail.com?subject=Pembelian%20Lisensi%20AkunTuntas">Hubungi Kami</a>
-        <p class="ajakan-kontak">
-            Email: <a href="mailto:akuntuntas@gmail.com">akuntuntas@gmail.com</a>
-        </p>
+
+        <div class="kontak-baris">
+            <a class="tombol tombol-besar"
+               href="https://wa.me/6282224293639?text=Halo%2C%20saya%20ingin%20bertanya%20tentang%20AkunTuntas"
+               target="_blank" rel="noopener">WhatsApp</a>
+        </div>
+
+        <form class="kontak-form" id="form-kontak" novalidate>
+            <div class="kontak-dua">
+                <div>
+                    <label for="kontak-nama">Nama</label>
+                    <input id="kontak-nama" name="nama" type="text"
+                           placeholder="Nama Anda" required>
+                </div>
+                <div>
+                    <label for="kontak-email">Email</label>
+                    <input id="kontak-email" name="email" type="email"
+                           placeholder="nama@email.com">
+                </div>
+            </div>
+
+            <div>
+                <label for="kontak-wa">Nomor WhatsApp</label>
+                <input id="kontak-wa" name="telepon" type="tel"
+                       placeholder="mis. 08123456789">
+            </div>
+
+            <div>
+                <label for="kontak-pesan">Pesan</label>
+                <textarea id="kontak-pesan" name="pesan" rows="4"
+                          placeholder="Tulis pertanyaan atau kebutuhan Anda"
+                          required></textarea>
+            </div>
+
+            <div class="kontak-aksi">
+                <button class="tombol tombol-besar" type="submit" id="kontak-kirim">
+                    Kirim Pesan
+                </button>
+                <p class="kontak-kabar" id="kontak-kabar" role="status"></p>
+            </div>
+            <p class="kontak-catatan">
+                Isi email atau nomor WhatsApp supaya kami dapat membalas.
+            </p>
+        </form>
     </div>
 </section>
 
@@ -789,7 +829,75 @@
             <span><a href="privasi.html" style="color: #8FA7BE;">Kebijakan Privasi</a></span>
         </div>
     </div>
-</footer>
+    </footer>
+
+<script>
+// Formulir kontak. Situs ini hanya berkas statis, jadi pesannya dikirim ke
+// layanan lisensi yang sudah ada lalu disimpan di sana. Pemilik usaha
+// membacanya dari dashboard admin.
+(function () {
+    var form = document.getElementById("form-kontak");
+    if (!form) return;
+
+    var tombol = document.getElementById("kontak-kirim");
+    var kabar = document.getElementById("kontak-kabar");
+
+    function tampilkan(teks, jenis) {
+        kabar.textContent = teks;
+        kabar.className = "kontak-kabar " + (jenis || "");
+    }
+
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        var nama = document.getElementById("kontak-nama").value.trim();
+        var email = document.getElementById("kontak-email").value.trim();
+        var telepon = document.getElementById("kontak-wa").value.trim();
+        var pesan = document.getElementById("kontak-pesan").value.trim();
+
+        if (!nama || !pesan) {
+            tampilkan("Isi nama dan pesan Anda.", "salah");
+            return;
+        }
+        if (!email && !telepon) {
+            tampilkan("Isi email atau nomor WhatsApp supaya kami dapat membalas.", "salah");
+            return;
+        }
+
+        tombol.disabled = true;
+        tombol.textContent = "Mengirim...";
+        tampilkan("");
+
+        fetch("/api/lisensi", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                aksi: "kontak",
+                nama: nama,
+                email: email,
+                telepon: telepon,
+                pesan: pesan
+            })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (!d.ok) {
+                tampilkan(d.pesan || "Pesan gagal dikirim. Coba lagi.", "salah");
+                return;
+            }
+            form.reset();
+            tampilkan("Pesan Anda sudah kami terima. Kami balas lewat email atau WhatsApp.", "benar");
+        })
+        .catch(function () {
+            tampilkan("Tidak dapat menghubungi server. Periksa sambungan internet Anda.", "salah");
+        })
+        .finally(function () {
+            tombol.disabled = false;
+            tombol.textContent = "Kirim Pesan";
+        });
+    });
+})();
+</script>
 
 </body>
 </html>
