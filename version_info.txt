@@ -3,10 +3,14 @@
 # Informasi versi berkas Windows untuk AkunTuntas.exe
 # Dibaca oleh PyInstaller (parameter version= pada EXE).
 #
+# Seluruh angka dan teks versi di bawah ini diisi otomatis oleh
+# tools/naik_versi.py. Jangan diubah manual, karena perubahan manual akan
+# tertimpa pada kenaikan versi berikutnya.
+#
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 0, 0, 0),
-    prodvers=(1, 0, 0, 0),
+    filevers=(1, 0, 1, 0),
+    prodvers=(1, 0, 1, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -19,16 +23,16 @@ VSVersionInfo(
       [
         StringTable(
           '0409',
-          [StringStruct('CompanyName', 'AkunTuntas'),
+          [StringStruct('CompanyName', 'Xinet Group'),
            StringStruct('FileDescription',
                         'AkunTuntas: Pembukuan dan Pajak Perusahaan Indonesia'),
-           StringStruct('FileVersion', '1.0.0.0'),
+           StringStruct('FileVersion', '1.0.1.0'),
            StringStruct('InternalName', 'AkunTuntas'),
            StringStruct('LegalCopyright',
-                        'AkunTuntas. Seluruh hak dilindungi.'),
+                        'Xinet Group. Seluruh hak dilindungi.'),
            StringStruct('OriginalFilename', 'AkunTuntas.exe'),
            StringStruct('ProductName', 'AkunTuntas'),
-           StringStruct('ProductVersion', '1.0.0 Edisi Regulasi 2026')])
+           StringStruct('ProductVersion', '1.0.1 Edisi Regulasi 2026')])
       ]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])
   ]

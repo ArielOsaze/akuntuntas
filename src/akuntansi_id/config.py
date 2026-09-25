@@ -17,8 +17,8 @@ from pathlib import Path
 # --------------------------------------------------------------------------
 APP_NAME = "AkunTuntas"
 APP_LONG_NAME = "AkunTuntas - Pembukuan & Pajak Perusahaan Indonesia"
-APP_VERSION = "1.0.0"
-APP_BUILD = "2026.02"
+APP_VERSION = "1.0.1"
+APP_BUILD = "2026.09"
 APP_PUBLISHER = "AkunTuntas"
 APP_EDITION = "Edisi Regulasi 2026"
 
