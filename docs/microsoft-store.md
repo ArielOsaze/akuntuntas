@@ -132,33 +132,54 @@ dan Anda dapat memperbaikinya lalu mengirim ulang tanpa biaya tambahan.
 
 ## Cara kerja mode uji coba
 
-Paket MSIX memuat berkas `uji_coba.txt`. Keberadaan berkas itu membuat
-aplikasi terbuka tanpa meminta kunci lisensi.
+Paket MSIX memuat berkas `uji_coba.txt` yang isinya keterangan bertanda
+tangan kunci rahasia server. Aplikasi memeriksa tanda tangan itu, lalu
+membuka halaman masuk tanpa meminta kunci lisensi.
 
-Tiga pengaman yang mencegahnya bocor ke versi yang dijual:
+**Cara menerbitkan penanda:**
 
-1. **Berkas penanda tidak ikut pada build installer.** Berkas itu hanya
-   disalin saat `--bungkus` dijalankan, tidak pernah lewat `build.spec` atau
-   `installer.iss`.
+```bash
+python tools/terbitkan_uji_coba.py
+python tools/bungkus_msix.py --siapkan
+python tools/bungkus_msix.py --bungkus
+```
 
-2. **Berlaku 60 hari** sejak aplikasi pertama dibuka. Setelah itu mode uji
-   coba mati sendiri dan aplikasi meminta lisensi sungguhan. Peninjau
-   Microsoft selalu menguji dalam hitungan hari.
+Alat itu meminta email dan sandi dashboard admin, karena penanda memberi
+seluruh fitur Enterprise selama masa berlakunya. Kunci rahasianya tidak ada
+di komputer pengembang, sehingga penanda hanya dapat diterbitkan lewat
+server.
 
-3. **Tidak menyentuh server lisensi.** Mode uji coba tidak mengaktifkan
+Empat pengaman yang mencegahnya bocor ke versi yang dijual:
+
+1. **Aplikasi harus benar-benar berjalan di dalam paket MSIX.** Keadaan itu
+   ditanyakan kepada Windows lewat `GetCurrentPackageFullName`, bukan
+   disimpulkan dari keberadaan berkas. Menaruh berkas penanda di folder
+   aplikasi hasil pemasangan installer biasa, atau di folder mana pun yang
+   dapat ditulis pengguna, tidak membuka apa pun.
+
+2. **Penanda harus bertanda tangan.** Berkas kosong, berkas dengan tanda
+   tangan palsu, dan berkas yang disunting untuk memperpanjang masa
+   berlakunya langsung ditolak, karena tanda tangannya tidak lagi cocok.
+
+3. **Berlaku 60 hari, dihitung dari isi penanda.** Batas waktunya dibaca
+   dari keterangan bertanda tangan, bukan dari catatan di komputer
+   pengguna, sehingga menghapus berkas apa pun tidak memperpanjang masa uji
+   coba. Peninjau Microsoft selalu menguji dalam hitungan hari.
+
+4. **Tidak menyentuh server lisensi.** Mode uji coba tidak mengaktifkan
    apa pun di Supabase dan tidak menulis berkas lisensi, sehingga lisensi
    asli milik pembeli tidak terpengaruh.
 
 ## Hal yang perlu diperhatikan
 
-**Perbarui berkas penanda bila mengirim versi baru.** Setiap kali mengirim
-pembaruan ke Store, paket baru juga memuat mode uji coba dengan hitungan 60
-hari yang baru. Ini memang disengaja, karena peninjau perlu dapat menguji
-setiap versi.
+**Terbitkan penanda baru bila mengirim versi baru.** Setiap kali mengirim
+pembaruan ke Store, terbitkan penanda baru supaya peninjau dapat menguji
+versi tersebut. Ini memang disengaja.
 
-**Jangan sertakan `uji_coba.txt` pada build yang dijual.** Bila berkas itu
-ada di folder aplikasi versi installer, pembeli dapat memakai aplikasi tanpa
-membeli lisensi.
+**Jangan pernah menaruh `uji_coba.txt` di folder aplikasi versi installer.**
+Meskipun sudah tidak dapat dipakai untuk membuka aplikasi, berkas itu tetap
+tidak ada gunanya di sana. Perintah `--bungkus` sudah menolak membungkus
+paket yang penandanya tidak bertanda tangan.
 
 **Versi MSIX wajib empat angka.** Tulis `1.0.0.0`, bukan `1.0.0`. Store
 menolak format yang kurang dari empat angka.
