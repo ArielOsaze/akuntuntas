@@ -90,6 +90,14 @@ class AsetPage(HalamanDasar):
             ("Metode", 110), ("Peny. Komersial", 145), ("Peny. Fiskal", 140),
             ("Selisih", 130),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel.set_pesan_kosong(
+            "Belum ada aset tetap yang terdaftar."
+            "\n\n"
+            "Tekan tombol Tambah Aset untuk mencatat peralatan, kendaraan, "
+            "atau bangunan milik usaha Anda.")
+
         self.body_lay.addWidget(self.tabel, 1)
 
         baris = QHBoxLayout()
@@ -489,6 +497,14 @@ class PayrollPage(QWidget):
             ("Status PTKP", 115), ("Gaji Pokok", 145), ("Tunjangan", 140),
             ("BPJS", 130), ("Beban/Bulan", 155),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_karyawan.set_pesan_kosong(
+            "Belum ada aset tetap yang terdaftar."
+            "\n\n"
+            "Tekan tombol Tambah Aset untuk mencatat peralatan, kendaraan, "
+            "atau bangunan milik usaha Anda.")
+
         lay.addWidget(self.tabel_karyawan, 1)
 
         self.lbl_karyawan = QLabel("")
@@ -584,6 +600,14 @@ class PayrollPage(QWidget):
             ("Potongan BPJS", 145), ("PPh 21", 130), ("Take Home Pay", 150),
             ("Beban Perusahaan", 160), ("Status", 100),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_payroll.set_pesan_kosong(
+            "Belum ada aset tetap yang terdaftar."
+            "\n\n"
+            "Tekan tombol Tambah Aset untuk mencatat peralatan, kendaraan, "
+            "atau bangunan milik usaha Anda.")
+
         self.tabel_payroll.doubleClicked.connect(self._detail_payroll)
         lay.addWidget(self.tabel_payroll, 1)
 
@@ -665,6 +689,14 @@ class PayrollPage(QWidget):
             ("BPJS Karyawan", 130), ("PPh 21", 120), ("Take Home Pay", 140),
             ("Metode PPh 21", 145),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada aset tetap yang terdaftar."
+            "\n\n"
+            "Tekan tombol Tambah Aset untuk mencatat peralatan, kendaraan, "
+            "atau bangunan milik usaha Anda.")
+
         baris = [[
             it["nama"], it["status_ptkp"], theme.money(it["gaji_pokok"]),
             theme.money(it["tunjangan"]), theme.money(it["bonus"]),
@@ -965,6 +997,14 @@ class DialogJalankanPayroll(QDialog):
                                 objek="FormLabel"))
             t = w.Tabel([("Nama", -1), ("Gaji Pokok", 150), ("Tunjangan", 140),
                          ("Bonus (Rp)", 180)])
+            # Keterangan ini tampil saat tabel masih kosong, supaya
+            # pengguna tahu langkah berikutnya.
+            t.set_pesan_kosong(
+                "Belum ada aset tetap yang terdaftar."
+                "\n\n"
+                "Tekan tombol Tambah Aset untuk mencatat peralatan, kendaraan, "
+                "atau bangunan milik usaha Anda.")
+
             t.setRowCount(len(self.karyawan))
             for i, k in enumerate(self.karyawan):
                 t.setItem(i, 0, QTableWidgetItem(k["nama"]))

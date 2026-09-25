@@ -405,6 +405,10 @@ class Tabel(QTableWidget):
     """
     Tabel standar aplikasi: tanpa grid mencolok, header rapi,
     kolom dapat diurutkan, baris berselang-seling.
+
+    Tabel yang belum berisi data menampilkan keterangan di tengah, bukan
+    ruang putih kosong. Tanpa keterangan itu, pengguna mengira halamannya
+    rusak atau masih memuat, padahal memang belum ada datanya.
     """
 
     def __init__(self, kolom: list[tuple[str, int]] = None, parent=None):
@@ -422,8 +426,66 @@ class Tabel(QTableWidget):
         self.horizontalHeader().setHighlightSections(False)
         self.horizontalHeader().setFixedHeight(38)
         self.setSortingEnabled(True)
+        # Keterangan yang tampil saat tabel belum berisi data.
+        self.pesan_kosong = "Belum ada data pada tabel ini."
+        self._label_kosong = None
         if kolom:
             self.set_kolom(kolom)
+
+    # ------------------------------------------------------------------
+    def set_pesan_kosong(self, pesan: str):
+        """
+        Tetapkan keterangan yang tampil saat tabel belum berisi data.
+
+        Setiap halaman dapat menyebutkan langkah yang perlu dilakukan,
+        misalnya "Tekan tombol Tambah Mitra untuk memulai".
+        """
+        self.pesan_kosong = pesan
+        self._perbarui_pesan_kosong()
+
+    def _perbarui_pesan_kosong(self):
+        """Tampilkan atau sembunyikan keterangan tabel kosong."""
+        kosong = self.rowCount() == 0
+        if not kosong:
+            if self._label_kosong is not None:
+                self._label_kosong.hide()
+            return
+
+        # Tabel kecil di dalam dialog tidak diberi keterangan, karena
+        # ruangnya sempit dan keterangan itu justru menutupi isinya.
+        if self.viewport().height() < 110:
+            if self._label_kosong is not None:
+                self._label_kosong.hide()
+            return
+
+        if self._label_kosong is None:
+            self._label_kosong = QLabel(self.pesan_kosong, self.viewport())
+            self._label_kosong.setAlignment(Qt.AlignCenter)
+            self._label_kosong.setWordWrap(True)
+            theme.latar(self._label_kosong,
+                        f"color: {C.TEXT_MUTED}; background: transparent; "
+                        f"font-size: {theme.FS_BODY}px;")
+
+        self._label_kosong.setText(self.pesan_kosong)
+        # Letakkan di bagian atas ruang tabel, tepat di bawah header, supaya
+        # keterangannya terbaca tanpa harus mencari.
+        area = self.viewport().rect()
+        self._label_kosong.setGeometry(area.x() + 20, area.y() + 16,
+                                       max(80, area.width() - 40), 60)
+        self._label_kosong.show()
+        self._label_kosong.raise_()
+
+    def clearContents(self):
+        super().clearContents()
+        self._perbarui_pesan_kosong()
+
+    def setRowCount(self, baris: int):
+        super().setRowCount(baris)
+        self._perbarui_pesan_kosong()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._perbarui_pesan_kosong()
 
     def setCellWidget(self, baris: int, kolom: int, widget):
         """
@@ -896,12 +958,24 @@ class SkorGauge(QWidget):
         super().__init__(parent)
         self.skor = 0
         self.label = ""
+        # Saat pembukuan masih kosong, lingkaran tidak menampilkan angka
+        # nol, karena angka itu terbaca sebagai penilaian buruk.
+        self.belum_dinilai = False
         self.ukuran = ukuran
         self.setFixedSize(ukuran, ukuran)
 
-    def set_skor(self, skor: int, label: str = ""):
+    def set_skor(self, skor: int, label: str = "", belum_dinilai: bool = False):
+        """
+        Tetapkan nilai yang ditampilkan lingkaran.
+
+        Parameter belum_dinilai dipakai saat pembukuan masih kosong. Nilai
+        nol tidak ditampilkan sebagai angka, karena angka nol terbaca
+        sebagai penilaian buruk, padahal yang terjadi adalah belum ada
+        yang dapat dinilai.
+        """
         self.skor = max(0, min(100, int(skor)))
         self.label = label
+        self.belum_dinilai = belum_dinilai
         self.update()
 
     def _lebar_tersedia(self, jarak_dari_pusat: float) -> float:
@@ -943,7 +1017,10 @@ class SkorGauge(QWidget):
         p.drawArc(rect, 90 * 16, -int(360 * 16 * self.skor / 100))
 
         tengah = self.ukuran / 2
-        teks_angka = str(self.skor)
+        # Saat pembukuan masih kosong, lingkaran tidak menampilkan angka
+        # nol, karena angka itu terbaca sebagai penilaian buruk. Tanda
+        # tanya dipakai supaya jelas bahwa nilainya belum ada.
+        teks_angka = "?" if self.belum_dinilai else str(self.skor)
 
         # Ukuran angka disesuaikan dengan ruang di dalam lingkaran.
         ukuran_angka = max(15, int(self.ukuran * 0.21))

@@ -104,8 +104,17 @@ PEMERIKSAAN = [
 
 
 def baris_hasil(teks: str) -> str:
+    """
+    Ambil baris ringkasan hasil dari keluaran sebuah rangkaian uji.
+
+    Sebagian rangkaian menuliskan ringkasannya dengan kata "HASIL",
+    sebagian lagi memakai "RINGKASAN". Keduanya harus dikenali, karena
+    kalau tidak, rangkaian yang sebenarnya lulus akan dilaporkan sebagai
+    tidak menghasilkan ringkasan.
+    """
     for baris in reversed(teks.splitlines()):
-        if "HASIL" in baris.upper():
+        naik = baris.upper()
+        if "HASIL" in naik or "RINGKASAN" in naik:
             return baris.strip()
     return "(ringkasan tidak ditemukan)"
 

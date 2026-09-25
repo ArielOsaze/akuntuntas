@@ -256,6 +256,14 @@ class PanelItem(QWidget):
             ("Satuan", 85), ("Harga Satuan", 150), ("Diskon %", 90),
             ("Jumlah", 160), ("", 40),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel.set_pesan_kosong(
+            "Belum ada transaksi penjualan."
+            "\n\n"
+            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
+            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+
         self.tabel.setMinimumHeight(220)
         lay.addWidget(self.tabel)
 
@@ -824,6 +832,14 @@ class DialogPenerimaan(QDialog):
             ("", 40), ("Invoice", 175), ("Tanggal", 110), ("Jatuh Tempo", 115),
             ("Total", 155), ("Sudah Bayar", 145), ("Sisa", 155), ("Alokasi", 165),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel.set_pesan_kosong(
+            "Belum ada transaksi penjualan."
+            "\n\n"
+            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
+            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+
         lay.addWidget(self.tabel, 1)
 
         self.checks: dict[int, QCheckBox] = {}
@@ -1183,6 +1199,14 @@ class PenjualanLengkapPage(QWidget):
             ("Jatuh Tempo", 110), ("Total", 150), ("Dibayar", 140),
             ("Sisa", 140), ("Status", 110),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_inv.set_pesan_kosong(
+            "Belum ada transaksi penjualan."
+            "\n\n"
+            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
+            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+
         self.tabel_inv.doubleClicked.connect(self._detail_invoice)
         lay.addWidget(self.tabel_inv, 1)
 
@@ -1216,6 +1240,14 @@ class PenjualanLengkapPage(QWidget):
             ("Tgl Kirim", 110), ("Subtotal", 150), ("PPN", 140),
             ("Total", 150), ("Status", 115),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_so.set_pesan_kosong(
+            "Belum ada transaksi penjualan."
+            "\n\n"
+            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
+            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+
         lay.addWidget(self.tabel_so, 1)
 
         baris = QHBoxLayout()
@@ -1244,6 +1276,14 @@ class PenjualanLengkapPage(QWidget):
             ("Nomor", 175), ("Tanggal", 110), ("Pelanggan", 130),
             ("Metode", 130), ("Jumlah", 165), ("Referensi", 175), ("Status", 105),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_rcv.set_pesan_kosong(
+            "Belum ada transaksi penjualan."
+            "\n\n"
+            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
+            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+
         self.tabel_rcv.doubleClicked.connect(self._detail_penerimaan)
         lay.addWidget(self.tabel_rcv, 1)
 
@@ -1270,6 +1310,14 @@ class PenjualanLengkapPage(QWidget):
             ("Nomor", 175), ("Tanggal", 110), ("Pelanggan", 130),
             ("Tipe", 120), ("Jumlah", 165), ("Alasan", 280), ("Status", 105),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_nota.set_pesan_kosong(
+            "Belum ada transaksi penjualan."
+            "\n\n"
+            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
+            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+
         lay.addWidget(self.tabel_nota, 1)
 
         baris = QHBoxLayout()
@@ -1297,6 +1345,14 @@ class PenjualanLengkapPage(QWidget):
             ("Belum JT", 145), ("1-30 hari", 140), ("31-60 hari", 140),
             ("61-90 hari", 140), ("di atas 90", 145), ("Total", 155),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_aging.set_pesan_kosong(
+            "Belum ada transaksi penjualan."
+            "\n\n"
+            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
+            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+
         lay.addWidget(self.tabel_aging, 1)
 
         baris = QHBoxLayout()
@@ -1677,6 +1733,14 @@ class PenjualanLengkapPage(QWidget):
 
         t = w.Tabel([("Invoice", 190), ("Jatuh Tempo", 120), ("Total Invoice", 165),
                      ("Dialokasikan", 165)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada transaksi penjualan."
+            "\n\n"
+            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
+            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+
         t.isi([[a["invoice_nomor"], theme.tanggal_id(a["jatuh_tempo"] or ""),
                 tx.rupiah(a["total"]), tx.rupiah(a["jumlah"])] for a in alokasi],
               align_kanan={2, 3})
@@ -1824,6 +1888,14 @@ class DialogDetailInvoice(QDialog):
         t = w.Tabel([("Produk/Jasa", -1), ("Qty", 85), ("Satuan", 85),
                      ("Harga Satuan", 150), ("Diskon", 110), ("Jumlah", 160),
                      ("HPP", 150)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada transaksi penjualan."
+            "\n\n"
+            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
+            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+
         t.isi([[it["deskripsi"] or it["produk_nama"] or "", f"{it['qty']:g}",
                 it["satuan"] or "", tx.rupiah(it["harga_satuan"]),
                 f"{it['diskon_persen']:g}%" if it["diskon_persen"]
@@ -1857,6 +1929,14 @@ class DialogDetailInvoice(QDialog):
                                   objek="SectionTitle"))
             t2 = w.Tabel([("Nama Berkas", -1), ("Tipe", 130), ("Versi", 85),
                           ("Diunggah", 165)])
+            # Keterangan ini tampil saat tabel masih kosong, supaya
+            # pengguna tahu langkah berikutnya.
+            t2.set_pesan_kosong(
+                "Belum ada transaksi penjualan."
+                "\n\n"
+                "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
+                "Anda. Jurnal dan pajaknya dihitung otomatis.")
+
             t2.isi([[d["nama_berkas"], d["tipe"] or "", str(d["versi"]),
                      d["created_at"][:16]] for d in docs])
             t2.setMinimumHeight(120)

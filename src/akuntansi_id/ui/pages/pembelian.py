@@ -399,6 +399,14 @@ class DialogBayarVendor(QDialog):
             ("", 40), ("Bill", 175), ("No. Vendor", 145), ("Tanggal", 110),
             ("Jatuh Tempo", 115), ("Total", 150), ("Sisa", 150), ("Alokasi", 165),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel.set_pesan_kosong(
+            "Belum ada transaksi pembelian."
+            "\n\n"
+            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
+            "atau jasa dari pemasok.")
+
         lay.addWidget(self.tabel, 1)
 
         self.checks: dict[int, QCheckBox] = {}
@@ -578,6 +586,14 @@ class DialogReturPembelian(QDialog):
         lay.addWidget(w.label("Barang yang Diretur", objek="SectionTitle"))
         self.tabel = w.Tabel([("Produk", -1), ("Qty Beli", 110), ("Harga", 150),
                               ("Qty Retur", 165)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel.set_pesan_kosong(
+            "Belum ada transaksi pembelian."
+            "\n\n"
+            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
+            "atau jasa dari pemasok.")
+
         lay.addWidget(self.tabel, 1)
 
         self.inputs: dict[int, tuple] = {}
@@ -729,6 +745,14 @@ class PembelianLengkapPage(QWidget):
             ("Pemasok", -1), ("Jatuh Tempo", 110), ("Total", 150),
             ("Sisa", 140), ("Status", 105),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_bill.set_pesan_kosong(
+            "Belum ada transaksi pembelian."
+            "\n\n"
+            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
+            "atau jasa dari pemasok.")
+
         self.tabel_bill.doubleClicked.connect(self._detail_bill)
         lay.addWidget(self.tabel_bill, 1)
 
@@ -756,6 +780,14 @@ class PembelianLengkapPage(QWidget):
             ("Tgl Terima", 110), ("Subtotal", 150), ("PPN", 140),
             ("Total", 150), ("Status", 115),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_po.set_pesan_kosong(
+            "Belum ada transaksi pembelian."
+            "\n\n"
+            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
+            "atau jasa dari pemasok.")
+
         lay.addWidget(self.tabel_po, 1)
 
         baris = QHBoxLayout()
@@ -784,6 +816,14 @@ class PembelianLengkapPage(QWidget):
             ("Nomor", 175), ("Tanggal", 110), ("Pemasok", -1),
             ("Metode", 130), ("Jumlah", 165), ("Referensi", 175), ("Status", 105),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_bayar.set_pesan_kosong(
+            "Belum ada transaksi pembelian."
+            "\n\n"
+            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
+            "atau jasa dari pemasok.")
+
         lay.addWidget(self.tabel_bayar, 1)
 
         baris = QHBoxLayout()
@@ -811,6 +851,14 @@ class PembelianLengkapPage(QWidget):
             ("Belum JT", 145), ("1-30 hari", 140), ("31-60 hari", 140),
             ("61-90 hari", 140), ("di atas 90", 145), ("Total", 155),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_aging_ap.set_pesan_kosong(
+            "Belum ada transaksi pembelian."
+            "\n\n"
+            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
+            "atau jasa dari pemasok.")
+
         lay.addWidget(self.tabel_aging_ap, 1)
 
         baris = QHBoxLayout()
@@ -1034,6 +1082,14 @@ class PembelianLengkapPage(QWidget):
 
         t = w.Tabel([("Produk", -1), ("Qty", 90), ("Satuan", 85),
                      ("Harga Satuan", 155), ("Subtotal", 165)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada transaksi pembelian."
+            "\n\n"
+            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
+            "atau jasa dari pemasok.")
+
         t.isi([[it["deskripsi"] or it["produk_nama"] or "", f"{it['qty']:g}",
                 it["satuan"] or "", tx.rupiah(it["harga_satuan"]),
                 tx.rupiah(it["subtotal"])] for it in items],

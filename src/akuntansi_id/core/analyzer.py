@@ -163,6 +163,23 @@ def analisis_kesehatan(company_id: int, tahun: int,
         "selisih_neraca": nr.selisih,
     }
 
+    # ---------------------------------------------------------------- kosong
+    # Belum ada satu pun jurnal berarti belum ada yang dapat dinilai. Tanpa
+    # pemeriksaan ini, seluruh pemeriksaan lolos karena tidak menemukan
+    # kesalahan, dan aplikasi memberi nilai tinggi kepada pembukuan yang
+    # sebenarnya masih kosong. Pengguna mengira pembukuannya sehat padahal
+    # belum ada isinya sama sekali.
+    if jml_jurnal_total == 0:
+        hasil.skor = 0
+        hasil.grade = "N/A"
+        hasil.grade_label = "Belum Dinilai"
+        hasil.ringkasan = (
+            "Belum ada transaksi yang tercatat, sehingga kondisi keuangan "
+            "belum dapat dinilai. Nilai akan muncul setelah Anda mencatat "
+            "transaksi pertama.")
+        hasil.temuan = []
+        return hasil
+
     T: list[Temuan] = []
 
     # ======================================================================

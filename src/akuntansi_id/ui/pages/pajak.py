@@ -209,6 +209,14 @@ class PajakPage(QWidget):
 
         # rincian perhitungan
         t = w.Tabel([("Uraian", -1), ("Jumlah (Rp)", 200), ("Keterangan", 380)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada data perpajakan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum atau Penjualan. "
+            "Perhitungan pajak akan muncul di sini.")
+
         baris_t, warna = [], {}
 
         def tambah(u, n, ket="", tebal=False, uang=True):
@@ -308,6 +316,14 @@ class PajakPage(QWidget):
             ("Kurang Bayar", 150), ("Lebih Bayar", 140), ("Disetor", 140),
             ("Sisa", 140), ("Status", 130),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada data perpajakan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum atau Penjualan. "
+            "Perhitungan pajak akan muncul di sini.")
+
         baris, warna = [], {}
         for i, d in enumerate(data):
             idx = len(baris)
@@ -391,6 +407,14 @@ class PajakPage(QWidget):
             ("Tanggal", 100), ("Masa", 90), ("Kode", 130), ("Jenis", -1),
             ("DPP", 140), ("Tarif", 75), ("Pajak", 135), ("Status", 105),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada data perpajakan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum atau Penjualan. "
+            "Perhitungan pajak akan muncul di sini.")
+
         baris, warna = [], {}
         for i, r in enumerate(data):
             idx = len(baris)
@@ -413,6 +437,14 @@ class PajakPage(QWidget):
             ("Tanggal Bayar", 120), ("Jenis Pajak", 130), ("Masa", 95),
             ("Jumlah", 150), ("NTPN", 190), ("Cara Bayar", 130), ("Catatan", -1),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t2.set_pesan_kosong(
+            "Belum ada data perpajakan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum atau Penjualan. "
+            "Perhitungan pajak akan muncul di sini.")
+
         baris2 = [[
             theme.tanggal_id(b["tanggal_bayar"]), b["jenis_pajak"], b["masa"],
             theme.money(b["jumlah"]), b["ntpn"], b["cara_bayar"], b["catatan"],
@@ -479,6 +511,14 @@ class PajakPage(QWidget):
             "info", "Tentang Rekonsiliasi Fiskal"))
 
         t = w.Tabel([("Uraian", -1), ("Jumlah (Rp)", 200), ("Keterangan", 420)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada data perpajakan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum atau Penjualan. "
+            "Perhitungan pajak akan muncul di sini.")
+
         baris, warna = [], {}
         for uraian, nilai, ket in rekon.rincian:
             idx = len(baris)
@@ -506,6 +546,14 @@ class PajakPage(QWidget):
         manual = services.list_koreksi_manual(cid, tahun)
         t2 = w.Tabel([("Uraian", -1), ("Jenis", 110), ("Nilai", 150),
                       ("Dokumen", 200), ("", 90)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t2.set_pesan_kosong(
+            "Belum ada data perpajakan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum atau Penjualan. "
+            "Perhitungan pajak akan muncul di sini.")
+
         baris2, warna2 = [], {}
         for i, m in enumerate(manual):
             idx = len(baris2)
@@ -529,6 +577,14 @@ class PajakPage(QWidget):
                 "warning", "Akun perlu tinjauan manual"))
             t3 = w.Tabel([("Kode", 90), ("Nama Akun", -1), ("Saldo", 160),
                           ("Catatan", 400)])
+            # Keterangan ini tampil saat tabel masih kosong, supaya
+            # pengguna tahu langkah berikutnya.
+            t3.set_pesan_kosong(
+                "Belum ada data perpajakan."
+                "\n\n"
+                "Catat dulu transaksi pada menu Jurnal Umum atau Penjualan. "
+                "Perhitungan pajak akan muncul di sini.")
+
             baris3 = [[d.kode, d.nama, theme.money(d.saldo_akhir_normal),
                        "Perlu ditinjau: pastikan ada dokumen pendukung"] for d in review]
             t3.isi(baris3, align_kanan={2})
@@ -575,6 +631,14 @@ class PajakPage(QWidget):
         t = w.Tabel([("Tenggat", 130), ("Hari", 105), ("Kewajiban", -1),
                      ("Masa", 130), ("Sanksi Bila Terlambat", 380),
                      ("Dasar Hukum", 320)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada data perpajakan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum atau Penjualan. "
+            "Perhitungan pajak akan muncul di sini.")
+
         baris, warna = [], {}
         for i, d in enumerate(data):
             idx = len(baris)

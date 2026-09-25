@@ -353,6 +353,14 @@ class DialogStockOpname(QDialog):
 
         self.tabel = w.Tabel([("Produk", -1), ("Satuan", 90), ("Stok Tercatat", 145),
                               ("Stok Fisik", 165), ("Selisih", 145)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel.set_pesan_kosong(
+            "Belum ada produk atau jasa yang terdaftar."
+            "\n\n"
+            "Tekan tombol Tambah Produk untuk mencatat barang atau jasa "
+            "yang Anda jual.")
+
         lay.addWidget(self.tabel, 1)
 
         self.inputs: dict[int, w.InputRupiah] = {}
@@ -525,6 +533,14 @@ class ProdukPage(QWidget):
             ("Harga Beli", 140), ("Harga Jual", 140), ("Stok", 110),
             ("Metode HPP", 115), ("Nilai Stok", 155),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_produk.set_pesan_kosong(
+            "Belum ada produk atau jasa yang terdaftar."
+            "\n\n"
+            "Tekan tombol Tambah Produk untuk mencatat barang atau jasa "
+            "yang Anda jual.")
+
         self.tabel_produk.doubleClicked.connect(self._ubah)
         lay.addWidget(self.tabel_produk, 1)
 
@@ -571,6 +587,14 @@ class ProdukPage(QWidget):
             ("HPP Satuan", 145), ("Nilai Stok", 160), ("Stok Min", 105),
             ("Status", 135),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_stok.set_pesan_kosong(
+            "Belum ada produk atau jasa yang terdaftar."
+            "\n\n"
+            "Tekan tombol Tambah Produk untuk mencatat barang atau jasa "
+            "yang Anda jual.")
+
         lay.addWidget(self.tabel_stok, 1)
 
         baris2 = QHBoxLayout()
@@ -617,6 +641,14 @@ class ProdukPage(QWidget):
             ("Keterangan", -1), ("Masuk", 110), ("Keluar", 110),
             ("Harga Satuan", 140), ("Nilai", 150), ("Sisa FIFO", 110),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_kartu.set_pesan_kosong(
+            "Belum ada produk atau jasa yang terdaftar."
+            "\n\n"
+            "Tekan tombol Tambah Produk untuk mencatat barang atau jasa "
+            "yang Anda jual.")
+
         lay.addWidget(self.tabel_kartu, 1)
 
         self.lbl_kartu = QLabel("")

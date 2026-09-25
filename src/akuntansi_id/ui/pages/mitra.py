@@ -345,6 +345,12 @@ class MitraPage(QWidget):
                  ("Kontak", 210), ("Kota", 110),
                  ("Termin", 80), ("Total Transaksi", 150), ("Saldo", 140)]
         t = w.Tabel(kolom)
+        # Keterangan ini tampil saat daftar masih kosong, supaya pengguna
+        # tahu langkah berikutnya dan tidak mengira halamannya rusak.
+        t.set_pesan_kosong(
+            "Belum ada mitra yang terdaftar.\n\n"
+            "Tekan tombol Tambah Mitra di atas untuk mencatat pelanggan "
+            "atau pemasok pertama Anda.")
         t.doubleClicked.connect(self._detail)
         lay.addWidget(t, 1)
 

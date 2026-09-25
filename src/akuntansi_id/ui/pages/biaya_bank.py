@@ -287,6 +287,14 @@ class BiayaPage(QWidget):
             ("Nomor", 155), ("Tanggal", 105), ("Uraian", -1), ("Kategori", 140),
             ("Vendor", 155), ("Jumlah", 155), ("Status", 130), ("Pengaju", 130),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel.set_pesan_kosong(
+            "Belum ada catatan biaya atau mutasi bank."
+            "\n\n"
+            "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
+            "mutasi rekening bank.")
+
         self.tabel.doubleClicked.connect(self._detail)
         self.lay.addWidget(self.tabel, 1)
 
@@ -448,6 +456,14 @@ class BiayaPage(QWidget):
         if docs:
             lay.addWidget(w.label(f"Lampiran ({len(docs)})", objek="SectionTitle"))
             t = w.Tabel([("Nama Berkas", -1), ("Tipe", 130), ("Diunggah", 165)])
+            # Keterangan ini tampil saat tabel masih kosong, supaya
+            # pengguna tahu langkah berikutnya.
+            t.set_pesan_kosong(
+                "Belum ada catatan biaya atau mutasi bank."
+                "\n\n"
+                "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
+                "mutasi rekening bank.")
+
             t.isi([[d["nama_berkas"], d["tipe"] or "", d["created_at"][:16]]
                    for d in docs])
             t.setMinimumHeight(130)
@@ -627,6 +643,14 @@ class DialogKategoriBiaya(QDialog):
             ("Nama Kategori", -1), ("Akun Beban", 145), ("Batas Nilai", 165),
             ("Perlu Persetujuan", 175),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel.set_pesan_kosong(
+            "Belum ada catatan biaya atau mutasi bank."
+            "\n\n"
+            "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
+            "mutasi rekening bank.")
+
         lay.addWidget(self.tabel, 1)
 
         baris = QHBoxLayout()
@@ -1041,6 +1065,14 @@ class DialogRekonsiliasi(QDialog):
             ("Tanggal", 110), ("Uraian", -1), ("Referensi", 145),
             ("Masuk", 140), ("Keluar", 140), ("Status", 120),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel.set_pesan_kosong(
+            "Belum ada catatan biaya atau mutasi bank."
+            "\n\n"
+            "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
+            "mutasi rekening bank.")
+
         lay.addWidget(self.tabel, 1)
 
         aksi = QHBoxLayout()
@@ -1349,6 +1381,14 @@ class BankPage(QWidget):
             ("Bank", 130), ("No. Rekening", 155), ("Akun Buku", 105),
             ("Saldo Buku", 175),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_rek.set_pesan_kosong(
+            "Belum ada catatan biaya atau mutasi bank."
+            "\n\n"
+            "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
+            "mutasi rekening bank.")
+
         lay.addWidget(self.tabel_rek, 1)
 
         baris = QHBoxLayout()
@@ -1391,6 +1431,14 @@ class BankPage(QWidget):
             ("Tanggal", 110), ("Uraian", -1), ("Referensi", 155),
             ("Masuk", 145), ("Keluar", 145), ("Status", 145),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_mutasi.set_pesan_kosong(
+            "Belum ada catatan biaya atau mutasi bank."
+            "\n\n"
+            "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
+            "mutasi rekening bank.")
+
         lay.addWidget(self.tabel_mutasi, 1)
 
         baris2 = QHBoxLayout()
@@ -1413,6 +1461,14 @@ class BankPage(QWidget):
             ("Saldo Buku", 175), ("Selisih", 165), ("Status", 120),
             ("Dibuat Oleh", 145),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        self.tabel_rekons.set_pesan_kosong(
+            "Belum ada catatan biaya atau mutasi bank."
+            "\n\n"
+            "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
+            "mutasi rekening bank.")
+
         lay.addWidget(self.tabel_rekons, 1)
 
         baris = QHBoxLayout()

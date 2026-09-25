@@ -89,10 +89,22 @@ class BarChart(QWidget):
         p.fillRect(self.rect(), QColor(C.SURFACE))
         self._kotak = []
 
-        if not self.data:
-            p.setPen(QColor(C.TEXT_FAINT))
-            p.setFont(QFont(theme.FONT_UI, 10))
-            p.drawText(self.rect(), Qt.AlignCenter, "Belum ada data untuk ditampilkan")
+        # Dua keadaan dianggap belum ada data: daftarnya kosong, dan
+        # daftarnya terisi tetapi seluruh nilainya nol. Keadaan kedua
+        # muncul saat perusahaan baru dibuat, karena kedua belas bulan
+        # sudah ada tetapi belum satu pun berisi angka. Tanpa pemeriksaan
+        # ini, grafiknya tergambar sebagai garis rata nol yang terbaca
+        # seperti grafik rusak.
+        ada_angka = any(
+            d["pendapatan"] or d["beban"] or d["hpp"] for d in (self.data or []))
+        if not self.data or not ada_angka:
+            p.setPen(QColor(C.TEXT_MUTED))
+            f = QFont(theme.FONT_UI)
+            f.setPixelSize(theme.FS_BODY)
+            p.setFont(f)
+            p.drawText(self.rect(), Qt.AlignCenter,
+                       "Belum ada transaksi pada tahun ini.\n"
+                       "Grafik akan terisi setelah Anda mencatat transaksi.")
             p.end()
             return
 
@@ -580,7 +592,10 @@ class DashboardPage(QWidget):
         al.setSpacing(28)
 
         gauge = w.SkorGauge(ukuran=158)
-        gauge.set_skor(analisis.skor, analisis.grade_label)
+        # Bila pembukuan masih kosong, lingkaran tidak menampilkan angka.
+        belum_dinilai = analisis.grade == "N/A"
+        gauge.set_skor(analisis.skor, analisis.grade_label,
+                       belum_dinilai=belum_dinilai)
         al.addWidget(gauge, 0, Qt.AlignVCenter)
 
         kanan = QVBoxLayout()
@@ -604,10 +619,17 @@ class DashboardPage(QWidget):
         # bersama judul. Pada jendela sempit, badge disembunyikan supaya
         # judulnya tetap terbaca utuh. Keterangan grade sudah tercantum pada
         # kalimat ringkasan di bawahnya, sehingga tidak ada informasi hilang.
-        badge_warna, badge_bg = theme.STATUS_COLORS.get(
-            "baik" if analisis.skor >= 70 else
-            ("peringatan" if analisis.skor >= 55 else "kritis"),
-            (C.TEXT_MUTED, C.NEUTRAL_BG))
+        #
+        # Saat pembukuan masih kosong, badge diberi warna netral. Warna
+        # peringatan akan terbaca sebagai penilaian buruk, padahal yang
+        # terjadi adalah belum ada yang dapat dinilai.
+        if belum_dinilai:
+            badge_warna, badge_bg = C.TEXT_MUTED, C.NEUTRAL_BG
+        else:
+            badge_warna, badge_bg = theme.STATUS_COLORS.get(
+                "baik" if analisis.skor >= 70 else
+                ("peringatan" if analisis.skor >= 55 else "kritis"),
+                (C.TEXT_MUTED, C.NEUTRAL_BG))
         teks_badge = f"GRADE {analisis.grade} · {analisis.grade_label.upper()}"
         bdg = QLabel(teks_badge)
         theme.latar(bdg, f"background: {badge_bg}; color: {badge_warna}; border-radius: 9px; "

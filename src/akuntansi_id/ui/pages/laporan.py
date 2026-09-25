@@ -330,6 +330,14 @@ class LaporanPage(QWidget):
 
         # tabel laba rugi
         t = w.Tabel([("Uraian", -1), ("Jumlah (Rp)", 200), ("% Pendapatan", 140)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada data untuk dilaporkan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum, Penjualan, atau "
+            "Pembelian. Laporan akan terisi sendiri.")
+
         baris_tabel = []
         warna = {}
 
@@ -404,6 +412,14 @@ class LaporanPage(QWidget):
         ka = w.Card()
         ka.body().addWidget(self._judul_kolom("ASET"))
         t1 = w.Tabel([("Keterangan", -1), ("Jumlah (Rp)", 165)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t1.set_pesan_kosong(
+            "Belum ada data untuk dilaporkan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum, Penjualan, atau "
+            "Pembelian. Laporan akan terisi sendiri.")
+
         baris1, warna1 = [], {}
 
         def tambah1(label, nilai, tebal=False, indent=True):
@@ -442,6 +458,14 @@ class LaporanPage(QWidget):
         ke = w.Card()
         ke.body().addWidget(self._judul_kolom("LIABILITAS & EKUITAS"))
         t2 = w.Tabel([("Keterangan", -1), ("Jumlah (Rp)", 165)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t2.set_pesan_kosong(
+            "Belum ada data untuk dilaporkan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum, Penjualan, atau "
+            "Pembelian. Laporan akan terisi sendiri.")
+
         baris2, warna2 = [], {}
 
         def tambah2(label, nilai, tebal=False, indent=True):
@@ -552,6 +576,14 @@ class LaporanPage(QWidget):
         lay.addWidget(kartu)
 
         t = w.Tabel([("Uraian", -1), ("Jumlah (Rp)", 190)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada data untuk dilaporkan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum, Penjualan, atau "
+            "Pembelian. Laporan akan terisi sendiri.")
+
         baris_t, warna = [], {}
 
         def tambah(label, nilai, tebal=False, indent=0):
@@ -621,6 +653,14 @@ class LaporanPage(QWidget):
         data = services.laporan_perubahan_ekuitas(cid, tahun)
 
         t = w.Tabel([("Uraian", -1), ("Jumlah (Rp)", 200)])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada data untuk dilaporkan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum, Penjualan, atau "
+            "Pembelian. Laporan akan terisi sendiri.")
+
         baris, warna = [], {}
         for d in data:
             idx = len(baris)
@@ -657,6 +697,14 @@ class LaporanPage(QWidget):
             ("Kode", 75), ("Nama Akun", -1), ("Tipe", 100), ("Normal", 75),
             ("Saldo Awal", 140), ("Debit", 140), ("Kredit", 140), ("Saldo Akhir", 150),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada data untuk dilaporkan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum, Penjualan, atau "
+            "Pembelian. Laporan akan terisi sendiri.")
+
         baris, warna = [], {}
         for d in data:
             if (d.saldo_awal == 0 and d.debit == 0 and d.kredit == 0):
@@ -756,6 +804,14 @@ class LaporanPage(QWidget):
             ("Tanggal", 105), ("No. Bukti", 130), ("Keterangan", -1),
             ("Debit", 140), ("Kredit", 140), ("Saldo", 150),
         ])
+        # Keterangan ini tampil saat tabel masih kosong, supaya
+        # pengguna tahu langkah berikutnya.
+        t.set_pesan_kosong(
+            "Belum ada data untuk dilaporkan."
+            "\n\n"
+            "Catat dulu transaksi pada menu Jurnal Umum, Penjualan, atau "
+            "Pembelian. Laporan akan terisi sendiri.")
+
         baris, warna = [], {}
         for i, d in enumerate(data):
             idx = len(baris)
