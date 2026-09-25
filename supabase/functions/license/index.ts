@@ -1164,6 +1164,45 @@ async function tangani(req: Request): Promise<Response> {
     return balas({ ok: true, kunci_publik: kunci.publik });
   }
 
+  // ------------------------------------------------------- penanda uji coba
+  // Menerbitkan berkas penanda untuk paket MSIX yang dikirim ke Microsoft
+  // Store. Isinya ditandatangani kunci privat server, sehingga berkas kosong
+  // atau berkas yang disunting untuk memperpanjang masa berlaku tidak dapat
+  // dipakai. Hanya boleh diminta oleh pemilik dashboard admin.
+  if (aksi === "terbitkan-uji-coba") {
+    const sesi = await periksaSesi(db, isi.token || "");
+    if (!sesi) {
+      return balas({ ok: false, pesan: "Sesi admin tidak berlaku." }, 401);
+    }
+
+    const hari = Math.max(1, Math.min(Number(isi.hari) || 60, 365));
+    const sekarang = new Date();
+    const batas = new Date(sekarang);
+    batas.setDate(batas.getDate() + hari);
+
+    const muatan = {
+      uji_coba: true,
+      paket: "XinetGroup.AkunTuntas",
+      diterbitkan: sekarang.toISOString(),
+      berlaku_sampai: batas.toISOString(),
+      penerbit: "Xinet Group",
+    };
+
+    const muatanTeks = JSON.stringify(muatan);
+    const kunciTanda = await ambilKunci(db);
+    const tanda = await tandaTangani(kunciTanda.privat, muatanTeks);
+
+    await catatJejak(db, sesi, "uji_coba.terbit",
+      `Penanda uji coba ${hari} hari diterbitkan`);
+
+    return balas({
+      ok: true,
+      muatan: muatanTeks,
+      tanda,
+      berlaku_sampai: batas.toISOString(),
+    });
+  }
+
   // ------------------------------------------------------- formulir kontak
   // Dipakai formulir kontak di situs. Situs hanya berkas statis, sehingga
   // tidak dapat mengirim email sendiri; pesannya disimpan di sini lalu
@@ -1318,6 +1357,29 @@ async function tangani(req: Request): Promise<Response> {
     return balas({ ok: false, pesan: "Kunci lisensi dan sidik perangkat wajib" }, 400);
   }
 
+  // ---------------------------------------------------- batas percobaan
+  // Kunci lisensi dicoba dari perangkat yang berbeda beda untuk mencari
+  // kunci yang masih berlaku. Tanpa batas, ribuan percobaan dapat dikirim
+  // dalam hitungan menit. Yang dibatasi hanya percobaan dengan kunci tidak
+  // dikenal, sehingga pemakaian biasa tidak pernah terkena batas ini.
+  //
+  // Sidik perangkat dipakai sebagai penanda, bukan alamat IP, karena satu
+  // kantor sering memakai satu alamat IP untuk banyak komputer.
+  const { data: gagal } = await db
+    .from("activation_log")
+    .select("id")
+    .eq("device_fingerprint", sidik)
+    .eq("hasil", "ditolak")
+    .gte("dibuat_pada", new Date(Date.now() - 15 * 60 * 1000).toISOString());
+
+  if ((gagal || []).length >= 12) {
+    return balas({
+      ok: false,
+      pesan: "Terlalu banyak percobaan aktivasi dari perangkat ini. " +
+        "Coba lagi dalam 15 menit.",
+    }, 429);
+  }
+
   /** Apakah baris aktivasi mewakili perangkat ini. */
   const perangkatIni = (d: { device_fingerprint: string }) =>
     d.device_fingerprint === sidik ||
@@ -1350,7 +1412,7 @@ async function tangani(req: Request): Promise<Response> {
 
   if (!lisensi) {
     await catat("ditolak", "Kunci tidak dikenal");
-    return balas({ ok: false, pesan: "Kunci lisensi tidak dikenal." }, 404);
+    return balas({ ok: false, tolak: true, pesan: "Kunci lisensi tidak dikenal." }, 404);
   }
 
   if (lisensi.status !== "aktif") {
@@ -1358,13 +1420,14 @@ async function tangani(req: Request): Promise<Response> {
       ? "Lisensi ini sudah dicabut."
       : "Lisensi ini sedang ditangguhkan.";
     await catat("ditolak", `Status: ${lisensi.status}`);
-    return balas({ ok: false, pesan: sebab }, 403);
+    return balas({ ok: false, tolak: true, pesan: sebab }, 403);
   }
 
   if (lisensi.kedaluwarsa_pada &&
       new Date(lisensi.kedaluwarsa_pada) < new Date()) {
     await catat("ditolak", "Lisensi kedaluwarsa");
-    return balas({ ok: false, pesan: "Masa berlaku lisensi sudah berakhir." }, 403);
+    return balas({ ok: false, tolak: true,
+      pesan: "Masa berlaku lisensi sudah berakhir." }, 403);
   }
 
   // ---------------------------------------------------------- paket
@@ -1376,7 +1439,8 @@ async function tangani(req: Request): Promise<Response> {
 
   if (!paket) {
     await catat("ditolak", "Paket tidak ditemukan");
-    return balas({ ok: false, pesan: "Paket lisensi tidak ditemukan." }, 500);
+    return balas({ ok: false, tolak: true,
+      pesan: "Paket lisensi tidak ditemukan." }, 500);
   }
 
   // ---------------------------------------------------------- perangkat
@@ -1412,7 +1476,7 @@ async function tangani(req: Request): Promise<Response> {
       : `Lisensi ini sudah dipakai di ${terpakai} perangkat. ` +
         `Batas paket ${paket.nama} adalah ${paket.max_device} perangkat.`;
     await catat("ditolak", `Batas perangkat tercapai (${terpakai}/${paket.max_device})`);
-    return balas({ ok: false, pesan }, 409);
+    return balas({ ok: false, tolak: true, pesan }, 409);
   }
 
   // ---------------------------------------------------------- daftarkan

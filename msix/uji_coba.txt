@@ -1,2 +1,4 @@
-Berkas ini menandai paket uji coba untuk peninjau Microsoft Store.
-Jangan sertakan berkas ini pada build yang dijual.
+{
+  "muatan": "{\"uji_coba\":true,\"paket\":\"XinetGroup.AkunTuntas\",\"diterbitkan\":\"2026-09-25T18:43:59.194431+00:00\",\"berlaku_sampai\":\"2026-11-24T18:43:59.194431+00:00\",\"penerbit\":\"Xinet Group\"}",
+  "tanda": "6f43edc3d3ac035a6d9560ed151cb71fb7fe9dd9c99f517f6b5f0ea3ee1d287c7b65fbbb8936bc5fb65879841ff239a8c082108ee52b46938db633a2afdaad0b"
+}

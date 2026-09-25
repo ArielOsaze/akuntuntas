@@ -425,6 +425,110 @@ def hapus(data_dir: Path) -> None:
 
 
 # ==========================================================================
+# JEJAK WAKTU: PENANGKALAN JAM DIMUNDURKAN
+# ==========================================================================
+# Pemeriksaan lisensi memakai jam komputer. Bila jamnya dimundurkan, lisensi
+# yang masa berlakunya sudah lewat akan tampak masih berlaku, dan aplikasi
+# dapat dipakai tanpa pernah menghubungi server lagi. Karena itu waktu
+# tertinggi yang pernah terlihat dicatat di dua tempat: berkas di folder data
+# dan catatan Windows. Bila jam komputer ternyata lebih awal daripada
+# catatan itu, jamnya dianggap dimundurkan dan aplikasi meminta pemeriksaan
+# ke server sebelum dapat dipakai.
+NAMA_JEJAK = "jejak_waktu.json"
+TOLERANSI_JAM = 172800  # dua hari, untuk selisih penyesuaian jam yang wajar
+KUNCI_REGISTRY = r"Software\Xinet Group\AkunTuntas"
+NILAI_REGISTRY = "TerakhirDilihat"
+
+
+def _path_jejak(data_dir: Path) -> Path:
+    return Path(data_dir) / NAMA_JEJAK
+
+
+def _baca_jejak_berkas(data_dir: Path) -> float:
+    try:
+        isi = json.loads(_path_jejak(data_dir).read_text(encoding="utf-8"))
+        return float(isi.get("tertinggi") or 0)
+    except Exception:
+        return 0.0
+
+
+def _baca_jejak_registry() -> float:
+    if sys.platform != "win32":
+        return 0.0
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, KUNCI_REGISTRY) as k:
+            nilai, _ = winreg.QueryValueEx(k, NILAI_REGISTRY)
+        return float(nilai)
+    except Exception:
+        return 0.0
+
+
+def _tulis_jejak(data_dir: Path, nilai: float) -> None:
+    """Simpan waktu tertinggi ke berkas dan ke catatan Windows."""
+    try:
+        jalur = _path_jejak(data_dir)
+        jalur.parent.mkdir(parents=True, exist_ok=True)
+        jalur.write_text(json.dumps({"tertinggi": nilai}, indent=2),
+                         encoding="utf-8")
+    except Exception:
+        pass
+
+    if sys.platform != "win32":
+        return
+    try:
+        import winreg
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, KUNCI_REGISTRY) as k:
+            winreg.SetValueEx(k, NILAI_REGISTRY, 0, winreg.REG_SZ, str(nilai))
+    except Exception:
+        pass
+
+
+def waktu_tertinggi(data_dir: Path) -> float:
+    """Waktu tertinggi yang pernah tercatat di komputer ini."""
+    return max(_baca_jejak_berkas(data_dir), _baca_jejak_registry())
+
+
+def catat_waktu(data_dir: Path) -> tuple[bool, str]:
+    """
+    Catat waktu tertinggi yang pernah terlihat, dan periksa jam komputer.
+
+    Mengembalikan (aman, alasan). Aman berarti jam komputer tidak lebih awal
+    daripada catatan sebelumnya. Bila jamnya dimundurkan, aplikasi meminta
+    pemeriksaan ke server sebelum dapat dipakai.
+    """
+    sekarang = time.time()
+    tertinggi = waktu_tertinggi(data_dir)
+
+    if tertinggi and sekarang < tertinggi - TOLERANSI_JAM:
+        return False, (
+            "Jam komputer ini lebih awal daripada catatan pemakaian "
+            "sebelumnya. Periksa tanggal dan jam Windows, lalu sambungkan ke "
+            "internet supaya lisensi dapat diperiksa ulang.")
+
+    if sekarang > tertinggi:
+        _tulis_jejak(data_dir, sekarang)
+    return True, ""
+
+
+def _catat_waktu_server(data_dir: Path, lisensi: "Lisensi") -> None:
+    """
+    Catat waktu tertinggi setelah server memastikan lisensi berlaku.
+
+    Waktu yang dipakai adalah yang lebih akhir antara jam komputer dan waktu
+    penerbitan dari server. Server memakai jamnya sendiri, sehingga pengguna
+    yang memundurkan jam komputernya tidak dapat menurunkan catatan ini.
+    """
+    dasar = time.time()
+    server = 0.0
+    try:
+        server = _waktu(json.loads(lisensi.muatan).get("diterbitkan"))
+    except Exception:
+        server = 0.0
+    _tulis_jejak(data_dir, max(dasar, server, waktu_tertinggi(data_dir)))
+
+
+# ==========================================================================
 # PEMERIKSAAN TANDA TANGAN
 # ==========================================================================
 def tanda_sah(muatan: str, tanda_hex: str) -> bool:
@@ -457,13 +561,19 @@ def lisensi_sah(data_dir: Path) -> tuple[bool, str, Lisensi | None]:
     Periksa lisensi yang tersimpan di komputer.
 
     Mengembalikan (sah, alasan, lisensi). Pemeriksaan berjalan tanpa
-    internet: yang diperiksa adalah tanda tangan server dan kecocokan
-    perangkat.
+    internet: yang diperiksa adalah tanda tangan server, kecocokan
+    perangkat, catatan waktu, dan masa tenggang.
 
-    Lisensi berlaku selamanya, jadi habisnya masa berlaku tanda tangan
-    bukan alasan menolak membuka aplikasi. Yang perlu diperbarui hanya
-    keterangan lokalnya; aplikasi tetap dapat dipakai dan pengguna
-    diingatkan untuk menyambung internet.
+    Lisensi berlaku selamanya, jadi habisnya masa berlaku tanda tangan bukan
+    alasan menolak membuka aplikasi. Yang diperiksa adalah masa tenggang:
+    selama itu aplikasi tetap dapat dipakai tanpa internet, sehingga pengguna
+    yang sambungannya sedang mati tidak terhalang.
+
+    Masa tenggang itu sendiri tidak boleh menjadi jalan memakai aplikasi
+    tanpa pernah menghubungi server lagi. Tanpa batas ini, seseorang dapat
+    mengaktifkan lisensi sekali, mematikan internet untuk selamanya, lalu
+    memakai aplikasi meskipun lisensinya sudah dicabut. Karena itu setelah
+    masa tenggang habis, aplikasi meminta sambungan ke server lebih dulu.
     """
     lisensi = muat(data_dir)
     if lisensi is None:
@@ -479,6 +589,18 @@ def lisensi_sah(data_dir: Path) -> tuple[bool, str, Lisensi | None]:
     if not sidik_cocok(lisensi.sidik):
         return False, ("Lisensi ini terdaftar untuk perangkat lain. "
                        "Aktifkan ulang dengan kunci lisensi Anda."), None
+
+    # Jam yang dimundurkan membuat masa tenggang tampak belum lewat.
+    aman, alasan_waktu = catat_waktu(data_dir)
+    if not aman:
+        return False, alasan_waktu, None
+
+    if not lisensi.dalam_tenggang():
+        return False, (
+            "Lisensi ini perlu diperiksa ulang ke server. Aplikasi sudah "
+            "lama tidak tersambung ke internet, sehingga keadaan lisensi "
+            "Anda tidak dapat dipastikan.\n\n"
+            "Sambungkan komputer ke internet lalu buka kembali aplikasi."), None
 
     return True, "", lisensi
 
@@ -517,7 +639,8 @@ def _kirim(permintaan: dict) -> tuple[bool, dict]:
             return True, json.loads(jawaban.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         # Server menjawab dengan penjelasan, misalnya lisensi sudah dipakai
-        # di perangkat lain.
+        # di perangkat lain. Jawaban seperti ini tetap dianggap berhasil
+        # terhubung, karena penolakannya memang berasal dari server.
         try:
             return True, json.loads(e.read().decode("utf-8"))
         except (ValueError, OSError) as galat:
@@ -527,6 +650,36 @@ def _kirim(permintaan: dict) -> tuple[bool, dict]:
         _catat(f"Gagal menghubungi layanan lisensi: {galat}")
         return False, {"pesan": ("Tidak dapat menghubungi layanan lisensi. "
                                  "Periksa sambungan internet Anda.")}
+
+
+def ditolak_server(jawaban: dict) -> bool:
+    """
+    Apakah jawaban server berupa penolakan, bukan gangguan sambungan.
+
+    Server menandai penolakannya dengan kolom `tolak`. Penanda ini dipakai
+    alih alih menebak dari kalimat pesannya, karena kalimat dapat berubah
+    dan terjemahannya dapat berbeda. Bila server lama belum mengirim kolom
+    itu, kalimatnya diperiksa sebagai cadangan.
+    """
+    if jawaban.get("tolak") is True:
+        return True
+
+    pesan = str(jawaban.get("pesan") or "").lower()
+    if not pesan:
+        return False
+
+    penanda = (
+        "dicabut",
+        "ditangguhkan",
+        "kedaluwarsa",
+        "sudah berakhir",
+        "tidak dikenal",
+        "tidak sah",
+        "perangkat lain",
+        "batas",
+        "terlalu banyak percobaan",
+    )
+    return any(k in pesan for k in penanda)
 
 
 def _catat(pesan: str) -> None:
@@ -607,6 +760,7 @@ def aktivasi(data_dir: Path, kunci: str) -> tuple[bool, str, Lisensi | None]:
 
     lisensi = Lisensi.dari_muatan(muatan_teks, tanda)
     simpan(data_dir, lisensi)
+    _catat_waktu_server(data_dir, lisensi)
     return True, "", lisensi
 
 
@@ -644,7 +798,11 @@ def perbarui(data_dir: Path) -> tuple[bool, str]:
     if not tanda_sah(muatan_teks, tanda):
         return False, "Jawaban server tidak dapat diperiksa keasliannya."
 
-    simpan(data_dir, Lisensi.dari_muatan(muatan_teks, tanda))
+    baru = Lisensi.dari_muatan(muatan_teks, tanda)
+    simpan(data_dir, baru)
+    # Catat waktu menurut server, supaya jam komputer yang dimundurkan tidak
+    # dapat menurunkan catatan waktu tertinggi.
+    _catat_waktu_server(data_dir, baru)
     return True, ""
 
 
@@ -687,6 +845,10 @@ def _waktu(teks) -> float:
             tzinfo=timezone.utc).timestamp()
     except Exception:
         return 0.0
+
+
+#: Nama lain untuk pemakaian di luar modul ini.
+waktu_dari_iso = _waktu
 
 
 def _versi_app() -> str:

@@ -82,7 +82,7 @@ def tulis_manifest(identitas: dict) -> pathlib.Path:
                                   "CN=Isi-Dari-Partner-Center")
     nama_paket = identitas.get("nama_paket", "XinetGroup.AkunTuntas")
     nama_tampil = identitas.get("nama_tampil", NAMA_PAKET)
-    versi = identitas.get("versi", "1.0.7.0")
+    versi = identitas.get("versi", "1.1.0.0")
     deskripsi = identitas.get(
         "deskripsi", "Pembukuan dan pajak perusahaan Indonesia")
 
@@ -218,11 +218,11 @@ def siapkan() -> int:
         print('      "penerbit": "CN=ABC12345-6789-ABCD-EF01-234567890ABC",')
         print('      "nama_penerbit_tampil": "Xinet Group",')
         print('      "nama_tampil": "AkunTuntas",')
-        print('      "versi": "1.0.7.0",')
+        print('      "versi": "1.1.0.0",')
         print('      "deskripsi": "Pembukuan dan pajak perusahaan Indonesia"')
         print("    }")
         print()
-        print("  Catatan: 'versi' wajib empat angka (1.0.7.0), bukan 1.0.7.")
+        print("  Catatan: 'versi' wajib empat angka (1.1.0.0), bukan 1.1.0.")
         return 3
 
     MSIX.mkdir(parents=True, exist_ok=True)
@@ -236,17 +236,32 @@ def siapkan() -> int:
     manifest = tulis_manifest(identitas)
     print(f"    {manifest.name}")
 
-    # Berkas penanda mode uji coba. Keberadaannya membuat aplikasi terbuka
-    # tanpa kunci lisensi, sehingga peninjau Microsoft dapat menguji seluruh
-    # fitur. Berkas ini tidak pernah ikut pada build installer biasa.
+    # Berkas penanda mode uji coba tidak dibuat di sini. Penanda harus memuat
+    # keterangan bertanda tangan kunci privat server, dan kunci itu tidak ada
+    # di komputer pengembang. Penanda diterbitkan lewat:
+    #     python tools/terbitkan_uji_coba.py
+    # Berkas kosong tidak lagi cukup, karena aplikasi memeriksa tanda
+    # tangannya dan memastikan dirinya benar benar berjalan di dalam paket
+    # MSIX.
     penanda = MSIX / "uji_coba.txt"
-    penanda.write_text(
-        "Berkas ini menandai paket uji coba untuk peninjau Microsoft Store.\n"
-        "Jangan sertakan berkas ini pada build yang dijual.\n",
-        encoding="utf-8")
     print()
     print("  Penanda uji coba:")
-    print(f"    {penanda.name} (aplikasi terbuka tanpa kunci lisensi)")
+    if penanda.exists():
+        try:
+            isi = json.loads(penanda.read_text(encoding="utf-8"))
+            lengkap = bool(isi.get("muatan") and isi.get("tanda"))
+        except Exception:
+            lengkap = False
+        if lengkap:
+            print(f"    {penanda.name} (bertanda tangan, siap dipakai)")
+        else:
+            print(f"    {penanda.name} ADA tetapi tidak bertanda tangan")
+            print("    Mode uji coba akan DITOLAK. Terbitkan yang sah:")
+            print("      python tools/terbitkan_uji_coba.py")
+    else:
+        print("    belum ada. Paket akan dibungkus tanpa mode uji coba.")
+        print("    Untuk paket yang dikirim ke Microsoft Store, terbitkan dulu:")
+        print("      python tools/terbitkan_uji_coba.py")
 
     print()
     print("  Selesai. Lanjutkan dengan:")
@@ -291,8 +306,27 @@ def bungkus() -> int:
 
     penanda = MSIX / "uji_coba.txt"
     if penanda.exists():
+        # Penanda harus memuat keterangan bertanda tangan, bukan berkas
+        # kosong. Tanpa tanda tangan, siapa pun dapat membuat berkas dengan
+        # nama yang sama dan memakai aplikasi tanpa membeli lisensi.
+        try:
+            isi = json.loads(penanda.read_text(encoding="utf-8"))
+            lengkap = bool(isi.get("muatan") and isi.get("tanda"))
+        except Exception:
+            lengkap = False
+
+        if not lengkap:
+            print()
+            print("  Penanda uji coba tidak dapat dipakai.")
+            print("  Berkas msix/uji_coba.txt tidak memuat keterangan")
+            print("  bertanda tangan, sehingga mode uji coba akan ditolak.")
+            print()
+            print("  Terbitkan penanda yang sah lebih dulu:")
+            print("    python tools/terbitkan_uji_coba.py")
+            return 5
+
         shutil.copy2(penanda, tahap / "uji_coba.txt")
-        print("  Menyertakan penanda mode uji coba.")
+        print("  Menyertakan penanda mode uji coba (bertanda tangan).")
 
     keluaran = KELUARAN / f"{NAMA_PAKET}.msix"
     if keluaran.exists():

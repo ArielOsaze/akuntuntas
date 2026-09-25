@@ -241,8 +241,10 @@ class Sidebar(QFrame):
         isi = QWidget()
         theme.latar(isi, f"background: {C.SIDEBAR_BG};")
         il = QVBoxLayout(isi)
-        il.setContentsMargins(9, 6, 9, 8)
-        il.setSpacing(1)
+        il.setContentsMargins(9, 8, 9, 10)
+        # Jarak antar menu dilonggarkan supaya daftar panjang tidak terasa
+        # padat dan salah klik tidak mudah terjadi.
+        il.setSpacing(2)
         self._isi_menu = il
 
         for seksi, item_list in self.MENU:
@@ -251,9 +253,9 @@ class Sidebar(QFrame):
             else:
                 s = QLabel(seksi)
                 s.setStyleSheet(
-                    f"color: {C.SIDEBAR_SECTION}; font-size: 10px; font-weight: 800; "
+                    f"color: {C.SIDEBAR_SECTION}; font-size: 10.5px; font-weight: 800; "
                     "letter-spacing: 0.8px; background: transparent; "
-                    "padding: 13px 10px 4px 10px;")
+                    "padding: 15px 10px 5px 10px;")
                 il.addWidget(s)
                 for kode, nama, nama_ikon in item_list:
                     self._buat_tombol(il, kode, nama, nama_ikon)
@@ -1189,11 +1191,73 @@ class JendelaAplikasi(QMainWindow):
         if sah:
             self.lisensi = lisensi
             self._siapkan_login()
-        elif uji_coba.aktif(config.DATA_DIR):
-            self.lisensi = uji_coba.lisensi_uji_coba(config.DATA_DIR)
+            return
+
+        # Lisensi sudah ada di komputer, tetapi belum dapat dipastikan sah:
+        # masa tenggangnya habis, atau jam komputernya dimundurkan. Keduanya
+        # dapat diselesaikan dengan memeriksa ke server, bukan dengan meminta
+        # pengguna mengetikkan kuncinya lagi. Kunci lisensi mereka sudah
+        # tersimpan dan tidak berubah.
+        if LIS.muat(config.DATA_DIR) is not None and not uji_coba.aktif():
+            if self._coba_perbarui_lisensi(alasan):
+                return
+
+        if uji_coba.aktif():
+            self.lisensi = uji_coba.lisensi_uji_coba()
             self._siapkan_login()
         else:
             self._tampilkan_aktivasi(alasan)
+
+    def _coba_perbarui_lisensi(self, alasan: str) -> bool:
+        """
+        Coba perbarui keterangan lisensi ke server sebelum menolak pengguna.
+
+        Dipanggil saat lisensi sudah ada di komputer tetapi masa tenggangnya
+        habis, atau jam komputernya dimundurkan. Meminta pengguna mengetikkan
+        kunci lisensi lagi untuk keadaan seperti itu akan membingungkan,
+        karena kuncinya tidak berubah dan masih tersimpan.
+
+        Pemeriksaan berjalan tanpa menahan jendela, dan bila server tidak
+        dapat dihubungi, pengguna tetap diberi keterangan aslinya.
+
+        Mengembalikan True bila layar masuk sudah disiapkan.
+        """
+        from PySide6.QtWidgets import QMessageBox
+
+        from .periksa_lisensi import PemeriksaLisensi
+
+        tanya = QMessageBox(self)
+        tanya.setWindowTitle("Lisensi perlu diperiksa")
+        tanya.setIcon(QMessageBox.Information)
+        tanya.setText(alasan)
+        tanya.setInformativeText(
+            "Periksa sekarang? Komputer perlu tersambung ke internet.")
+        periksa = tanya.addButton("Periksa sekarang", QMessageBox.AcceptRole)
+        tanya.addButton("Nanti", QMessageBox.RejectRole)
+        tanya.exec()
+
+        if tanya.clickedButton() is not periksa:
+            return False
+
+        # Pemeriksaan berjalan di latar belakang supaya jendela tidak membeku.
+        self._pemeriksa = PemeriksaLisensi(config.DATA_DIR, self)
+        self._pemeriksa.selesai.connect(self._hasil_perbarui_awal)
+        self._pemeriksa.start()
+        return True
+
+    def _hasil_perbarui_awal(self, berlaku: bool, pesan: str, ditolak: bool):
+        """Tindak lanjuti pemeriksaan lisensi saat aplikasi dibuka."""
+        self._pemeriksa = None
+
+        sah, alasan, lisensi = LIS.lisensi_sah(config.DATA_DIR)
+        if sah:
+            self.lisensi = lisensi
+            self._siapkan_login()
+            return
+
+        if ditolak and pesan:
+            alasan = pesan
+        self._tampilkan_aktivasi(alasan)
 
     # ------------------------------------------------------------------
     def _tampilkan_aktivasi(self, alasan: str = ""):
@@ -1282,7 +1346,7 @@ class JendelaAplikasi(QMainWindow):
         """
         # Mode uji coba tidak diperiksa, karena memang tidak memakai lisensi.
         from ..core import uji_coba
-        if uji_coba.aktif(config.DATA_DIR):
+        if uji_coba.aktif():
             return
 
         # Jangan periksa dua kali bila pemeriksaan sebelumnya belum selesai.

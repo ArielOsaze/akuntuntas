@@ -457,7 +457,7 @@ body {
     color: var(--teks);
 }
 
-.daftar-fitur li.mati { color: #8B97A5; }
+.daftar-fitur li.mati { color: #6B7787; }
 
 .daftar-fitur svg {
     width: 17px;
@@ -880,7 +880,7 @@ body {
 
 .kontak-form input::placeholder,
 .kontak-form textarea::placeholder {
-    color: #7E99B4;
+    color: #93AEC9;
 }
 
 .kontak-form input:focus,
@@ -938,7 +938,7 @@ body {
 .kontak-catatan {
     margin: 0;
     font-size: 13.5px;
-    color: #A8BED4;
+    color: #BBD0E4;
 }
 
 @media (max-width: 620px) {
@@ -949,7 +949,7 @@ body {
 .kaki {
     background: #0A1D2F;
     padding: 46px 0 30px;
-    color: #8FA7BE;
+    color: #A9BFD6;
     font-size: 14px;
 }
 
@@ -991,7 +991,7 @@ body {
 
 .kaki-kolom a {
     display: block;
-    color: #8FA7BE;
+    color: #A9BFD6;
     text-decoration: none;
     padding: 4px 0;
     font-size: 14px;

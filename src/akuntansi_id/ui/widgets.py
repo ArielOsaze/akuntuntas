@@ -165,9 +165,10 @@ class KpiTile(QFrame):
         baris_atas.addWidget(self.lbl_label, 1)
         if ikon:
             # ikon digambar sebagai pixmap, bukan karakter teks
+            warna_ikon = warna or icons.WARNA_MUTED
             self.lbl_ikon = QLabel()
-            self.lbl_ikon.setPixmap(icons.pixmap(ikon, icons.WARNA_MUTED, 16))
-            self.lbl_ikon.setFixedSize(16, 16)
+            self.lbl_ikon.setPixmap(icons.pixmap(ikon, warna_ikon, 17))
+            self.lbl_ikon.setFixedSize(17, 17)
             self.lbl_ikon.setStyleSheet("background: transparent;")
             baris_atas.addWidget(self.lbl_ikon, 0)
         lay.addLayout(baris_atas)
@@ -1005,6 +1006,16 @@ class SkorGauge(QWidget):
         p.setPen(QPen(QColor(C.NEUTRAL_BG), tebal, Qt.SolidLine, Qt.RoundCap))
         p.drawArc(rect, 0, 360 * 16)
 
+        # Saat belum ada yang dapat dinilai, busurnya digambar putus putus
+        # dan tanpa warna penilaian. Lingkaran penuh berwarna akan terbaca
+        # sebagai hasil penilaian, padahal belum ada datanya.
+        if self.belum_dinilai:
+            p.setPen(QPen(QColor(C.BORDER_STRONG), tebal, Qt.DashLine,
+                          Qt.RoundCap))
+            p.drawArc(rect, 0, 360 * 16)
+            self._gambar_teks(p, teks_angka="?")
+            return
+
         # warna berdasarkan skor
         if self.skor >= 70:
             warna = QColor(C.SUCCESS)
@@ -1015,12 +1026,11 @@ class SkorGauge(QWidget):
 
         p.setPen(QPen(warna, tebal, Qt.SolidLine, Qt.RoundCap))
         p.drawArc(rect, 90 * 16, -int(360 * 16 * self.skor / 100))
+        self._gambar_teks(p, teks_angka=str(self.skor))
 
+    def _gambar_teks(self, p, teks_angka: str):
+        """Gambar angka dan label di tengah lingkaran."""
         tengah = self.ukuran / 2
-        # Saat pembukuan masih kosong, lingkaran tidak menampilkan angka
-        # nol, karena angka itu terbaca sebagai penilaian buruk. Tanda
-        # tanya dipakai supaya jelas bahwa nilainya belum ada.
-        teks_angka = "?" if self.belum_dinilai else str(self.skor)
 
         # Ukuran angka disesuaikan dengan ruang di dalam lingkaran.
         ukuran_angka = max(15, int(self.ukuran * 0.21))

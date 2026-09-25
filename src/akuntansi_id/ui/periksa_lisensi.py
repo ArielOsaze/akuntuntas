@@ -64,22 +64,8 @@ class PemeriksaLisensi(QThread):
         """
         Apakah pesan berasal dari penolakan server, bukan gangguan sambungan.
 
-        Server memakai kalimat yang menyebut keadaan lisensinya. Pesan
-        gangguan sambungan tidak memuat kata-kata itu, sehingga aplikasi
-        tetap dapat dipakai saat internet mati.
+        Pemeriksaan ini memakai penanda yang sama dengan pemeriksaan lisensi,
+        sehingga keduanya tidak dapat berbeda pendapat tentang pesan yang
+        sama.
         """
-        if not pesan:
-            return False
-
-        teks = pesan.lower()
-        penanda = (
-            "dicabut",
-            "ditangguhkan",
-            "kedaluwarsa",
-            "sudah berakhir",
-            "tidak dikenal",
-            "tidak sah",
-            "perangkat lain",
-            "batas",
-        )
-        return any(k in teks for k in penanda)
+        return LIS.ditolak_server({"pesan": pesan})

@@ -78,6 +78,21 @@ def _buka_regulasi(berkas: list, baris: int) -> None:
 # ==========================================================================
 # HALAMAN PENGATURAN
 # ==========================================================================
+
+def _judul_kartu(kartu, teks: str) -> None:
+    """
+    Pasang judul di bagian atas kartu.
+
+    Judul dibuat sebagai label tersendiri, bukan lewat argumen Card, karena
+    kartu dipakai juga untuk isi yang tidak berjudul. Cara ini sama dengan
+    yang dipakai halaman lain supaya seluruh aplikasi seragam.
+    """
+    j = QLabel(teks)
+    j.setObjectName("SectionTitle")
+    j.setWordWrap(True)
+    kartu.body().addWidget(j)
+
+
 class PengaturanPage(QWidget):
     pindah_halaman = Signal(str)
     mode_berubah = Signal(str)
@@ -114,14 +129,16 @@ class PengaturanPage(QWidget):
         self.tab_pengguna = QWidget()
         self.tab_backup = QWidget()
         self.tab_audit = QWidget()
+        self.tab_lisensi = QWidget()
         self.tabs.addTab(self.tab_preferensi, "Preferensi")
         self.tabs.addTab(self.tab_pengguna, "Pengguna")
         self.tabs.addTab(self.tab_backup, "Cadangan && Data")
         self.tabs.addTab(self.tab_audit, "Jejak Audit")
+        self.tabs.addTab(self.tab_lisensi, "Lisensi && Keamanan")
         self.tabs.currentChanged.connect(self.muat)
 
         for t in (self.tab_preferensi, self.tab_pengguna, self.tab_backup,
-                  self.tab_audit):
+                  self.tab_audit, self.tab_lisensi):
             l = QVBoxLayout(t)
             l.setContentsMargins(0, 12, 0, 0)
             l.setSpacing(13)
@@ -134,8 +151,10 @@ class PengaturanPage(QWidget):
             self._muat_pengguna()
         elif idx == 2:
             self._muat_backup()
-        else:
+        elif idx == 3:
             self._muat_audit()
+        else:
+            self._muat_lisensi()
 
     def _bersihkan(self, widget):
         """
@@ -993,6 +1012,251 @@ class PengaturanPage(QWidget):
             f"administrasi: {jumlah.get(db.KATEGORI_ADMIN, 0)}.",
             objek="Muted"))
         lay.addStretch()
+
+
+    # ======================================================================
+    # LISENSI & KEAMANAN
+    # ======================================================================
+    def _muat_lisensi(self):
+        """
+        Tampilkan keadaan lisensi dan pemeriksaan keamanan yang berlaku.
+
+        Halaman ini menjawab pertanyaan yang paling sering muncul: lisensi
+        berlaku sampai kapan, terpasang di perangkat mana, dan apa yang
+        melindunginya dari pemakaian tanpa izin. Isinya dibaca dari berkas
+        lisensi bertanda tangan, bukan diketik ulang.
+        """
+        from ...core import license as LIS
+
+        lay = self._bersihkan(self.tab_lisensi)
+        lis = LIS.muat(config.DATA_DIR)
+
+        if lis is None:
+            lay.addWidget(w.InfoBanner(
+                "Lisensi belum diaktifkan di komputer ini. Keluarkan akun "
+                "untuk membuka halaman aktivasi, lalu masukkan kunci "
+                "lisensi Anda.",
+                tingkat="warning", judul="Lisensi belum aktif"))
+            lay.addStretch()
+            return
+
+        # ------------------------------------------------------ identitas
+        kartu = w.Card()
+        _judul_kartu(kartu, "Lisensi Anda")
+        isi = QVBoxLayout()
+        isi.setSpacing(11)
+
+        for nama, nilai in (
+            ("Kunci lisensi", lis.kunci or "-"),
+            ("Paket", lis.nama_paket),
+            ("Pemilik", lis.pemilik or "-"),
+            ("Perangkat ini", LIS.nama_perangkat()),
+            ("Sistem", LIS.nama_windows()),
+        ):
+            b = QHBoxLayout()
+            k = QLabel(nama)
+            k.setStyleSheet(
+                f"color: {C.TEXT_MUTED}; font-size: {theme.FS_SMALL}px; "
+                f"background: transparent;")
+            k.setFixedWidth(140)
+            v = QLabel(str(nilai))
+            v.setStyleSheet(
+                f"color: {C.TEXT}; font-size: {theme.FS_BODY}px; "
+                f"font-weight: 600; background: transparent;")
+            v.setWordWrap(True)
+            b.addWidget(k)
+            b.addWidget(v, 1)
+            isi.addLayout(b)
+        kartu.body().addLayout(isi)
+        lay.addWidget(kartu)
+
+        # ------------------------------------------------- keadaan berlaku
+        sisa = lis.sisa_hari()
+        if lis.masih_berlaku():
+            tingkat, judul, pesan = (
+                "success", "Lisensi aktif",
+                f"Lisensi berlaku selamanya. Keterangannya di komputer ini "
+                f"diperbarui berkala, dan pembaruan berikutnya dalam "
+                f"{sisa} hari. Selama itu aplikasi dapat dipakai tanpa "
+                f"internet.")
+        elif lis.dalam_tenggang():
+            tingkat, judul, pesan = (
+                "warning", "Menunggu pemeriksaan",
+                "Keterangan lisensi di komputer ini sudah lewat masa "
+                "pembaruannya, tetapi aplikasi masih dapat dipakai sampai "
+                "masa tenggang berakhir. Sambungkan komputer ke internet "
+                "supaya keterangannya diperbarui.")
+        else:
+            tingkat, judul, pesan = (
+                "danger", "Perlu diperiksa",
+                "Keterangan lisensi di komputer ini sudah lewat masa "
+                "tenggangnya. Sambungkan komputer ke internet lalu buka "
+                "kembali aplikasi supaya lisensi dapat diperiksa ulang.")
+
+        lay.addWidget(w.InfoBanner(pesan, tingkat=tingkat, judul=judul))
+
+        # ------------------------------------------------------ keamanan
+        keamanan = w.Card()
+        _judul_kartu(keamanan, "Perlindungan Lisensi")
+        kl = QVBoxLayout()
+        kl.setSpacing(10)
+
+        daftar = [
+            ("Lisensi terikat pada perangkat ini",
+             "Perangkat dikenali dari ciri perangkat kerasnya: nomor seri "
+             "cakram, nomor prosesor, nomor volume Windows, dan alamat "
+             "jaringan. Berkas lisensi yang disalin ke komputer lain tidak "
+             "dapat dipakai."),
+            ("Berkas lisensi bertanda tangan digital",
+             "Isi lisensi ditandatangani kunci rahasia server. Menyunting "
+             "berkas untuk menaikkan paket atau memperpanjang masa berlaku "
+             "membuat tanda tangannya tidak lagi cocok, sehingga lisensi "
+             "ditolak."),
+            ("Lisensi diperiksa saat masuk",
+             "Setiap kali halaman masuk dibuka, lisensi diperiksa ke server "
+             "tanpa mengganggu Anda. Inilah yang membuat pencabutan lisensi "
+             "berlaku, misalnya bila lisensi diperjualbelikan kembali tanpa "
+             "izin."),
+            ("Percobaan aktivasi dibatasi",
+             "Percobaan aktivasi dengan kunci yang tidak dikenal dibatasi "
+             "12 kali per 15 menit untuk setiap perangkat, sehingga kunci "
+             "tidak dapat ditebak berulang kali."),
+            ("Jam komputer tidak dapat dimundurkan",
+             "Waktu pemakaian tertinggi dicatat di dua tempat terpisah. "
+             "Bila jam Windows dimundurkan, aplikasi meminta pemeriksaan ke "
+             "server sebelum dapat dipakai."),
+            ("Pemakaian tanpa internet dibatasi",
+             "Aplikasi tetap dapat dipakai tanpa internet selama masa "
+             "tenggang. Setelah itu lisensi perlu diperiksa ke server, "
+             "supaya lisensi yang sudah dicabut tidak dapat dipakai "
+             "selamanya hanya dengan mematikan sambungan internet."),
+        ]
+
+        for judul_butir, keterangan in daftar:
+            b = QVBoxLayout()
+            b.setSpacing(3)
+            j = QLabel(judul_butir)
+            j.setStyleSheet(
+                f"color: {C.TEXT}; font-size: {theme.FS_BODY}px; "
+                f"font-weight: 600; background: transparent;")
+            j.setWordWrap(True)
+            d = QLabel(keterangan)
+            d.setStyleSheet(
+                f"color: {C.TEXT_MUTED}; font-size: {theme.FS_SMALL}px; "
+                f"background: transparent;")
+            d.setWordWrap(True)
+            b.addWidget(j)
+            b.addWidget(d)
+            kl.addLayout(b)
+        keamanan.body().addLayout(kl)
+        lay.addWidget(keamanan)
+
+        # ------------------------------------------------------ tindakan
+        aksi = w.Card()
+        _judul_kartu(aksi, "Tindakan")
+        al = QHBoxLayout()
+        al.setSpacing(10)
+
+        b_periksa = QPushButton("Periksa Lisensi Sekarang")
+        b_periksa.setCursor(Qt.PointingHandCursor)
+        b_periksa.setToolTip(
+            "Hubungi server untuk memastikan lisensi Anda masih berlaku, "
+            "lalu perbarui keterangannya di komputer ini")
+        b_periksa.clicked.connect(self._periksa_lisensi_sekarang)
+        al.addWidget(b_periksa)
+
+        b_lepas = QPushButton("Lepas Perangkat Ini")
+        b_lepas.setObjectName("TombolBahaya")
+        b_lepas.setCursor(Qt.PointingHandCursor)
+        b_lepas.setToolTip(
+            "Lepaskan komputer ini dari lisensi supaya kunci yang sama "
+            "dapat dipakai di komputer lain")
+        b_lepas.clicked.connect(self._lepas_perangkat)
+        al.addWidget(b_lepas)
+        al.addStretch()
+
+        aksi.body().addLayout(al)
+        petunjuk = QLabel(
+            "Melepas perangkat berguna saat Anda pindah komputer. Setelah "
+            "dilepas, kunci lisensi yang sama dapat diaktifkan di komputer "
+            "baru. Lisensi tidak hangus dan tetap berlaku selamanya.")
+        petunjuk.setWordWrap(True)
+        petunjuk.setStyleSheet(
+            f"color: {C.TEXT_MUTED}; font-size: {theme.FS_SMALL}px; "
+            f"background: transparent;")
+        aksi.body().addWidget(petunjuk)
+        lay.addWidget(aksi)
+
+        lay.addStretch()
+
+    def _periksa_lisensi_sekarang(self):
+        """Periksa lisensi ke server dan beri tahu hasilnya."""
+        from ...core import license as LIS
+        from PySide6.QtWidgets import QMessageBox
+
+        berhasil, pesan = LIS.perbarui(config.DATA_DIR)
+        if berhasil:
+            QMessageBox.information(
+                self, "Lisensi masih berlaku",
+                "Lisensi Anda sudah diperiksa dan masih berlaku. "
+                "Keterangannya di komputer ini sudah diperbarui.")
+            self.muat()
+        else:
+            QMessageBox.warning(
+                self, "Lisensi tidak dapat diperiksa",
+                f"{pesan}\n\nBila sambungan internet Anda normal, hubungi "
+                f"penjual untuk memeriksa keadaan lisensi.")
+
+    def _lepas_perangkat(self):
+        """Lepaskan komputer ini dari lisensi, dengan dua penegasan."""
+        from ...core import license as LIS
+        from PySide6.QtWidgets import QMessageBox, QInputDialog
+
+        lis = LIS.muat(config.DATA_DIR)
+        if lis is None:
+            return
+
+        tanya = QMessageBox(self)
+        tanya.setWindowTitle("Lepas perangkat ini?")
+        tanya.setIcon(QMessageBox.Warning)
+        tanya.setText("Komputer ini akan dilepas dari lisensi Anda.")
+        tanya.setInformativeText(
+            "Aplikasi akan kembali ke halaman aktivasi, dan kunci lisensi "
+            "yang sama dapat dipakai di komputer lain.\n\n"
+            "Data pembukuan Anda TIDAK terhapus. Data tetap ada dan dapat "
+            "dibuka lagi setelah lisensi diaktifkan kembali.\n\n"
+            "Lanjutkan?")
+        lanjut = tanya.addButton("Lepas perangkat", QMessageBox.AcceptRole)
+        tanya.addButton("Batal", QMessageBox.RejectRole)
+        tanya.exec()
+
+        if tanya.clickedButton() is not lanjut:
+            return
+
+        # Ketik ulang kunci lisensi sebagai penegasan, supaya tindakan ini
+        # tidak tertekan tanpa sengaja.
+        kunci, ok = QInputDialog.getText(
+            self, "Penegasan",
+            f"Ketik kunci lisensi Anda untuk menegaskan:\n{lis.kunci}")
+        if not ok:
+            return
+        if "".join(c for c in kunci.upper() if c.isalnum()) != lis.kunci:
+            QMessageBox.warning(self, "Kunci tidak cocok",
+                                "Kunci yang Anda ketik tidak cocok. "
+                                "Perangkat tidak dilepas.")
+            return
+
+        berhasil, pesan = LIS.lepas(config.DATA_DIR)
+        if berhasil:
+            QMessageBox.information(
+                self, "Perangkat dilepas",
+                "Komputer ini sudah dilepas dari lisensi. Aplikasi akan "
+                "kembali ke halaman aktivasi.\n\n"
+                "Data pembukuan Anda tetap tersimpan.")
+            self.muat()
+        else:
+            QMessageBox.warning(self, "Gagal melepas",
+                                f"{pesan}\n\nPeriksa sambungan internet Anda.")
 
 
 # ==========================================================================

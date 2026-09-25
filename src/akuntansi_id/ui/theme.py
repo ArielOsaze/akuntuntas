@@ -32,9 +32,9 @@ class C:
     SIDEBAR_BG = "#0F2942"
     SIDEBAR_HOVER = "#1A3A5C"
     SIDEBAR_ACTIVE = "#1B4F8A"
-    SIDEBAR_TEXT = "#C9D8E5"
+    SIDEBAR_TEXT = "#D8E4EE"
     SIDEBAR_TEXT_ACTIVE = "#FFFFFF"
-    SIDEBAR_SECTION = "#8FA4B8"
+    SIDEBAR_SECTION = "#9CB2C6"
 
     # Latar
     BG = "#F4F6F9"
@@ -45,8 +45,8 @@ class C:
 
     # Teks
     TEXT = "#1A2733"
-    TEXT_MUTED = "#556577"
-    TEXT_FAINT = "#5A6B7D"
+    TEXT_MUTED = "#48586B"
+    TEXT_FAINT = "#54637A"
     TEXT_INVERSE = "#FFFFFF"
 
     # Status
@@ -350,14 +350,14 @@ QLabel#KpiValue {{
 }}
 QLabel#KpiLabel {{
     font-size: {_px(FS_SMALL)}px;
-    font-weight: 600;
+    font-weight: 700;
     color: {C.TEXT_MUTED};
-    letter-spacing: 0.1px;
+    letter-spacing: 0.3px;
     background: transparent;
 }}
 QLabel#KpiHint {{
-    font-size: {_px(FS_TINY)}px;
-    color: {C.TEXT_MUTED};
+    font-size: {_px(FS_SMALL)}px;
+    color: {C.TEXT_FAINT};
     background: transparent;
 }}
 QLabel#HelpTitle {{
@@ -500,10 +500,10 @@ QPushButton#NavButton {{
     border-radius: 7px;
     color: {C.SIDEBAR_TEXT};
     text-align: left;
-    padding: 7px 10px 7px 8px;
-    font-size: {_px(FS_SMALL)}px;
+    padding: 8px 10px 8px 8px;
+    font-size: {_px(FS_BODY - 0.5)}px;
     font-weight: 500;
-    spacing: 9px;
+    spacing: 10px;
 }}
 QPushButton#NavButton:hover {{
     background: {C.SIDEBAR_HOVER};
