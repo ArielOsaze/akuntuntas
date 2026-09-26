@@ -149,6 +149,7 @@ def main() -> int:
         ("beranda", "index.html", 1280, 900, ""),
         ("beranda_hero", "index.html", 1280, 900, ""),
         ("harga", "index.html", 1280, 1100, "#harga"),
+        ("banding_kepala", "index.html", 1280, 1000, ".banding-kepala"),
         ("banding_lebar", "index.html", 1280, 1000, ".banding"),
         ("banding_sempit", "index.html", 209, 1000, ".banding"),
         ("banding_370", "index.html", 370, 1000, ".banding"),

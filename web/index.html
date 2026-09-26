@@ -6,7 +6,7 @@
 <title>AkunTuntas - Software Pembukuan & Pajak Perusahaan Indonesia</title>
 <meta name="description" content="Software pembukuan dan perpajakan untuk UMKM, PT Perorangan, dan PT di Indonesia. Bekerja sepenuhnya offline, menghitung PPh 21, PPh Badan, dan PPN sesuai peraturan yang berlaku.">
 <meta name="theme-color" content="#1B4F8A">
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=6">
 
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" href="logo-32.png" type="image/png" sizes="32x32">
@@ -399,6 +399,8 @@
             <p class="banding-legenda">
                 <span><span class="tanda ada-tanda">&#10003;</span> Tersedia</span>
                 <span><span class="tanda tidak-tanda">&#10005;</span> Tidak tersedia</span>
+                <span><span class="legenda-penanda eksklusif"></span> Hanya ada di Enterprise</span>
+                <span><span class="legenda-penanda nilai"></span> Batasannya berbeda</span>
             </p>
 
             <div class="banding-kisi">
@@ -417,8 +419,8 @@
                     </div>
                 </div>
                 <div class="banding-kelompok">Jumlah pemakaian</div>
-                <div class="banding-fitur banding-fitur-beda">
-                    <div class="banding-nama">Jumlah perangkat</div>
+                <div class="banding-fitur banding-fitur-beda-nilai">
+                    <div class="banding-nama">Jumlah perangkat<span class="banding-label">Batasannya berbeda</span></div>
                     <div class="banding-nilai">
                         <span class="nilai-paket">Standar</span>
                         <span class="nilai-isi"><strong>1</strong> perangkat</span>
@@ -428,8 +430,8 @@
                         <span class="nilai-isi"><strong>10</strong> perangkat</span>
                     </div>
                 </div>
-                <div class="banding-fitur banding-fitur-beda">
-                    <div class="banding-nama">Jumlah badan usaha dalam satu aplikasi</div>
+                <div class="banding-fitur banding-fitur-beda-nilai">
+                    <div class="banding-nama">Jumlah badan usaha dalam satu aplikasi<span class="banding-label">Batasannya berbeda</span></div>
                     <div class="banding-nilai">
                         <span class="nilai-paket">Standar</span>
                         <span class="nilai-isi">1 badan usaha</span>
@@ -439,8 +441,8 @@
                         <span class="nilai-isi">Banyak badan usaha</span>
                     </div>
                 </div>
-                <div class="banding-fitur banding-fitur-beda">
-                    <div class="banding-nama">Jumlah cabang</div>
+                <div class="banding-fitur banding-fitur-eksklusif">
+                    <div class="banding-nama">Jumlah cabang<span class="banding-label">Hanya Enterprise</span></div>
                     <div class="banding-nilai">
                         <span class="nilai-paket">Standar</span>
                         <span class="nilai-isi"><span class="tanda tidak" aria-label="Tidak tersedia">&#10005;</span><span class="nilai-teks">Tidak tersedia</span></span>
@@ -529,8 +531,8 @@
                         <span class="nilai-isi"><span class="tanda ada" aria-label="Tersedia">&#10003;</span><span class="nilai-teks">Tersedia</span></span>
                     </div>
                 </div>
-                <div class="banding-fitur banding-fitur-beda">
-                    <div class="banding-nama">Pajak lanjutan dan faktur pajak</div>
+                <div class="banding-fitur banding-fitur-eksklusif">
+                    <div class="banding-nama">Pajak lanjutan dan faktur pajak<span class="banding-label">Hanya Enterprise</span></div>
                     <div class="banding-nilai">
                         <span class="nilai-paket">Standar</span>
                         <span class="nilai-isi"><span class="tanda tidak" aria-label="Tidak tersedia">&#10005;</span><span class="nilai-teks">Tidak tersedia</span></span>
@@ -563,8 +565,8 @@
                         <span class="nilai-isi"><span class="tanda ada" aria-label="Tersedia">&#10003;</span><span class="nilai-teks">Tersedia</span></span>
                     </div>
                 </div>
-                <div class="banding-fitur banding-fitur-beda">
-                    <div class="banding-nama">Laba rugi per dimensi, proyek, dan cabang</div>
+                <div class="banding-fitur banding-fitur-eksklusif">
+                    <div class="banding-nama">Laba rugi per dimensi, proyek, dan cabang<span class="banding-label">Hanya Enterprise</span></div>
                     <div class="banding-nilai">
                         <span class="nilai-paket">Standar</span>
                         <span class="nilai-isi"><span class="tanda tidak" aria-label="Tidak tersedia">&#10005;</span><span class="nilai-teks">Tidak tersedia</span></span>
@@ -575,8 +577,8 @@
                     </div>
                 </div>
                 <div class="banding-kelompok">Akuntansi lanjutan</div>
-                <div class="banding-fitur banding-fitur-beda">
-                    <div class="banding-nama">Dimensi biaya dan proyek</div>
+                <div class="banding-fitur banding-fitur-eksklusif">
+                    <div class="banding-nama">Dimensi biaya dan proyek<span class="banding-label">Hanya Enterprise</span></div>
                     <div class="banding-nilai">
                         <span class="nilai-paket">Standar</span>
                         <span class="nilai-isi"><span class="tanda tidak" aria-label="Tidak tersedia">&#10005;</span><span class="nilai-teks">Tidak tersedia</span></span>
@@ -586,8 +588,8 @@
                         <span class="nilai-isi"><span class="tanda ada" aria-label="Tersedia">&#10003;</span><span class="nilai-teks">Tersedia</span></span>
                     </div>
                 </div>
-                <div class="banding-fitur banding-fitur-beda">
-                    <div class="banding-nama">Konsolidasi multi-entitas</div>
+                <div class="banding-fitur banding-fitur-eksklusif">
+                    <div class="banding-nama">Konsolidasi multi-entitas<span class="banding-label">Hanya Enterprise</span></div>
                     <div class="banding-nilai">
                         <span class="nilai-paket">Standar</span>
                         <span class="nilai-isi"><span class="tanda tidak" aria-label="Tidak tersedia">&#10005;</span><span class="nilai-teks">Tidak tersedia</span></span>
@@ -631,8 +633,8 @@
                         <span class="nilai-isi"><span class="tanda ada" aria-label="Tersedia">&#10003;</span><span class="nilai-teks">Tersedia</span></span>
                     </div>
                 </div>
-                <div class="banding-fitur banding-fitur-beda">
-                    <div class="banding-nama">Log audit lanjutan</div>
+                <div class="banding-fitur banding-fitur-eksklusif">
+                    <div class="banding-nama">Log audit lanjutan<span class="banding-label">Hanya Enterprise</span></div>
                     <div class="banding-nilai">
                         <span class="nilai-paket">Standar</span>
                         <span class="nilai-isi"><span class="tanda tidak" aria-label="Tidak tersedia">&#10005;</span><span class="nilai-teks">Tidak tersedia</span></span>
@@ -654,8 +656,8 @@
                     </div>
                 </div>
                 <div class="banding-kelompok">Dukungan</div>
-                <div class="banding-fitur banding-fitur-beda">
-                    <div class="banding-nama">Pembaruan versi</div>
+                <div class="banding-fitur banding-fitur-beda-nilai">
+                    <div class="banding-nama">Pembaruan versi<span class="banding-label">Batasannya berbeda</span></div>
                     <div class="banding-nilai">
                         <span class="nilai-paket">Standar</span>
                         <span class="nilai-isi"><strong>1 tahun</strong></span>
@@ -665,8 +667,8 @@
                         <span class="nilai-isi"><strong>2 tahun</strong></span>
                     </div>
                 </div>
-                <div class="banding-fitur banding-fitur-beda">
-                    <div class="banding-nama">Bantuan teknis</div>
+                <div class="banding-fitur banding-fitur-beda-nilai">
+                    <div class="banding-nama">Bantuan teknis<span class="banding-label">Batasannya berbeda</span></div>
                     <div class="banding-nilai">
                         <span class="nilai-paket">Standar</span>
                         <span class="nilai-isi">Email</span>

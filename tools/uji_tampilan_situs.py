@@ -163,10 +163,20 @@ def main() -> int:
           "&#10003;" in html and "&#10005;" in html)
 
     # Baris pembeda paket.
-    jumlah_beda = html.count("banding-fitur-beda")
-    p.cek(f"baris pembeda paket ditandai ({jumlah_beda} baris)",
-          jumlah_beda >= 8, f"jumlah: {jumlah_beda}")
-    p.cek("CSS baris pembeda ada", "banding-fitur-beda" in css)
+    jumlah_eks = html.count("banding-fitur-eksklusif")
+    jumlah_nilai = html.count("banding-fitur-beda-nilai")
+    p.cek(f"baris hanya Enterprise ditandai ({jumlah_eks} baris)",
+          jumlah_eks == 6, f"jumlah: {jumlah_eks}")
+    p.cek(f"baris beda nilai ditandai ({jumlah_nilai} baris)",
+          jumlah_nilai == 4, f"jumlah: {jumlah_nilai}")
+    p.cek("CSS penanda eksklusif ada", "banding-fitur-eksklusif" in css)
+    p.cek("CSS penanda beda nilai ada", "banding-fitur-beda-nilai" in css)
+    p.cek("tiap baris berbeda punya label keterangan",
+          html.count("banding-label") == 10,
+          f"jumlah label: {html.count('banding-label')}")
+    p.cek("legenda menerangkan kedua penanda",
+          "legenda-penanda eksklusif" in html
+          and "legenda-penanda nilai" in html)
 
     # Kepala tabel melekat saat digulir.
     p.cek("kepala perbandingan memuat nama paket",
@@ -185,7 +195,7 @@ def main() -> int:
             continue
         versi = re.findall(r'styles\.css\?v=(\d+)', isi_h)
         p.cek(f"{berkas.name} memuat CSS dengan versi",
-              bool(versi) and int(versi[0]) >= 5,
+              bool(versi) and int(versi[0]) >= 6,
               f"versi: {versi}")
     print()
 

@@ -684,16 +684,47 @@ body {
     font-size: 15px;
     line-height: 1.55;
     color: var(--teks);
+    /* Nama fitur dan label penandanya disusun bertumpuk, bukan
+       berdampingan. Sebelumnya keduanya sejajar sehingga label menempel
+       di ujung nama fitur dan terbaca menyatu, misalnya menjadi
+       "Pajak lanjutan dan faktur pajakHanya Enterprise". */
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 5px;
 }
 
-/* Baris yang membedakan kedua paket diberi penanda garis tepi, supaya
-   pengunjung langsung melihat apa yang mereka dapatkan lebih. */
-.banding-fitur-beda .banding-nama {
+/* Baris yang membedakan kedua paket diberi penanda pada sisi kiri.
+
+   Ada dua jenis perbedaan, dan keduanya diberi penanda yang berbeda
+   supaya pengunjung dapat membedakannya:
+     - "eksklusif"   : fitur hanya ada di Enterprise, Standar tidak punya.
+     - "beda nilai"  : kedua paket punya, tetapi batasannya berbeda.
+   Sebelumnya keduanya memakai penanda yang sama, sehingga pengunjung
+   tidak dapat membedakan "tidak ada" dari "batasnya berbeda". */
+.banding-fitur-eksklusif .banding-nama {
     box-shadow: inset 3px 0 0 var(--biru);
     font-weight: 600;
 }
+
+.banding-fitur-beda-nilai .banding-nama {
+    box-shadow: inset 3px 0 0 #C08A3E;
+    font-weight: 600;
+}
+
+/* Label kecil di bawah nama fitur yang menjelaskan arti penandanya.
+   Jaraknya diatur oleh gap induknya. */
+.banding-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.3;
+}
+
+.banding-fitur-eksklusif .banding-label { color: var(--biru); }
+.banding-fitur-beda-nilai .banding-label { color: #96631C; }
 
 .banding-nilai {
     padding: 15px 22px;
@@ -803,6 +834,19 @@ body {
     background: var(--biru-tua);
     border-color: var(--biru-tua);
 }
+
+/* Penanda kecil pada legenda, serupa dengan garis pada baris fitur. */
+.legenda-penanda {
+    display: inline-block;
+    width: 3px;
+    height: 15px;
+    border-radius: 2px;
+    margin-right: 7px;
+    vertical-align: -2px;
+}
+
+.legenda-penanda.eksklusif { background: var(--biru); }
+.legenda-penanda.nilai { background: #C08A3E; }
 
 .banding-catatan {
     margin-top: 20px;
@@ -1157,9 +1201,15 @@ body {
         align-items: flex-start;
     }
 
-    .banding-fitur-beda .banding-nama {
+    .banding-fitur-eksklusif .banding-nama {
         box-shadow: none;
         border-left: 3px solid var(--biru);
+        padding-left: 11px;
+    }
+
+    .banding-fitur-beda-nilai .banding-nama {
+        box-shadow: none;
+        border-left: 3px solid #C08A3E;
         padding-left: 11px;
     }
 
