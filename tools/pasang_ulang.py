@@ -21,11 +21,11 @@ import time
 from pathlib import Path
 
 AKAR = Path(__file__).resolve().parent.parent
-INSTALLER = AKAR / "installer_output" / "AkunTuntas-1.1.5-Setup.exe"
+INSTALLER = AKAR / "installer_output" / "AkunTuntas-1.1.6-Setup.exe"
 TUJUAN = Path(r"C:\Users\ariel\AkunTuntas")
 LOG = AKAR / "_pasang_ulang.log"
 
-NAMA_PROSES = ["AkunTuntas.exe", "AkunTuntas-1.1.5-Setup.exe", "unins000.exe"]
+NAMA_PROSES = ["AkunTuntas.exe", "AkunTuntas-1.1.6-Setup.exe", "unins000.exe"]
 
 
 def jalankan(perintah: list, tunggu: int = 600) -> tuple:
