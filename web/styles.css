@@ -567,6 +567,13 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    background: var(--putih);
+    border: 1px solid var(--garis);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 13.5px;
+    font-weight: 500;
+    box-shadow: 0 1px 2px rgba(15, 41, 66, 0.04);
 }
 
 /* Perbandingan paket.
@@ -577,10 +584,11 @@ body {
    hanya melihat kolom fitur dan harus menggeser untuk melihat kolom
    paket. Dengan kisi, seluruh keterangan tetap terbaca. */
 .banding-kisi {
-    border: 1.5px solid var(--garis);
-    border-radius: 16px;
+    border: 1px solid var(--garis);
+    border-radius: 18px;
     background: var(--putih);
-    box-shadow: var(--bayang);
+    box-shadow: 0 1px 2px rgba(15, 41, 66, 0.04),
+                0 14px 36px rgba(15, 41, 66, 0.07);
     overflow: hidden;
     min-width: 0;
 }
@@ -589,8 +597,8 @@ body {
 .banding-kepala {
     display: grid;
     grid-template-columns: 52% 24% 24%;
-    background: var(--latar-lembut);
-    border-bottom: 1.5px solid var(--garis);
+    background: linear-gradient(180deg, #FFFFFF 0%, var(--latar-lembut) 100%);
+    border-bottom: 1px solid var(--garis);
 }
 
 .banding-kepala > div {
@@ -610,7 +618,8 @@ body {
 }
 
 .kepala-paket.unggulan {
-    background: rgba(27, 79, 138, 0.10);
+    background: linear-gradient(180deg, rgba(27, 79, 138, 0.11) 0%,
+                rgba(27, 79, 138, 0.04) 100%);
     box-shadow: inset 0 3px 0 var(--biru);
 }
 
@@ -618,20 +627,22 @@ body {
    dapat membandingkan tanpa menggulir ke bagian harga. */
 .paket-nama {
     display: block;
-    font-size: 15.5px;
+    font-size: 16.5px;
     font-weight: 700;
     color: var(--teks);
-    margin-bottom: 3px;
+    letter-spacing: -0.01em;
+    margin-bottom: 5px;
 }
 
 .kepala-paket.unggulan .paket-nama { color: var(--biru); }
 
 .paket-harga {
     display: block;
-    font-size: 17px;
+    font-size: 23px;
     font-weight: 700;
-    color: var(--navy);
-    letter-spacing: -0.01em;
+    color: #0B2340;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
 }
 
 .kepala-paket.unggulan .paket-harga { color: var(--biru); }
@@ -640,47 +651,61 @@ body {
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: var(--teks-abu);
-    margin-top: 2px;
-    letter-spacing: 0.01em;
+    color: #45566A;
+    margin-top: 5px;
+    letter-spacing: 0.02em;
 }
 
 /* Pita penanda paket yang paling lengkap. */
 .paket-pita {
     display: inline-block;
-    background: var(--biru);
+    background: linear-gradient(135deg, #2563A8 0%, var(--biru) 100%);
     color: var(--putih);
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.07em;
     text-transform: uppercase;
-    padding: 3px 11px;
+    padding: 4px 12px;
     border-radius: 999px;
-    margin-bottom: 8px;
+    margin-bottom: 9px;
+    box-shadow: 0 2px 6px rgba(27, 79, 138, 0.26);
 }
 
 /* Judul kelompok. */
 .banding-kelompok {
-    background: var(--navy);
-    color: var(--putih);
-    font-size: 12.5px;
+    background: var(--latar-lembut);
+    color: var(--navy);
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
-    padding: 11px 22px;
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--garis);
 }
 
 /* Satu baris fitur: nama fitur di kiri, nilai tiap paket di kanan. */
 .banding-fitur {
     display: grid;
     grid-template-columns: 52% 24% 24%;
-    border-bottom: 1px solid var(--garis);
+    border-bottom: 1px solid #EDF1F6;
+    transition: background 0.14s;
 }
 
 .banding-fitur:last-child { border-bottom: none; }
 
+/* Belang halus pada baris genap supaya mata mudah menyusuri satu baris
+   dari nama fitur sampai nilai kedua paket. Tanpa belang, baris yang
+   panjang membuat pembaca berpindah baris. */
+.banding-kisi > .banding-fitur:nth-of-type(even) {
+    background: #FCFDFE;
+}
+
+.banding-kisi > .banding-fitur:hover {
+    background: #F7FAFD;
+}
+
 .banding-nama {
-    padding: 15px 22px;
+    padding: 17px 22px;
     font-size: 15px;
     line-height: 1.55;
     color: var(--teks);
@@ -706,28 +731,42 @@ body {
 .banding-fitur-eksklusif .banding-nama {
     box-shadow: inset 3px 0 0 var(--biru);
     font-weight: 600;
+    background: linear-gradient(90deg, rgba(27, 79, 138, 0.05) 0%,
+                rgba(27, 79, 138, 0) 34%);
 }
 
 .banding-fitur-beda-nilai .banding-nama {
     box-shadow: inset 3px 0 0 #C08A3E;
     font-weight: 600;
+    background: linear-gradient(90deg, rgba(192, 138, 62, 0.06) 0%,
+                rgba(192, 138, 62, 0) 34%);
 }
 
 /* Label kecil di bawah nama fitur yang menjelaskan arti penandanya.
    Jaraknya diatur oleh gap induknya. */
 .banding-label {
-    display: block;
-    font-size: 12px;
+    display: inline-block;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.05em;
     line-height: 1.3;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
 }
 
-.banding-fitur-eksklusif .banding-label { color: var(--biru); }
-.banding-fitur-beda-nilai .banding-label { color: #96631C; }
+.banding-fitur-eksklusif .banding-label {
+    color: var(--biru);
+    background: rgba(27, 79, 138, 0.09);
+}
+
+.banding-fitur-beda-nilai .banding-label {
+    color: #8A5A18;
+    background: rgba(192, 138, 62, 0.13);
+}
 
 .banding-nilai {
-    padding: 15px 22px;
+    padding: 17px 22px;
     font-size: 15px;
     line-height: 1.55;
     color: var(--teks);
@@ -741,6 +780,26 @@ body {
 .banding-nilai.unggulan {
     background: rgba(27, 79, 138, 0.04);
 }
+
+/* Angka di dalam nilai paket, misalnya jumlah perangkat, ditonjolkan
+   supaya perbedaan antar paket langsung terlihat. */
+.banding-nilai strong {
+    font-weight: 700;
+    color: var(--navy);
+    font-variant-numeric: tabular-nums;
+}
+
+.banding-nilai.unggulan strong { color: var(--biru); }
+
+.nilai-isi {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+    justify-content: center;
+    min-width: 0;
+}
+
 
 /* Nama paket di dalam baris hanya tampil pada layar sempit, karena di
    layar lebar nama paket sudah tertera pada kepala. */
@@ -761,8 +820,8 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     font-size: 15px;
     font-weight: 700;
@@ -772,14 +831,16 @@ body {
 
 .banding-kisi .tanda.ada,
 .banding-legenda .ada-tanda {
-    background: #E3F3EA;
-    color: #05663F;
+    background: linear-gradient(160deg, #EAF9F1 0%, #D7F0E3 100%);
+    color: #04663C;
+    box-shadow: inset 0 0 0 1px rgba(4, 102, 60, 0.16);
 }
 
 .banding-kisi .tanda.tidak,
 .banding-legenda .tidak-tanda {
-    background: #EDF1F5;
-    color: #556577;
+    background: #EFF3F7;
+    color: #4E5E70;
+    box-shadow: inset 0 0 0 1px rgba(78, 94, 112, 0.12);
 }
 
 /* Keterangan di samping tanda hanya tampil pada layar sempit. */
@@ -791,8 +852,8 @@ body {
 /* Baris penutup: tombol pilih paket pada tiap kolom, supaya pengunjung
    dapat langsung memilih setelah membaca seluruh daftar. */
 .banding-pilih {
-    background: var(--latar-lembut);
-    border-top: 1.5px solid var(--garis);
+    background: linear-gradient(180deg, var(--latar-lembut) 0%, #FFFFFF 100%);
+    border-top: 1px solid var(--garis);
 }
 
 .banding-pilih .banding-nama {
@@ -807,15 +868,16 @@ body {
 
 .tombol-pilih {
     display: inline-block;
-    padding: 10px 20px;
-    border-radius: 9px;
+    padding: 11px 24px;
+    border-radius: 10px;
     font-size: 14.5px;
     font-weight: 600;
     text-decoration: none;
     background: var(--putih);
     color: var(--biru);
     border: 1.5px solid var(--biru);
-    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s,
+                transform 0.15s;
 }
 
 .tombol-pilih:hover {
@@ -825,24 +887,25 @@ body {
 }
 
 .tombol-pilih.unggulan {
-    background: var(--biru);
+    background: linear-gradient(135deg, #2563A8 0%, var(--biru) 100%);
     color: var(--putih);
-    border-color: var(--biru);
+    border-color: transparent;
+    box-shadow: 0 3px 10px rgba(27, 79, 138, 0.24);
 }
 
 .tombol-pilih.unggulan:hover {
-    background: var(--biru-tua);
-    border-color: var(--biru-tua);
+    background: linear-gradient(135deg, var(--biru) 0%, var(--biru-tua) 100%);
+    box-shadow: 0 6px 16px rgba(27, 79, 138, 0.30);
+    transform: translateY(-1px);
 }
 
 /* Penanda kecil pada legenda, serupa dengan garis pada baris fitur. */
 .legenda-penanda {
     display: inline-block;
-    width: 3px;
-    height: 15px;
-    border-radius: 2px;
-    margin-right: 7px;
-    vertical-align: -2px;
+    width: 4px;
+    height: 16px;
+    border-radius: 3px;
+    flex-shrink: 0;
 }
 
 .legenda-penanda.eksklusif { background: var(--biru); }
