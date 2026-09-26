@@ -67,15 +67,25 @@ def periksa(nama: str, jalur: str) -> list[dict]:
     # Ukur setiap tombol: warna teks, latar efektif (telusuri ke atas bila
     # transparan), dan rasio kontras.
     skrip = """(() => {
+      function dariGradasi(gambar) {
+        // Gradasi tidak muncul di backgroundColor, jadi warnanya harus
+        // dibaca dari backgroundImage. Tanpa ini, tombol bergradasi
+        // dianggap berlatar transparan dan warnanya salah dinilai.
+        if (!gambar || gambar === 'none') return null;
+        const m = gambar.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/);
+        return m ? [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])] : null;
+      }
       function latarEfektif(el) {
         let n = el;
         while (n && n !== document.documentElement) {
-          const g = getComputedStyle(n).backgroundColor;
-          const m = g.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)/);
+          const g = getComputedStyle(n);
+          const m = g.backgroundColor.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)/);
           if (m) {
             const a = m[4] === undefined ? 1 : parseFloat(m[4]);
             if (a > 0.5) return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])];
           }
+          const dariGambar = dariGradasi(g.backgroundImage);
+          if (dariGambar) return dariGambar;
           n = n.parentElement;
         }
         return [255, 255, 255];
