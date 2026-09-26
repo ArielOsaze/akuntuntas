@@ -1,6 +1,6 @@
 {
-  "versi": "1.1.6",
+  "versi": "1.1.7",
   "build": "2026.09",
   "tanggal": "2026-09-26",
-  "catatan": "Kartu stok: kolom saldo berjalan dan keterangan saldo awal serta saldo akhir yang benar"
+  "catatan": "Impor jurnal menerima berbagai bentuk tanggal, termasuk format Indonesia"
 }
