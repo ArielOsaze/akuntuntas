@@ -20,6 +20,16 @@ from .core import tax_engine as tx
 # ==========================================================================
 # PERUSAHAAN
 # ==========================================================================
+def _persen(v: float, desimal: int = 1) -> str:
+    """Persen dengan koma desimal, sesuai penulisan angka Indonesia."""
+    try:
+        teks = f"{float(v) * 100:.{desimal}f}"
+    except (TypeError, ValueError):
+        return "0%"
+    return teks.replace(".", ",") + "%"
+
+
+
 def list_companies(aktif_saja: bool = True) -> list:
     sql = "SELECT * FROM companies"
     if aktif_saja:
@@ -917,7 +927,7 @@ def hitung_payroll_bulanan(company_id: int, masa: str, bonus: dict[int, int] = N
         else:
             r = tx.pph21_bulanan_ter(bruto, k["status_ptkp"])
             pph21 = r.pph21_ter
-            metode = f"TER {r.kategori_ter} ({r.tarif_ter * 100:.2f}%)"
+            metode = f"TER {r.kategori_ter} ({_persen(r.tarif_ter, 2)})"
 
         potongan = bpjs.total_karyawan + pph21
         thp = bruto - potongan

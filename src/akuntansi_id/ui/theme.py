@@ -977,10 +977,12 @@ def money(amount, prefix: str = "Rp", negatif_merah: bool = True) -> str:
 
 
 def persen(v: float, desimal: int = 1) -> str:
+    """Persen dengan koma desimal, sesuai penulisan angka Indonesia."""
     try:
-        return f"{float(v) * 100:.{desimal}f}%"
+        teks = f"{float(v) * 100:.{desimal}f}"
     except (TypeError, ValueError):
         return "0%"
+    return teks.replace(".", ",") + "%"
 
 
 def tanggal_id(iso: str) -> str:

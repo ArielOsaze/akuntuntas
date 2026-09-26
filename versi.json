@@ -1,6 +1,6 @@
 {
-  "versi": "1.2.2",
+  "versi": "1.2.3",
   "build": "2026.09",
   "tanggal": "2026-09-26",
-  "catatan": "Dashboard dan Analisis Keuangan kini punya tombol Ekspor dan Cetak; temuan dapat disaring per tingkat; kartu fitur analisis ditambahkan di situs"
+  "catatan": "Perbaiki penilaian rasio, penulisan angka Indonesia, dan tambah tindak lanjut temuan"
 }

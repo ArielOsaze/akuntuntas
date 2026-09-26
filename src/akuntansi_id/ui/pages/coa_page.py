@@ -800,7 +800,7 @@ class PerusahaanPage(QWidget):
             ("Omzet Tahun Ini", theme.money(omzet)),
             ("Batas Wajib PKP", theme.money(config.THRESHOLD_PKP)),
             ("Progres ke Batas PKP",
-             f"{omzet / config.THRESHOLD_PKP * 100:.1f}%"),
+             f"{theme.persen(omzet / config.THRESHOLD_PKP, 1)}"),
             ("Omzet Tahun Lalu", theme.money(comp["omzet_prev_year"])),
         ]
         for i, (label, nilai) in enumerate(data):

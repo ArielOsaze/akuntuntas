@@ -56,6 +56,27 @@ class Temuan:
                 "saran": "SARAN", "baik": "BAIK"}.get(self.tingkat, "-")
 
 
+def _persen(v: float, desimal: int = 1) -> str:
+    """Persen dengan koma desimal, sesuai penulisan angka Indonesia."""
+    try:
+        teks = f"{float(v) * 100:.{desimal}f}"
+    except (TypeError, ValueError):
+        return "0%"
+    return teks.replace(".", ",") + "%"
+
+
+def _rasio(v, desimal: int = 2) -> str:
+    """Angka rasio dengan koma desimal, sesuai penulisan angka Indonesia."""
+    try:
+        angka = float(v)
+    except (TypeError, ValueError):
+        return "-"
+    if angka == float("inf"):
+        return "tidak terhingga"
+    teks = f"{angka:.{desimal}f}"
+    return teks.replace(".", ",") + "x"
+
+
 @dataclass
 class HasilAnalisis:
     skor: int = 100
@@ -115,6 +136,7 @@ def hitung_rasio(nr: acc.Neraca, lr: acc.LabaRugi, kas: int) -> dict:
     r["aset_lancar"] = aset_lancar
     r["liabilitas_pendek"] = liab_pendek
     r["ekuitas"] = nr.total_ekuitas
+    r["laba_bersih"] = lr.laba_bersih
     return r
 
 
@@ -310,12 +332,12 @@ def analisis_kesehatan(company_id: int, tahun: int,
                 judul="Bantalan kas relatif tipis",
                 penjelasan=(
                     f"Kas {tx.rupiah(kas)} hanya sekitar "
-                    f"{kas / liab_pendek:.1f}x kewajiban jangka pendek "
+                    f"{_rasio(kas / liab_pendek, 1)} kewajiban jangka pendek "
                     f"({tx.rupiah(liab_pendek)}). Idealnya minimal 1,5x untuk keamanan."
                 ),
                 tindakan="Perkuat cadangan kas dan percepat penagihan piutang.",
                 dampak="Rentan terhadap keterlambatan pembayaran pelanggan.",
-                angka=f"Rasio kas {kas / liab_pendek:.2f}x",
+                angka=f"Rasio kas {_rasio(kas / liab_pendek, 2)}",
             ))
         else:
             T.append(Temuan(
@@ -323,7 +345,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
                 judul="Posisi kas sehat",
                 penjelasan=(
                     f"Kas {tx.rupiah(kas)} mencukupi untuk menutup kewajiban jangka "
-                    f"pendek {tx.rupiah(liab_pendek)} (rasio {kas / liab_pendek:.2f}x)."
+                    f"pendek {tx.rupiah(liab_pendek)} (rasio {_rasio(kas / liab_pendek, 2)})."
                 ),
                 tindakan="Pertahankan. Pertimbangkan menempatkan kelebihan kas pada deposito.",
                 dasar_hukum="Bunga deposito dikenai PPh Final 20% (PP 19/2009).",
@@ -336,7 +358,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
                 tingkat="kritis", kategori="Likuiditas",
                 judul="Aset lancar lebih kecil dari kewajiban jangka pendek",
                 penjelasan=(
-                    f"Rasio lancar {rl:.2f}x (aset lancar {tx.rupiah(nr.total_aset_lancar)} "
+                    f"Rasio lancar {_rasio(rl, 2)} (aset lancar {tx.rupiah(nr.total_aset_lancar)} "
                     f"dibanding kewajiban jangka pendek {tx.rupiah(liab_pendek)}). "
                     "Usaha berisiko tidak mampu membayar utang jangka pendek."
                 ),
@@ -345,7 +367,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
                     "panjang, atau tambah modal kerja."
                 ),
                 dampak="Risiko kebangkrutan teknis (tidak mampu bayar saat jatuh tempo).",
-                angka=f"Rasio lancar {rl:.2f}x",
+                angka=f"Rasio lancar {_rasio(rl, 2)}",
             ))
         elif rl >= 2.0:
             T.append(Temuan(
@@ -353,11 +375,11 @@ def analisis_kesehatan(company_id: int, tahun: int,
                 halaman="kas_bank",
                 judul="Likuiditas kuat",
                 penjelasan=(
-                    f"Rasio lancar {rl:.2f}x - aset lancar jauh melebihi kewajiban "
+                    f"Rasio lancar {_rasio(rl, 2)} - aset lancar jauh melebihi kewajiban "
                     "jangka pendek."
                 ),
                 tindakan="Sehat. Pastikan kelebihan dana tidak menganggur tanpa hasil.",
-                angka=f"Rasio lancar {rl:.2f}x",
+                angka=f"Rasio lancar {_rasio(rl, 2)}",
             ))
         elif rl < 1.5:
             T.append(Temuan(
@@ -365,11 +387,11 @@ def analisis_kesehatan(company_id: int, tahun: int,
                 halaman="kas_bank",
                 judul="Likuiditas perlu diperhatikan",
                 penjelasan=(
-                    f"Rasio lancar {rl:.2f}x. Masih di atas 1 tetapi di bawah angka "
+                    f"Rasio lancar {_rasio(rl, 2)}. Masih di atas 1 tetapi di bawah angka "
                     "nyaman 1,5x."
                 ),
                 tindakan="Tingkatkan penagihan piutang dan kelola persediaan lebih efisien.",
-                angka=f"Rasio lancar {rl:.2f}x",
+                angka=f"Rasio lancar {_rasio(rl, 2)}",
             ))
 
     # Kas negatif — indikasi kesalahan pencatatan
@@ -433,7 +455,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
                 tingkat="peringatan", kategori="Profitabilitas",
                 judul="Margin laba bersih sangat tipis",
                 penjelasan=(
-                    f"Margin laba bersih hanya {lr.margin_bersih * 100:.1f}%. Artinya dari "
+                    f"Margin laba bersih hanya {_persen(lr.margin_bersih, 1)}. Artinya dari "
                     f"setiap Rp100 penjualan, laba bersih hanya {tx.rupiah(lr.margin_bersih * 100)}. "
                     "Usaha rentan terganggu bila biaya naik sedikit saja."
                 ),
@@ -442,7 +464,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
                     "baik, dan tekan beban operasional yang tidak memberi nilai tambah."
                 ),
                 dampak="Sedikit kenaikan biaya bisa membuat usaha merugi.",
-                angka=f"Margin bersih {lr.margin_bersih * 100:.2f}%",
+                angka=f"Margin bersih {_persen(lr.margin_bersih, 2)}",
             ))
         elif lr.margin_bersih >= 0.15:
             T.append(Temuan(
@@ -450,11 +472,11 @@ def analisis_kesehatan(company_id: int, tahun: int,
                 halaman="laporan",
                 judul="Margin laba bersih sehat",
                 penjelasan=(
-                    f"Margin laba bersih {lr.margin_bersih * 100:.1f}% - di atas 15%, "
+                    f"Margin laba bersih {_persen(lr.margin_bersih, 1)} - di atas 15%, "
                     "tergolong sehat untuk usaha kecil."
                 ),
                 tindakan="Pertahankan efisiensi. Pertimbangkan ekspansi bertahap.",
-                angka=f"Margin bersih {lr.margin_bersih * 100:.2f}%",
+                angka=f"Margin bersih {_persen(lr.margin_bersih, 2)}",
             ))
 
         if lr.margin_kotor < 0.20:
@@ -462,7 +484,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
                 tingkat="peringatan", kategori="Profitabilitas",
                 judul="Margin kotor rendah",
                 penjelasan=(
-                    f"Margin kotor {lr.margin_kotor * 100:.1f}%. Laba kotor "
+                    f"Margin kotor {_persen(lr.margin_kotor, 1)}. Laba kotor "
                     f"{tx.rupiah(lr.laba_kotor)} dari pendapatan "
                     f"{tx.rupiah(lr.pendapatan_usaha)}. Margin di bawah 20% menyulitkan "
                     "penutupan beban operasional."
@@ -472,7 +494,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
                     "kurangi pemborosan bahan, atau naikkan harga jual."
                 ),
                 dampak="Sulit menghasilkan laba operasional yang cukup.",
-                angka=f"Margin kotor {lr.margin_kotor * 100:.2f}%",
+                angka=f"Margin kotor {_persen(lr.margin_kotor, 2)}",
             ))
 
         if rasio["beban_terhadap_pendapatan"] > 0.95:
@@ -482,7 +504,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
                 judul="Beban menyerap hampir seluruh pendapatan",
                 penjelasan=(
                     f"Total HPP + beban operasional = "
-                    f"{rasio['beban_terhadap_pendapatan'] * 100:.1f}% dari pendapatan. "
+                    f"{_persen(rasio['beban_terhadap_pendapatan'], 1)} dari pendapatan. "
                     "Hampir tidak ada sisa untuk laba."
                 ),
                 tindakan="Lakukan audit beban: urutkan dari terbesar dan potong yang tidak esensial.",
@@ -499,7 +521,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
                 tingkat="kritis", kategori="Solvabilitas",
                 judul="Beban utang sangat berat dibanding modal",
                 penjelasan=(
-                    f"Rasio utang terhadap ekuitas {der:.2f}x - utang "
+                    f"Rasio utang terhadap ekuitas {_rasio(der, 2)} - utang "
                     f"{tx.rupiah(nr.total_liabilitas)} vs ekuitas "
                     f"{tx.rupiah(nr.total_ekuitas)}. Usaha sangat bergantung pada utang."
                 ),
@@ -511,7 +533,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
                     "Bunga pinjaman menggerus laba. Untuk pinjaman dari pemegang saham, "
                     "bunga di atas rasio 4:1 tidak dapat dibiayakan (PMK 169/2017)."
                 ),
-                angka=f"DER {der:.2f}x",
+                angka=f"DER {_rasio(der, 2)}",
             ))
         elif der > 1.5:
             T.append(Temuan(
@@ -519,11 +541,11 @@ def analisis_kesehatan(company_id: int, tahun: int,
                 halaman="laporan",
                 judul="Struktur modal cukup berutang",
                 penjelasan=(
-                    f"Rasio utang/ekuitas {der:.2f}x. Masih terkendali, tetapi perlu "
+                    f"Rasio utang/ekuitas {_rasio(der, 2)}. Masih terkendali, tetapi perlu "
                     "pemantauan agar tidak meningkat."
                 ),
                 tindakan="Jaga pertumbuhan laba ditahan agar ekuitas menguat.",
-                angka=f"DER {der:.2f}x",
+                angka=f"DER {_rasio(der, 2)}",
             ))
     elif nr.total_liabilitas > 0:
         T.append(Temuan(
@@ -765,7 +787,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
                 tingkat="peringatan", kategori="Kas",
                 judul="Piutang menumpuk",
                 penjelasan=(
-                    f"Piutang {tx.rupiah(piutang)} setara {rasio_piutang * 100:.0f}% dari "
+                    f"Piutang {tx.rupiah(piutang)} setara {_persen(rasio_piutang, 0)} dari "
                     "pendapatan setahun. Uang Anda banyak tertahan di pelanggan."
                 ),
                 tindakan=(
@@ -986,7 +1008,7 @@ def _buat_ringkasan(hasil: HasilAnalisis, comp, lr, nr, omzet: int) -> str:
     if omzet > 0:
         bagian.append(
             f"Peredaran bruto tercatat {tx.rupiah(omzet)} "
-            f"({omzet / config.THRESHOLD_PKP * 100:.1f}% dari batas wajib PKP "
+            f"({_persen(omzet / config.THRESHOLD_PKP, 1)} dari batas wajib PKP "
             f"Rp4,8 miliar)."
         )
     if lr.pendapatan_usaha > 0:
@@ -994,7 +1016,7 @@ def _buat_ringkasan(hasil: HasilAnalisis, comp, lr, nr, omzet: int) -> str:
         bagian.append(
             f"Dari pendapatan {tx.rupiah(lr.pendapatan_usaha)}, usaha mencatat "
             f"{status} bersih {tx.rupiah(abs(lr.laba_bersih))} "
-            f"(margin {lr.margin_bersih * 100:.1f}%)."
+            f"(margin {_persen(lr.margin_bersih, 1)})."
         )
     bagian.append(
         f"Total aset {tx.rupiah(nr.total_aset)} dengan liabilitas "
@@ -1004,7 +1026,7 @@ def _buat_ringkasan(hasil: HasilAnalisis, comp, lr, nr, omzet: int) -> str:
     kritis, peringatan = hasil.jumlah_kritis, hasil.jumlah_peringatan
     if kritis:
         bagian.append(
-            f"peringatan Ada {kritis} temuan KRITIS yang perlu segera ditindaklanjuti"
+            f"Ada {kritis} temuan KRITIS yang perlu segera ditindaklanjuti"
             + (f" dan {peringatan} peringatan." if peringatan else ".")
         )
     elif peringatan:

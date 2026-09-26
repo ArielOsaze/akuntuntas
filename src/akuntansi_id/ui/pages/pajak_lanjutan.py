@@ -697,7 +697,7 @@ class PajakLanjutanPage(QWidget):
         t.isi([[theme.tanggal_id(d["tanggal"]),
                 istilah.label("pbjt", d["jenis"]),
                 theme.money(d["dpp"]),
-                f"{float(d['tarif']) * 100:.0f}%",
+                f"{theme.persen(float(d['tarif']), 0)}",
                 theme.money(d["pajak"])] for d in daftar])
         lay.addWidget(t, 1)
 
@@ -757,7 +757,7 @@ class PajakLanjutanPage(QWidget):
         t.isi([[theme.tanggal_id(d["tanggal"]),
                 istilah.label("pph15", d["jenis"]),
                 theme.money(d["peredaran_bruto"]),
-                f"{float(d['tarif']) * 100:.2f}%".replace(".", ","),
+                f"{theme.persen(float(d['tarif']), 2)}",
                 theme.money(d["pph"])] for d in daftar])
         lay.addWidget(t, 1)
 

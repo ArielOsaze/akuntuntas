@@ -177,7 +177,7 @@ class DialogProduk(QDialog):
             margin = jual - beli
             persen = (margin / beli * 100) if beli else 0
             pesan.append(f"Margin per unit: <b>{tx.rupiah(margin)}</b> "
-                         f"({persen:.1f}% dari harga beli)")
+                         f"({theme.persen(persen / 100, 1)} dari harga beli)")
             if margin <= 0:
                 pesan.append(f"<span style='color:{C.DANGER}'>peringatan Harga jual di bawah "
                              "atau sama dengan harga beli - usaha akan merugi.</span>")

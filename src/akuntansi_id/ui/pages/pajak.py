@@ -421,7 +421,7 @@ class PajakPage(QWidget):
             baris.append([
                 theme.tanggal_id(r["tanggal"]), r["masa"], r["kode_pajak"],
                 r["jenis"], theme.money(r["dpp"]),
-                f"{r['tarif_dipakai'] * 100:.2f}%", theme.money(r["pajak"]),
+                f"{theme.persen(r['tarif_dipakai'], 2)}", theme.money(r["pajak"]),
                 r["status"],
             ])
             if r["status"] == "Terutang":

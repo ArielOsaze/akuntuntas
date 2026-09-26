@@ -568,7 +568,7 @@ class PengaturanPage(QWidget):
         if terakhir:
             al.addWidget(w.label(
                 f"Cadangan terakhir: {terakhir['ts']} "
-                f"({terakhir['size_bytes'] / 1024 / 1024:.2f} MB)",
+                f"({(terakhir['size_bytes'] / 1024 / 1024):.2f} MB".replace(".", ",") + ")",
                 objek="Faint", wrap=True))
         else:
             al.addWidget(w.label("Belum ada cadangan dibuat.",
@@ -611,7 +611,7 @@ class PengaturanPage(QWidget):
                          ("Ukuran", 120), ("Keterangan", 250), ("", 100)])
             baris_t = [[
                 c["ts"], c["path"],
-                f"{c['size_bytes'] / 1024 / 1024:.2f} MB",
+                f"{c['size_bytes'] / 1024 / 1024:.2f} MB".replace(".", ","),
                 c["keterangan"] or "", "Pulihkan",
             ] for c in cadangan]
             t.isi(baris_t, align_kanan={2})
@@ -1611,7 +1611,7 @@ class ChecklistPage(QWidget):
         selesai = sum(1 for c in data if c["status"] == "Selesai")
         self.lbl_info.setText(
             f"{selesai} dari {len(data)} item selesai "
-            f"({selesai / len(data) * 100:.0f}%)" if data else "Belum ada item")
+            f"({theme.persen(selesai / len(data), 0)})" if data else "Belum ada item")
 
     def _ubah_status(self, r: int):
         masa = self.cmb_masa.currentData()

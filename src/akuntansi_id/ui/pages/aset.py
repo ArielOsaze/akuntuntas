@@ -915,7 +915,7 @@ class DialogKaryawan(QDialog):
             baris.append(f"<b>Perkiraan PPh 21 (skema TER): "
                          f"{theme.money(r.pph21_ter)}</b>")
             baris.append(f"Kategori TER {r.kategori_ter}, tarif efektif "
-                         f"{r.tarif_ter * 100:.2f}%")
+                         f"{theme.persen(r.tarif_ter, 2)}")
             thp = upah - b.total_karyawan - r.pph21_ter
             baris.append(f"<b>Perkiraan take home pay: {theme.money(thp)}</b>")
             beban = upah + b.total_perusahaan

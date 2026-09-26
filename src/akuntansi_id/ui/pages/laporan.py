@@ -346,7 +346,7 @@ class LaporanPage(QWidget):
             p = persen if persen is not None else (
                 nilai / lr.pendapatan_usaha if lr.pendapatan_usaha else 0)
             baris_tabel.append([uraian, theme.money(nilai),
-                                f"{p * 100:.1f}%" if lr.pendapatan_usaha else ""])
+                                f"{theme.persen(p, 1)}" if lr.pendapatan_usaha else ""])
             if tebal:
                 warna[idx] = C.PRIMARY
             return idx

@@ -360,10 +360,11 @@ class BarChart(QWidget):
         """
         v = float(v)
         if v >= 1_000_000_000:
-            return f"{v / 1_000_000_000:.1f}M"
+            return f"{v / 1_000_000_000:.1f}M".replace(".", ",")
         if v >= 1_000_000:
             angka = v / 1_000_000
-            return f"{angka:.0f}" if angka >= 10 else f"{angka:.1f}"
+            return (f"{angka:.0f}" if angka >= 10
+                    else f"{angka:.1f}".replace(".", ","))
         if v >= 1_000:
             return f"{v / 1_000:.0f}rb"
         return f"{v:.0f}"
@@ -390,7 +391,7 @@ class BarChart(QWidget):
     def _singkat(v: float) -> str:
         v = float(v)
         if v >= 1_000_000_000:
-            return f"{v / 1_000_000_000:.1f} M"
+            return f"{v / 1_000_000_000:.1f} M".replace(".", ",")
         if v >= 1_000_000:
             return f"{v / 1_000_000:.0f} jt"
         if v >= 1_000:
@@ -896,7 +897,7 @@ class DashboardPage(QWidget):
 
         tiles = [
             ("Omzet / Peredaran Bruto", theme.money(omzet),
-             f"{pct_pkp:.1f}% dari batas wajib PKP Rp4,8 M", warna_omzet, "laporan"),
+             f"{theme.persen(pct_pkp / 100, 1)} dari batas wajib PKP Rp4,8 M", warna_omzet, "laporan"),
             ("Laba Bersih", theme.money(kpi["laba_bersih"]),
              f"Margin {theme.persen(kpi['margin_bersih'])}",
              C.POSITIF if kpi["laba_bersih"] >= 0 else C.NEGATIF, "uang"),

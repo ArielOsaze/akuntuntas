@@ -32,10 +32,19 @@ def round_down_thousand(amount: int) -> int:
 
 
 def rupiah(amount) -> str:
+    """
+    Format angka rupiah: Rp1.234.567, dan -Rp1.234.567 bila negatif.
+
+    Tanda minus diletakkan sebelum "Rp" mengikuti penulisan baku bahasa
+    Indonesia. Bila diletakkan di dalam ("Rp-1.234.567"), angkanya sulit
+    dibaca sekilas karena tanda minus tampak menyatu dengan nominalnya.
+    """
     try:
-        return "Rp" + f"{int(round(float(amount))):,}".replace(",", ".")
+        angka = int(round(float(amount)))
     except (TypeError, ValueError):
         return "Rp0"
+    teks = "Rp" + f"{abs(angka):,}".replace(",", ".")
+    return f"-{teks}" if angka < 0 else teks
 
 
 # ==========================================================================
@@ -197,6 +206,15 @@ TER_HARIAN_TARIF_1 = 0.0
 TER_HARIAN_TARIF_2 = 0.005
 
 
+def _persen(v: float, desimal: int = 1) -> str:
+    """Persen dengan koma desimal, sesuai penulisan angka Indonesia."""
+    try:
+        teks = f"{float(v) * 100:.{desimal}f}"
+    except (TypeError, ValueError):
+        return "0%"
+    return teks.replace(".", ",") + "%"
+
+
 @dataclass
 class PPh21Result:
     bruto: int = 0
@@ -274,7 +292,7 @@ def pph21_bulanan_ter(bruto_bulanan: int, status_ptkp: str = "TK/0") -> PPh21Res
         pph21_ter=pajak,
         metode="TER",
         keterangan=(f"Kategori TER {kategori} (status {status_ptkp}), "
-                    f"tarif efektif {tarif * 100:.2f}% atas bruto bulanan."),
+                    f"tarif efektif {_persen(tarif, 2)} atas bruto bulanan."),
     )
 
 
@@ -675,7 +693,7 @@ def status_pkp(omzet_setahun: int, sudah_pkp: bool) -> dict:
             "wajib_pkp": False,
             "status": "Mendekati Batas PKP",
             "pesan": (f"Peredaran bruto {rupiah(omzet_setahun)} sudah mencapai "
-                      f"{rasio * 100:.1f}% dari batas Rp4,8 miliar. Bersiaplah untuk "
+                      f"{_persen(rasio, 1)} dari batas Rp4,8 miliar. Bersiaplah untuk "
                       "mendaftar sebagai PKP - siapkan administrasi faktur pajak."),
             "level": "warning",
         }
@@ -683,7 +701,7 @@ def status_pkp(omzet_setahun: int, sudah_pkp: bool) -> dict:
         "wajib_pkp": False,
         "status": "Belum wajib PKP",
         "pesan": (f"Peredaran bruto {rupiah(omzet_setahun)} masih di bawah batas "
-                  f"Rp4,8 miliar ({rasio * 100:.1f}%). Belum wajib memungut PPN."),
+                  f"Rp4,8 miliar ({_persen(rasio, 1)}). Belum wajib memungut PPN."),
         "level": "ok",
     }
 
@@ -787,7 +805,7 @@ def hitung_pph26(dpp: int, tarif_p3b: Optional[float] = None) -> PotPutResult:
     """PPh 26 untuk Wajib Pajak Luar Negeri - 20% atau tarif P3B."""
     tarif = tarif_p3b if tarif_p3b is not None else config.RATE_PPH26
     return PotPutResult(
-        kode="PPh26", jenis=f"PPh 26 WPLN - {tarif * 100:.2f}%", dpp=dpp, tarif=tarif,
+        kode="PPh26", jenis=f"PPh 26 WPLN - {_persen(tarif, 2)}", dpp=dpp, tarif=tarif,
         pajak=int(round(dpp * tarif)), kredit_pph_badan=False,
         keterangan="Dipotong atas penghasilan yang dibayarkan ke WPLN. "
                    "Gunakan tarif P3B bila tersedia Surat Keterangan Domisili (SKD).",
@@ -893,8 +911,8 @@ def hitung_bunga_keterlambatan(pajak: int, bulan_terlambat: int,
         "bunga": bunga,
         "total_bayar": pajak + bunga,
         "keterangan": (
-            f"Bunga = {suku_bunga_acuan * 100:.2f}% × (1+10%) ÷ 12 × {bulan} bulan "
-            f"= {tarif_bulanan * 100:.4f}% per bulan."
+            f"Bunga = {_persen(suku_bunga_acuan, 2)} × (1+10%) ÷ 12 × {bulan} bulan "
+            f"= {_persen(tarif_bulanan, 4)} per bulan."
         ),
     }
 

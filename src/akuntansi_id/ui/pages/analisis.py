@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from ... import services
+from ...core.analyzer import _rasio
 from .. import theme
 from ..theme import C
 from .. import widgets as w
@@ -163,6 +164,26 @@ class AnalisisPage(QWidget):
         r.setStyleSheet(f"font-size: {theme.FS_BODY}px; line-height: 155%; "
                         "background: transparent;")
         kanan.addWidget(r)
+
+        # Laba besar dengan kas negatif sering tampak seperti salah hitung,
+        # padahal wajar bila penjualan masih berupa piutang. Keterangan ini
+        # hanya muncul saat keadaannya memang begitu.
+        laba = a.rasio.get("laba_bersih", 0)
+        kas = a.rasio.get("kas", 0)
+        if laba > 0 and kas < 0:
+            catatan = QLabel(
+                "Laba dan kas berbeda karena penjualan yang belum dibayar "
+                "tidak menambah uang di rekening. Laba dihitung saat "
+                "transaksi terjadi, sedangkan kas bertambah saat uangnya "
+                "benar benar masuk. Karena itu usaha bisa mencetak laba "
+                "namun uang tunainya kurang. Tagih piutang yang jatuh tempo "
+                "untuk menutup selisih ini.")
+            catatan.setWordWrap(True)
+            theme.latar(catatan,
+                        f"color: {C.TEXT_MUTED}; font-size: {theme.FS_SMALL}px; "
+                        f"background: {C.INFO_BG}; border-radius: 8px; "
+                        "padding: 10px 12px;")
+            kanan.addWidget(catatan)
 
         st = QHBoxLayout()
         st.setSpacing(9)
@@ -398,7 +419,7 @@ class AnalisisPage(QWidget):
 
         rasio_lancar = r["rasio_lancar"]
         teks_rl = ("Tidak ada utang jangka pendek" if rasio_lancar == float("inf")
-                   else f"{rasio_lancar:.2f}x")
+                   else f"{_rasio(rasio_lancar, 2)}")
         status_rl, warna_rl = self._nilai_rasio(
             rasio_lancar, baik=2.0, cukup=1.5, bahaya=1.0, teks=teks_rl,
             terbalik=True, maks=1.0)
@@ -409,7 +430,7 @@ class AnalisisPage(QWidget):
 
         rasio_kas = r["rasio_kas"]
         teks_rk = ("Tidak ada utang jangka pendek" if rasio_kas == float("inf")
-                   else f"{rasio_kas:.2f}x")
+                   else f"{_rasio(rasio_kas, 2)}")
         status_rk, warna_rk = self._nilai_rasio(
             rasio_kas, baik=1.0, cukup=0.5, bahaya=0.25, teks=teks_rk,
             terbalik=True, maks=0.0)
@@ -468,7 +489,7 @@ class AnalisisPage(QWidget):
 
         der = r["rasio_utang_ekuitas"]
         teks_der = ("Tidak ada utang" if der == 0 else
-                    ("Ekuitas negatif" if der == float("inf") else f"{der:.2f}x"))
+                    ("Ekuitas negatif" if der == float("inf") else f"{_rasio(der, 2)}"))
         s, wrn = self._nilai_rasio(der, baik=0.5, cukup=1.5, bahaya=3.0,
                                    teks=teks_der)
         grid3.addWidget(self._kotak_rasio(
@@ -552,7 +573,7 @@ class AnalisisPage(QWidget):
 
         rl = r["rasio_lancar"]
         t = ("Tidak ada utang jangka pendek" if rl == float("inf")
-             else f"{rl:.2f}x")
+             else f"{_rasio(rl, 2)}")
         s, wrn = self._nilai_rasio(rl, baik=2.0, cukup=1.5, bahaya=1.0, teks=t,
                                    terbalik=True, maks=1.0)
         daftar.append(baris_rasio("Rasio Lancar", t, s, wrn,
@@ -560,7 +581,7 @@ class AnalisisPage(QWidget):
 
         rk = r["rasio_kas"]
         t = ("Tidak ada utang jangka pendek" if rk == float("inf")
-             else f"{rk:.2f}x")
+             else f"{_rasio(rk, 2)}")
         s, wrn = self._nilai_rasio(rk, baik=1.0, cukup=0.5, bahaya=0.25, teks=t,
                                    terbalik=True, maks=0.0)
         daftar.append(baris_rasio("Rasio Kas", t, s, wrn, "di atas 1,00x"))
@@ -591,7 +612,7 @@ class AnalisisPage(QWidget):
 
         der = r["rasio_utang_ekuitas"]
         t = ("Tidak ada utang" if der == 0 else
-             ("Ekuitas negatif" if der == float("inf") else f"{der:.2f}x"))
+             ("Ekuitas negatif" if der == float("inf") else f"{_rasio(der, 2)}"))
         s, wrn = self._nilai_rasio(der, baik=0.5, cukup=1.5, bahaya=3.0, teks=t)
         daftar.append(baris_rasio("Rasio Utang terhadap Ekuitas", t, s, wrn,
                                   "di bawah 1,50x"))
