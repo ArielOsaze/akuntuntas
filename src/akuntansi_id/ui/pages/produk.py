@@ -457,6 +457,7 @@ class ProdukPage(QWidget):
         b_tambah = w.tombol("Tambah Produk", gaya="primary", ikon="tambah")
         b_tambah.clicked.connect(self._tambah)
         self.header.tambah_aksi(b_tambah)
+        self.header.pasang_ekspor_cetak(self, "Daftar Produk", "tabel_produk")
 
         b_lain = w.tombol("Aksi Lain", ikon="panah_bawah")
         menu = QMenu(b_lain)

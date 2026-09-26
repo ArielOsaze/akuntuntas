@@ -1149,6 +1149,16 @@ class MiniStat(QWidget):
 # ==========================================================================
 # HEADER HALAMAN
 # ==========================================================================
+def _tombol(teks: str, gaya: str = "biasa", ikon: str = "") -> QPushButton:
+    """
+    Panggil tombol() yang didefinisikan di bagian bawah berkas ini.
+
+    Dibuat terpisah supaya kelas di atasnya dapat memakainya tanpa
+    bergantung pada urutan penulisan.
+    """
+    return tombol(teks, gaya=gaya, ikon=ikon)
+
+
 class PageHeader(QWidget):
     """Judul halaman + subjudul + area tombol aksi."""
 
@@ -1190,6 +1200,103 @@ class PageHeader(QWidget):
         self.aksi.addWidget(tombol)
         self._wadah_aksi.setMinimumWidth(self.aksi.sizeHint().width())
         return tombol
+
+    def pasang_ekspor_cetak(self, halaman, judul: str = "", nama_tabel=None):
+        """
+        Tambahkan tombol Ekspor dan Cetak ke header halaman ini.
+
+        Dipanggil sekali dari halaman mana pun. Isi tabel dibaca langsung
+        dari tabel yang sedang tampil, sehingga halaman tidak perlu
+        menyiapkan data tersendiri dan seluruh halaman memakai cara yang
+        sama.
+
+        halaman   : objek halaman, dipakai untuk judul dan kotak pesan
+        judul     : judul yang tampil pada berkas, kosong berarti memakai
+                    judul halaman
+        nama_tabel: atribut tabel pada halaman; kosong berarti mencari
+                    sendiri tabel pertama yang ditemukan
+        """
+        from .ekspor_cetak import (cetak_halaman, ekspor_halaman,
+                                   tabel_dari_widget)
+
+        self._halaman = halaman
+        self._judul_ekspor = judul or self.lbl_judul.text()
+
+        def ambil_data():
+            tabel = self._cari_tabel(nama_tabel)
+            if tabel is None:
+                return []
+            return [(self._judul_ekspor, tabel_dari_widget(tabel))]
+
+        def lakukan_ekspor():
+            data = ambil_data()
+            if not data:
+                return
+            sub = self.lbl_sub.text()
+            ekspor_halaman(halaman, self._judul_ekspor, sub, data,
+                           nama_berkas=self._judul_ekspor)
+
+        def lakukan_cetak():
+            data = ambil_data()
+            if not data:
+                return
+            sub = self.lbl_sub.text()
+            cetak_halaman(halaman, self._judul_ekspor, sub, data)
+
+        # tombol() berada di bagian bawah berkas ini, jadi dipanggil
+        # setelah modulnya selesai dimuat.
+        b_ekspor = _tombol("Ekspor", ikon="ekspor")
+        b_ekspor.setToolTip(
+            "Simpan data yang tampil ke berkas Excel.\n"
+            "Angka tersimpan sebagai angka sehingga dapat dijumlahkan.")
+        b_ekspor.clicked.connect(lakukan_ekspor)
+
+        b_cetak = _tombol("Cetak", ikon="dokumen")
+        b_cetak.setToolTip(
+            "Cetak data yang tampil ke kertas A4.\n"
+            "Pratinjau ditampilkan lebih dulu sebelum kertas terpakai.")
+        b_cetak.clicked.connect(lakukan_cetak)
+
+        self.tambah_aksi(b_ekspor)
+        self.tambah_aksi(b_cetak)
+
+        # Dua tombol tambahan membuat baris aksi menjadi panjang. Pada
+        # header yang menyusun tombolnya menyamping, tombolnya dapat keluar
+        # dari tepi header. Karena itu susunannya dipindah ke baris
+        # tersendiri di bawah judul.
+        self.susun_aksi_terpisah()
+        return b_ekspor, b_cetak
+
+    def _cari_tabel(self, nama: str):
+        """
+        Temukan tabel yang akan diekspor.
+
+        Bila namanya disebut, atribut itu yang dipakai. Bila tidak, tabel
+        pertama yang ditemukan pada halaman dianggap tabel utama.
+        """
+        if self._halaman is None:
+            return None
+        if nama:
+            return getattr(self._halaman, nama, None)
+        # Tabel yang benar benar terlihat lebih didahulukan, karena satu
+        # halaman dapat memuat beberapa tabel pada tab yang berbeda.
+        kandidat = []
+        for atribut in dir(self._halaman):
+            if not atribut.startswith("tabel"):
+                continue
+            objek = getattr(self._halaman, atribut, None)
+            if objek is None or not hasattr(objek, "rowCount"):
+                continue
+            kandidat.append((atribut, objek))
+        if not kandidat:
+            return None
+        for _, objek in kandidat:
+            try:
+                if objek.isVisible():
+                    return objek
+            except Exception:
+                continue
+        return kandidat[0][1]
 
     def hasHeightForWidth(self) -> bool:
         """Header ikut menghitung tinggi dari pembungkusan subjudulnya."""

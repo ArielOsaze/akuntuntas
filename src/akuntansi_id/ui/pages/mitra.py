@@ -292,6 +292,7 @@ class MitraPage(QWidget):
         b_tambah = w.tombol("Tambah Mitra", gaya="primary", ikon="tambah")
         b_tambah.clicked.connect(self._tambah)
         self.header.tambah_aksi(b_tambah)
+        self.header.pasang_ekspor_cetak(self, "Daftar Mitra")
 
         b_impor = w.tombol("Impor dari CSV", ikon="impor")
         b_impor.clicked.connect(self._impor)

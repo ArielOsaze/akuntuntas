@@ -504,6 +504,7 @@ class JurnalPage(HalamanDasar):
         self.inp_cari.setMinimumWidth(240)
         self.inp_cari.textChanged.connect(self.muat)
         self.header.tambah_aksi(self.inp_cari)
+        self.header.pasang_ekspor_cetak(self, "Buku Jurnal", "tabel")
 
         # panel kontrol keseimbangan
         self.panel_cek = QFrame()

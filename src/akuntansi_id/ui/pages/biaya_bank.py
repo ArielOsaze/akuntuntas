@@ -228,6 +228,7 @@ class BiayaPage(QWidget):
         b = w.tombol("Ajukan Biaya", gaya="primary", ikon="tambah")
         b.clicked.connect(self._tambah)
         self.header.tambah_aksi(b)
+        self.header.pasang_ekspor_cetak(self, "Biaya")
 
         b2 = w.tombol("Kategori Biaya", ikon="")
         b2.clicked.connect(self._kategori)

@@ -672,6 +672,7 @@ class PembelianLengkapPage(QWidget):
         b_po = w.tombol("Purchase Order", ikon="jurnal")
         b_po.clicked.connect(self._buat_po)
         self.header.tambah_aksi(b_po)
+        self.header.pasang_ekspor_cetak(self, "Daftar Pembelian")
 
         b_bill = w.tombol("Bill Baru", gaya="primary", ikon="tambah")
         b_bill.clicked.connect(self._buat_bill)
