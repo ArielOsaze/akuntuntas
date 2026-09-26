@@ -90,6 +90,7 @@
             <a href="#harga">Harga</a>
             <a href="#ketentuan">Ketentuan</a>
             <a href="#tanya">Pertanyaan</a>
+            <a href="kontak.html">Hubungi Kami</a>
         </nav>
         <div class="kepala-tombol">
             <a class="tombol tombol-garis" href="unduh.html">Unduh</a>
@@ -588,7 +589,7 @@
                 Peningkatan dari Standar ke Enterprise dapat dilakukan kapan
                 saja melalui halaman <a href="beli.html">pembelian</a> atau
                 dengan menghubungi kami melalui WhatsApp pada bagian
-                <a href="#kontak">Hubungi Kami</a>.
+                <a href="kontak.html">Hubungi Kami</a>.
             </p>
         </div>
     </div>
@@ -755,7 +756,7 @@
 </section>
 
 <!-- ==================================================== ajakan -->
-<section class="ajakan" id="kontak">
+<section class="ajakan">
     <div class="wadah">
         <h2>Siap menuntaskan pembukuan usaha Anda?</h2>
         <p>
@@ -764,58 +765,13 @@
         </p>
 
         <div class="kontak-baris">
-            <button class="tombol tombol-besar" type="button" id="kontak-buka"
-                    aria-expanded="false" aria-controls="form-kontak">
+            <a class="tombol tombol-besar" href="kontak.html">
                 Hubungi Kami
-            </button>
+            </a>
             <a class="tombol tombol-besar tombol-garis"
                href="https://wa.me/6282224293639?text=Halo%2C%20saya%20ingin%20bertanya%20tentang%20AkunTuntas"
                target="_blank" rel="noopener">WhatsApp</a>
         </div>
-
-        <!-- Formulir disembunyikan sampai tombol Hubungi Kami ditekan,
-             supaya bagian ini tetap ringkas saat pertama dilihat. -->
-        <form class="kontak-form" id="form-kontak" novalidate hidden>
-            <div class="kontak-dua">
-                <div>
-                    <label for="kontak-nama">Nama</label>
-                    <input id="kontak-nama" name="nama" type="text"
-                           placeholder="Nama Anda" required>
-                </div>
-                <div>
-                    <label for="kontak-email">Email</label>
-                    <input id="kontak-email" name="email" type="email"
-                           placeholder="nama@email.com">
-                </div>
-            </div>
-
-            <div>
-                <label for="kontak-wa">Nomor WhatsApp</label>
-                <input id="kontak-wa" name="telepon" type="tel"
-                       placeholder="mis. 08123456789">
-            </div>
-
-            <div>
-                <label for="kontak-pesan">Pesan</label>
-                <textarea id="kontak-pesan" name="pesan" rows="4"
-                          placeholder="Tulis pertanyaan atau kebutuhan Anda"
-                          required></textarea>
-            </div>
-
-            <div class="kontak-aksi">
-                <button class="tombol tombol-besar" type="submit" id="kontak-kirim">
-                    Kirim Pesan
-                </button>
-                <button class="tombol tombol-besar tombol-garis" type="button"
-                        id="kontak-tutup">
-                    Batal
-                </button>
-                <p class="kontak-kabar" id="kontak-kabar" role="status"></p>
-            </div>
-            <p class="kontak-catatan">
-                Isi email atau nomor WhatsApp supaya kami dapat membalas.
-            </p>
-        </form>
     </div>
 </section>
 
@@ -852,7 +808,7 @@
             <div class="kaki-kolom">
                 <h5>Hubungi</h5>
                 <a href="https://wa.me/6282224293639?text=Halo%2C%20saya%20ingin%20bertanya%20tentang%20AkunTuntas." target="_blank" rel="noopener">WhatsApp 0822 2429 3639</a>
-                <a href="#kontak">Kirim pesan</a>
+                <a href="kontak.html">Kirim pesan</a>
                 <span class="kaki-surel">akuntuntas@gmail.com</span>
             </div>
         </div>
@@ -864,109 +820,6 @@
         </div>
     </div>
     </footer>
-
-<script>
-// Formulir kontak. Situs ini hanya berkas statis, jadi pesannya dikirim ke
-// layanan lisensi yang sudah ada lalu disimpan di sana. Pemilik usaha
-// membacanya dari dashboard admin.
-(function () {
-    var form = document.getElementById("form-kontak");
-    if (!form) return;
-
-    var tombolBuka = document.getElementById("kontak-buka");
-    var tombolTutup = document.getElementById("kontak-tutup");
-    var tombol = document.getElementById("kontak-kirim");
-    var kabar = document.getElementById("kontak-kabar");
-
-    function tampilkan(teks, jenis) {
-        kabar.textContent = teks;
-        kabar.className = "kontak-kabar " + (jenis || "");
-    }
-
-    // Formulir dibuka saat tombol Hubungi Kami ditekan, dan ditutup lagi
-    // saat Batal ditekan, supaya bagian kontak tetap ringkas.
-    function bukaFormulir() {
-        form.hidden = false;
-        tombolBuka.setAttribute("aria-expanded", "true");
-        tombolBuka.textContent = "Tutup Formulir";
-        // Sorot bidang pertama supaya pengunjung langsung tahu harus mengisi apa.
-        setTimeout(function () {
-            var n = document.getElementById("kontak-nama");
-            if (n) n.focus();
-        }, 60);
-    }
-
-    function tutupFormulir() {
-        form.hidden = true;
-        tombolBuka.setAttribute("aria-expanded", "false");
-        tombolBuka.textContent = "Hubungi Kami";
-        tampilkan("");
-    }
-
-    tombolBuka.addEventListener("click", function () {
-        if (form.hidden) bukaFormulir();
-        else tutupFormulir();
-    });
-
-    tombolTutup.addEventListener("click", tutupFormulir);
-
-    // Bila halaman dibuka dengan #kontak, formulir langsung dibuka supaya
-    // pengunjung yang menuju bagian ini tidak perlu menekan tombol lagi.
-    if (window.location.hash === "#kontak") {
-        bukaFormulir();
-    }
-
-    form.addEventListener("submit", function (e) {
-        e.preventDefault();
-
-        var nama = document.getElementById("kontak-nama").value.trim();
-        var email = document.getElementById("kontak-email").value.trim();
-        var telepon = document.getElementById("kontak-wa").value.trim();
-        var pesan = document.getElementById("kontak-pesan").value.trim();
-
-        if (!nama || !pesan) {
-            tampilkan("Isi nama dan pesan Anda.", "salah");
-            return;
-        }
-        if (!email && !telepon) {
-            tampilkan("Isi email atau nomor WhatsApp supaya kami dapat membalas.", "salah");
-            return;
-        }
-
-        tombol.disabled = true;
-        tombol.textContent = "Mengirim...";
-        tampilkan("");
-
-        fetch("/api/lisensi", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                aksi: "kontak",
-                nama: nama,
-                email: email,
-                telepon: telepon,
-                pesan: pesan
-            })
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-            if (!d.ok) {
-                tampilkan(d.pesan || "Pesan gagal dikirim. Coba lagi.", "salah");
-                return;
-            }
-            form.reset();
-            tampilkan("Pesan Anda sudah kami terima. Kami balas lewat email atau WhatsApp.", "benar");
-        })
-        .catch(function () {
-            tampilkan("Tidak dapat menghubungi server. Periksa sambungan internet Anda.", "salah");
-        })
-        .finally(function () {
-            tombol.disabled = false;
-            tombol.textContent = "Kirim Pesan";
-        });
-    });
-})();
-</script>
 
 </body>
 </html>

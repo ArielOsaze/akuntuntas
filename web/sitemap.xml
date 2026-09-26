@@ -41,4 +41,10 @@
         <priority>0.4</priority>
     </url>
 
+    <url>
+        <loc>https://akuntuntas.xinet.id/kontak</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
 </urlset>

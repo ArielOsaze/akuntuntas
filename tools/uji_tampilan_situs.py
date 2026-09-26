@@ -295,7 +295,48 @@ def main() -> int:
     print()
 
     # ------------------------------------------------------------------
-    print("[8. Tabel dapat digulir pada layar sempit]")
+    print("[8. Halaman kontak berdiri sendiri]")
+    # Halaman kontak harus punya alamatnya sendiri (slug /kontak), bukan
+    # formulir yang disembunyikan di beranda. Pengunjung yang menekan
+    # Hubungi Kami harus benar benar berpindah halaman.
+    kontak = WEB / "kontak.html"
+    p.cek("berkas halaman kontak ada", kontak.exists())
+    if kontak.exists():
+        isi_k = kontak.read_text(encoding="utf-8")
+        p.cek("halaman kontak memuat formulir", 'id="form-kontak"' in isi_k)
+        p.cek("halaman kontak memuat tombol WhatsApp",
+              "wa.me/6282224293639" in isi_k)
+        p.cek("halaman kontak memuat alamat kanonis",
+              'rel="canonical"' in isi_k and "/kontak" in isi_k)
+        p.cek("halaman kontak punya judul", "<title>" in isi_k)
+        # Tombol kirim dan batal harus punya kelas berbeda supaya tidak
+        # tampak sama, dan tidak bertumpuk saat layar sempit.
+        p.cek("tombol batal bergaya tersendiri",
+              "kontak-batal" in isi_k and ".kontak-batal" in isi_k)
+        p.cek("tombol menumpuk rapi saat layar sempit",
+              "flex: 1 1 100%" in isi_k)
+
+    # Beranda tidak boleh lagi menyembunyikan formulir.
+    p.cek("beranda tidak lagi memuat formulir tersembunyi",
+          'id="form-kontak"' not in html)
+
+    # Seluruh tombol Hubungi Kami harus menuju halaman kontak, bukan
+    # menggulir ke bagian yang sama.
+    ada_hash = []
+    for berkas in sorted(WEB.glob("*.html")):
+        isi_h = berkas.read_text(encoding="utf-8")
+        if 'href="#kontak"' in isi_h:
+            ada_hash.append(berkas.name)
+    p.cek("tidak ada tautan yang menggulir ke bagian kontak",
+          not ada_hash, f"temuan: {ada_hash}")
+
+    # Sitemap memuat halaman kontak.
+    sm = (WEB / "sitemap.xml").read_text(encoding="utf-8")
+    p.cek("halaman kontak terdaftar di sitemap", "/kontak" in sm)
+    print()
+
+    # ------------------------------------------------------------------
+    print("[9. Tabel dapat digulir pada layar sempit]")
     p.cek("tabel dibungkus wadah yang dapat digulir",
           "banding-tabel-wadah" in html and "overflow-x: auto" in css)
     p.cek("tabel punya lebar minimum supaya kolom tidak terhimpit",

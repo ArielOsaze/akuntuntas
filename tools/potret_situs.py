@@ -27,7 +27,7 @@ app = QApplication.instance() or QApplication([])
 
 def potret(nama: str, berkas: str, lebar: int = 1280,
            tinggi: int = 900, tunggu: int = 2200,
-           gulir_ke: str = "") -> Path:
+           gulir_ke: str = "", tekan: str = "") -> Path:
     """Potret satu halaman dan simpan sebagai gambar."""
     KELUARAN.mkdir(exist_ok=True)
     tujuan = KELUARAN / f"{nama}.png"
@@ -57,6 +57,33 @@ def potret(nama: str, berkas: str, lebar: int = 1280,
     jeda = QEventLoop()
     QTimer.singleShot(900, jeda.quit)
     jeda.exec()
+
+    # Tekan elemen tertentu lebih dulu, misalnya tombol yang membuka
+    # formulir, supaya keadaan sesudah ditekan ikut terpotret.
+    if tekan:
+        hasil_tekan = {"nilai": ""}
+        selesai_tekan = QEventLoop()
+
+        def terima_tekan(nilai):
+            hasil_tekan["nilai"] = nilai
+            selesai_tekan.quit()
+
+        skrip_tekan = (
+            "(() => {"
+            f"  const el = document.querySelector('{tekan}');"
+            "  if (!el) return 'tidak ketemu';"
+            "  el.click();"
+            "  return 'ok';"
+            "})()")
+        tampilan.page().runJavaScript(skrip_tekan, terima_tekan)
+        QTimer.singleShot(1200, selesai_tekan.quit)
+        selesai_tekan.exec()
+        if hasil_tekan["nilai"] != "ok":
+            print(f"  ! tombol {tekan} tidak ketemu")
+        # Beri waktu tata letak sesudah ditekan selesai dihitung.
+        jeda_tekan = QEventLoop()
+        QTimer.singleShot(800, jeda_tekan.quit)
+        jeda_tekan.exec()
 
     if gulir_ke == "penuh":
         # Setel jendela setinggi isi halaman, lalu potret seluruhnya.
@@ -125,6 +152,10 @@ def main() -> int:
         ("perbandingan", "index.html", 1280, 1100, ".banding"),
         ("perbandingan_penuh", "index.html", 1280, 900, "penuh"),
         ("perbandingan_kaki", "index.html", 1280, 900, "tfoot .baris-pilih"),
+        ("kontak", "kontak.html", 1280, 1000, ""),
+        ("kontak_sempit", "kontak.html", 420, 1100, ""),
+        ("kontak_bawah", "kontak.html", 1280, 1000, "#formulir"),
+        ("kontak_sempit_bawah", "kontak.html", 420, 1100, ".kontak-aksi"),
         ("beli", "beli.html", 1280, 1000, ""),
         ("unduh", "unduh.html", 1280, 900, ""),
         ("privasi", "privasi.html", 1280, 900, ""),
@@ -135,9 +166,14 @@ def main() -> int:
         daftar = [d for d in daftar if pilih in d[0]]
 
     berhasil = 0
-    for nama, berkas, lebar, tinggi, gulir in daftar:
+    for d in daftar:
+        nama, berkas, lebar, tinggi, gulir = d[0], d[1], d[2], d[3], d[4]
         try:
-            hasil = potret(nama, berkas, lebar, tinggi, gulir_ke=gulir)
+            tekan = ""
+            if len(d) > 5:
+                tekan = d[5]
+            hasil = potret(nama, berkas, lebar, tinggi,
+                           gulir_ke=gulir, tekan=tekan)
             ukuran = hasil.stat().st_size // 1024
             print(f"  [OK] {nama:16s} -> {hasil.name}  ({ukuran} KB)")
             berhasil += 1

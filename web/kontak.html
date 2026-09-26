@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hubungi Kami - AkunTuntas</title>
+<meta name="description" content="Hubungi tim AkunTuntas untuk pembelian lisensi, pertanyaan teknis, atau penawaran khusus untuk kantor akuntan dan konsultan pajak.">
+<link rel="stylesheet" href="styles.css?v=3">
+<style>
+    .kontak-wadah {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 56px 0 72px;
+    }
+
+    .kontak-judul {
+        text-align: center;
+        margin-bottom: 34px;
+    }
+
+    .kontak-judul h1 {
+        font-size: 34px;
+        letter-spacing: -0.02em;
+        margin-bottom: 12px;
+    }
+
+    .kontak-judul p {
+        color: #46586C;
+        font-size: 16.5px;
+        line-height: 1.65;
+        max-width: 520px;
+        margin: 0 auto;
+    }
+
+    /* Dua jalan menghubungi kami ditampilkan berdampingan supaya pengunjung
+       dapat memilih yang paling nyaman: pesan singkat lewat WhatsApp, atau
+       formulir lengkap bila pertanyaannya perlu dijelaskan panjang. */
+    .kontak-jalan {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 34px;
+    }
+
+    .kontak-jalan-kartu {
+        display: block;
+        background: var(--putih);
+        border: 1.5px solid var(--garis);
+        border-radius: var(--radius);
+        padding: 20px 22px;
+        text-decoration: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .kontak-jalan-kartu:hover {
+        border-color: var(--biru);
+        box-shadow: 0 6px 18px rgba(27, 79, 138, 0.12);
+    }
+
+    .kontak-jalan-kartu svg {
+        width: 26px;
+        height: 26px;
+        stroke: var(--biru);
+        margin-bottom: 12px;
+    }
+
+    .kontak-jalan-kartu h3 {
+        font-size: 16px;
+        margin-bottom: 5px;
+        color: var(--teks);
+    }
+
+    .kontak-jalan-kartu p {
+        font-size: 13.5px;
+        line-height: 1.55;
+        color: var(--teks-abu);
+        margin: 0;
+    }
+
+    .kontak-jalan-kartu strong {
+        display: block;
+        margin-top: 10px;
+        font-size: 14.5px;
+        color: var(--biru);
+    }
+
+    .kontak-kotak {
+        background: var(--putih);
+        border: 1px solid var(--garis);
+        border-radius: var(--radius);
+        box-shadow: var(--bayang);
+        padding: 30px 32px;
+    }
+
+    .kontak-kotak h2 {
+        font-size: 19px;
+        margin-bottom: 6px;
+    }
+
+    .kontak-kotak .kontak-penjelas {
+        font-size: 14px;
+        color: var(--teks-abu);
+        line-height: 1.6;
+        margin-bottom: 22px;
+    }
+
+    .kontak-form {
+        display: grid;
+        gap: 16px;
+    }
+
+    .kontak-dua {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .kontak-form label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--teks);
+    }
+
+    .kontak-form input,
+    .kontak-form textarea {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1.5px solid var(--garis);
+        border-radius: 9px;
+        background: var(--putih);
+        color: var(--teks);
+        font-family: inherit;
+        font-size: 15px;
+        line-height: 1.5;
+    }
+
+    .kontak-form input::placeholder,
+    .kontak-form textarea::placeholder {
+        color: #7B8A9A;
+    }
+
+    .kontak-form input:focus,
+    .kontak-form textarea:focus {
+        outline: none;
+        border-color: var(--biru);
+        box-shadow: 0 0 0 3px rgba(27, 79, 138, 0.14);
+    }
+
+    .kontak-form textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    /* Tombol kirim dan batal disusun menyamping saat ruang cukup, dan
+       ditumpuk saat layar sempit supaya tidak berdesakan. */
+    .kontak-aksi {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .kontak-aksi .tombol {
+        min-height: 46px;
+        padding: 12px 26px;
+    }
+
+    .kontak-batal {
+        background: transparent;
+        color: var(--teks-abu);
+        border: 1.5px solid var(--garis);
+        box-shadow: none;
+    }
+
+    .kontak-batal:hover {
+        background: var(--latar-lembut);
+        color: var(--teks);
+        border-color: #9CB8D6;
+        box-shadow: none;
+    }
+
+    .kontak-kabar {
+        margin: 0;
+        font-size: 14.5px;
+        line-height: 1.5;
+        flex: 1 1 100%;
+    }
+
+    .kontak-kabar.benar { color: #047857; font-weight: 600; }
+    .kontak-kabar.salah { color: #B91C1C; font-weight: 600; }
+
+    .kontak-catatan {
+        margin: 0;
+        font-size: 13.5px;
+        color: var(--teks-abu);
+    }
+
+    .kontak-jam {
+        margin-top: 26px;
+        padding-top: 22px;
+        border-top: 1px solid var(--garis);
+        text-align: center;
+        font-size: 13.5px;
+        color: var(--teks-abu);
+        line-height: 1.7;
+    }
+
+    .kontak-jam strong { color: var(--teks); }
+
+    @media (max-width: 620px) {
+        .kontak-wadah { padding: 36px 0 56px; }
+        .kontak-judul h1 { font-size: 26px; }
+        .kontak-kotak { padding: 22px 18px; }
+        .kontak-jalan { grid-template-columns: 1fr; }
+        .kontak-dua { grid-template-columns: 1fr; }
+        .kontak-aksi .tombol { flex: 1 1 100%; text-align: center; }
+    }
+</style>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="logo-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="logo-128.png">
+<link rel="manifest" href="manifest.json">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AkunTuntas">
+<meta property="og:title" content="Hubungi Kami - AkunTuntas">
+<meta property="og:description" content="Hubungi tim AkunTuntas untuk pembelian lisensi, pertanyaan teknis, atau penawaran khusus untuk kantor akuntan dan konsultan pajak.">
+<meta property="og:image" content="https://akuntuntas.xinet.id/pratinjau.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AkunTuntas - Pembukuan dan Pajak Perusahaan Indonesia">
+<meta property="og:url" content="https://akuntuntas.xinet.id/kontak">
+<meta property="og:locale" content="id_ID">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Hubungi Kami - AkunTuntas">
+<meta name="twitter:description" content="Hubungi tim AkunTuntas untuk pembelian lisensi, pertanyaan teknis, atau penawaran khusus.">
+<meta name="twitter:image" content="https://akuntuntas.xinet.id/pratinjau.png">
+
+<link rel="canonical" href="https://akuntuntas.xinet.id/kontak">
+</head>
+<body>
+
+<header class="kepala">
+    <div class="wadah kepala-isi">
+        <a class="merek" href="index.html">
+            <img src="logo.png" alt="">
+            AkunTuntas
+        </a>
+        <nav class="nav">
+            <a href="index.html#fitur">Fitur</a>
+            <a href="index.html#cara">Cara Kerja</a>
+            <a href="index.html#harga">Harga</a>
+            <a href="index.html#tanya">Pertanyaan</a>
+        </nav>
+        <a class="tombol" href="index.html#harga">Beli Lisensi</a>
+    </div>
+</header>
+
+<main class="bagian">
+    <div class="wadah">
+        <div class="kontak-wadah">
+            <div class="kontak-judul">
+                <h1>Hubungi Kami</h1>
+                <p>
+                    Kami siap membantu pembelian lisensi, pertanyaan teknis,
+                    maupun penawaran khusus untuk kantor akuntan dan konsultan
+                    pajak.
+                </p>
+            </div>
+
+            <div class="kontak-jalan">
+                <a class="kontak-jalan-kartu"
+                   href="https://wa.me/6282224293639?text=Halo%2C%20saya%20ingin%20bertanya%20tentang%20AkunTuntas"
+                   target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-4.1-.9L3 20.5l1.5-4.6A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg>
+                    <h3>WhatsApp</h3>
+                    <p>Jawaban paling cepat pada jam kerja.</p>
+                    <strong>0822 2429 3639</strong>
+                </a>
+                <a class="kontak-jalan-kartu" href="#formulir">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v12H7l-3 3V5z"/></svg>
+                    <h3>Formulir Pesan</h3>
+                    <p>Cocok untuk pertanyaan panjang atau penawaran.</p>
+                    <strong>Isi formulir di bawah</strong>
+                </a>
+            </div>
+
+            <div class="kontak-kotak" id="formulir">
+                <h2>Kirim pesan</h2>
+                <p class="kontak-penjelas">
+                    Tulis pertanyaan atau kebutuhan Anda. Kami balas lewat email
+                    atau WhatsApp pada hari kerja berikutnya.
+                </p>
+
+                <form class="kontak-form" id="form-kontak" novalidate>
+                    <div class="kontak-dua">
+                        <div>
+                            <label for="kontak-nama">Nama</label>
+                            <input id="kontak-nama" name="nama" type="text"
+                                   placeholder="Nama Anda" required>
+                        </div>
+                        <div>
+                            <label for="kontak-email">Email</label>
+                            <input id="kontak-email" name="email" type="email"
+                                   placeholder="nama@email.com">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="kontak-wa">Nomor WhatsApp</label>
+                        <input id="kontak-wa" name="telepon" type="tel"
+                               placeholder="mis. 08123456789">
+                    </div>
+
+                    <div>
+                        <label for="kontak-pesan">Pesan</label>
+                        <textarea id="kontak-pesan" name="pesan" rows="5"
+                                  placeholder="Tulis pertanyaan atau kebutuhan Anda"
+                                  required></textarea>
+                    </div>
+
+                    <div class="kontak-aksi">
+                        <button class="tombol" type="submit" id="kontak-kirim">
+                            Kirim Pesan
+                        </button>
+                        <button class="tombol kontak-batal" type="button"
+                                id="kontak-batal">
+                            Bersihkan
+                        </button>
+                        <p class="kontak-kabar" id="kontak-kabar" role="status"></p>
+                    </div>
+                    <p class="kontak-catatan">
+                        Isi email atau nomor WhatsApp supaya kami dapat membalas.
+                    </p>
+                </form>
+            </div>
+
+            <p class="kontak-jam">
+                <strong>Jam layanan:</strong> Senin sampai Jumat, 08.00 sampai 17.00 WIB.<br>
+                Di luar jam tersebut, pesan Anda tetap kami terima dan balas pada hari kerja berikutnya.
+            </p>
+        </div>
+    </div>
+</main>
+
+<footer class="kaki">
+    <div class="wadah">
+        <div class="kaki-bawah">
+            <span>&copy; 2026 Xinet Group. Seluruh hak cipta dilindungi.</span>
+            <span><a href="index.html" style="color: #8FA7BE;">Kembali ke beranda</a></span>
+            <span><a href="privasi.html" style="color: #8FA7BE;">Kebijakan Privasi</a></span>
+        </div>
+    </div>
+</footer>
+
+<script>
+// Formulir kontak. Situs ini hanya berkas statis, jadi pesannya dikirim ke
+// layanan lisensi yang sudah ada lalu disimpan di sana. Pemilik usaha
+// membacanya dari dashboard admin.
+(function () {
+    var form = document.getElementById("form-kontak");
+    if (!form) return;
+
+    var tombol = document.getElementById("kontak-kirim");
+    var tombolBatal = document.getElementById("kontak-batal");
+    var kabar = document.getElementById("kontak-kabar");
+
+    function tampilkan(teks, jenis) {
+        kabar.textContent = teks;
+        kabar.className = "kontak-kabar " + (jenis || "");
+    }
+
+    tombolBatal.addEventListener("click", function () {
+        form.reset();
+        tampilkan("");
+        document.getElementById("kontak-nama").focus();
+    });
+
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        var nama = document.getElementById("kontak-nama").value.trim();
+        var email = document.getElementById("kontak-email").value.trim();
+        var telepon = document.getElementById("kontak-wa").value.trim();
+        var pesan = document.getElementById("kontak-pesan").value.trim();
+
+        if (!nama || !pesan) {
+            tampilkan("Isi nama dan pesan Anda.", "salah");
+            return;
+        }
+        if (!email && !telepon) {
+            tampilkan("Isi email atau nomor WhatsApp supaya kami dapat membalas.", "salah");
+            return;
+        }
+
+        tombol.disabled = true;
+        tombol.textContent = "Mengirim...";
+        tampilkan("");
+
+        fetch("/api/lisensi", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                aksi: "kontak",
+                nama: nama,
+                email: email,
+                telepon: telepon,
+                pesan: pesan
+            })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (!d.ok) {
+                tampilkan(d.pesan || "Pesan gagal dikirim. Coba lagi.", "salah");
+                return;
+            }
+            form.reset();
+            tampilkan("Pesan Anda sudah kami terima. Kami balas lewat email atau WhatsApp.", "benar");
+        })
+        .catch(function () {
+            tampilkan("Tidak dapat menghubungi server. Periksa sambungan internet Anda.", "salah");
+        })
+        .finally(function () {
+            tombol.disabled = false;
+            tombol.textContent = "Kirim Pesan";
+        });
+    });
+})();
+</script>
+
+</body>
+</html>
