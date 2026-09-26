@@ -1,6 +1,6 @@
 {
-  "versi": "1.2.0",
+  "versi": "1.2.1",
   "build": "2026.09",
   "tanggal": "2026-09-26",
-  "catatan": "Pemisahan data antar perusahaan diperketat: saldo dan mutasi stok kini menyaring perusahaan"
+  "catatan": "Ekspor Excel dan cetak A4 tersedia di halaman Mitra, Produk, Pembelian, Jurnal, dan Biaya"
 }
