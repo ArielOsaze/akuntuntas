@@ -346,43 +346,60 @@ body {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 22px;
+    /* Seluruh baris dibuat sama tinggi, supaya tepi bawah kartu rata.
+       Tanpa ini, baris yang teksnya lebih panjang menjadi lebih tinggi
+       dan tepi bawahnya tampak bergelombang. */
+    grid-auto-rows: 1fr;
 }
 
 .fitur {
     background: var(--putih);
     border: 1px solid var(--garis);
     border-radius: var(--radius);
-    padding: 26px 24px;
-    transition: box-shadow 0.2s, transform 0.2s;
+    padding: 26px 24px 28px;
+    transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+    /* Kartu mengisi tinggi barisnya, sehingga seluruh kartu sama tinggi
+       walau panjang teksnya berbeda. */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .fitur:hover {
-    box-shadow: var(--bayang);
-    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(15, 41, 66, 0.06),
+                0 14px 30px rgba(15, 41, 66, 0.10);
+    border-color: #B9CDE2;
+    transform: translateY(-3px);
 }
 
 .fitur-ikon {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
+    width: 46px;
+    height: 46px;
+    border-radius: 11px;
     background: #E8F0F9;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 16px;
+    margin-bottom: 17px;
+    transition: background 0.2s;
 }
 
-.fitur-ikon svg { width: 21px; height: 21px; stroke: var(--biru); }
+.fitur:hover .fitur-ikon { background: #DCE9F6; }
+
+.fitur-ikon svg { width: 23px; height: 23px; stroke: var(--biru); }
 
 .fitur h3 {
     font-size: 17px;
-    margin-bottom: 8px;
+    margin-bottom: 9px;
+    color: var(--teks);
+    line-height: 1.35;
 }
 
 .fitur p {
     color: var(--teks-abu);
     font-size: 14.5px;
-    line-height: 1.6;
+    line-height: 1.65;
+    margin: 0;
 }
 
 /* ------------------------------------------------------------------ harga */

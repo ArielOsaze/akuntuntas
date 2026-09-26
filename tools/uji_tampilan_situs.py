@@ -185,7 +185,7 @@ def main() -> int:
             continue
         versi = re.findall(r'styles\.css\?v=(\d+)', isi_h)
         p.cek(f"{berkas.name} memuat CSS dengan versi",
-              bool(versi) and int(versi[0]) >= 3,
+              bool(versi) and int(versi[0]) >= 4,
               f"versi: {versi}")
     print()
 
