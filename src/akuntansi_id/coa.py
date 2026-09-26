@@ -245,6 +245,11 @@ COA_FULL: list[Row] = [
        "DP yang diterima dari pelanggan atas barang/jasa yang belum diserahkan."),
     _a("2012", "Utang Dividen", "Liabilitas", "", "Utang Usaha", "Kredit", "Deductible/Taxable",
        "Dividen yang telah diumumkan tetapi belum dibayar."),
+    _a("2013", "Utang Akrual", "Liabilitas", "", "Utang Usaha", "Kredit", "Deductible/Taxable",
+       "Beban yang sudah terjadi tetapi belum ditagih pemasoknya, misalnya "
+       "tagihan listrik akhir bulan. Dipakai bersama fitur jurnal balik pada "
+       "halaman Pajak Lanjutan, agar beban tidak dihitung dua kali pada "
+       "periode berikutnya."),
     _a("2101", "Utang Bank Jangka Pendek", "Liabilitas", "", "Pinjaman Jangka Pendek", "Kredit", "Deductible/Taxable",
        "Kredit modal kerja dengan jatuh tempo ≤ 1 tahun."),
     _a("2102", "Utang Leasing Jangka Pendek", "Liabilitas", "", "Pinjaman Jangka Pendek", "Kredit", "Deductible/Taxable",

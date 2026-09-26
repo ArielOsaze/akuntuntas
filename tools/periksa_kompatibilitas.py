@@ -23,7 +23,7 @@ from pathlib import Path
 
 AKAR = Path(__file__).resolve().parent.parent
 FOLDER = AKAR / "dist" / "AkunTuntas"
-INSTALLER = AKAR / "installer_output" / "AkunTuntas-1.1.2-Setup.exe"
+INSTALLER = AKAR / "installer_output" / "AkunTuntas-1.1.3-Setup.exe"
 SKRIP = AKAR / "installer.iss"
 
 NAMA_MESIN = {0x014c: "x86 (32-bit)", 0x8664: "x64 (64-bit)", 0xAA64: "ARM64"}

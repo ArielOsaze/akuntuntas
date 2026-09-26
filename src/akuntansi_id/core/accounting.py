@@ -47,7 +47,8 @@ class ValidasiJurnal:
     selisih: int = 0
 
 
-def validasi_jurnal(baris: list[dict]) -> ValidasiJurnal:
+def validasi_jurnal(baris: list[dict],
+                    company_id: Optional[int] = None) -> ValidasiJurnal:
     """
     Periksa kaidah double-entry sebelum menyimpan jurnal.
 
@@ -57,10 +58,30 @@ def validasi_jurnal(baris: list[dict]) -> ValidasiJurnal:
       3. Setiap baris hanya debit ATAU kredit (tidak keduanya, tidak nol)
       4. Total debit = total kredit
       5. Nilai bulat rupiah (tidak ada pecahan sen)
+
+    Bila company_id diberikan, kode akun diperiksa terhadap bagan akun
+    perusahaan itu. Tanpa pemeriksaan tersebut, jurnal dengan kode akun
+    yang tidak dikenal tetap tersimpan, dan barisnya muncul tanpa nama akun
+    di buku besar maupun laporan. Data seperti itu sulit dilacak asalnya
+    karena tidak terhubung ke akun mana pun.
     """
     v = ValidasiJurnal()
     if len(baris) < 2:
         v.errors.append("Jurnal harus memiliki minimal 2 baris (satu debit, satu kredit).")
+
+    # Daftar kode akun yang benar benar terdaftar, dibaca sekali saja.
+    kode_dikenal: set[str] | None = None
+    if company_id:
+        try:
+            kode_dikenal = {
+                r["kode"] for r in db.q(
+                    "SELECT kode FROM accounts WHERE company_id = ?",
+                    (company_id,))
+            }
+        except Exception:
+            # Bila daftar akun tidak dapat dibaca, pemeriksaan ini dilewati
+            # supaya jurnal tidak tertolak hanya karena gangguan pembacaan.
+            kode_dikenal = None
 
     for i, b in enumerate(baris, start=1):
         d = int(b.get("debit", 0) or 0)
@@ -72,8 +93,14 @@ def validasi_jurnal(baris: list[dict]) -> ValidasiJurnal:
         if d < 0 or k < 0:
             v.errors.append(f"Baris {i}: nilai tidak boleh negatif. "
                             "Untuk mengurangi, tukar posisi debit/kredit.")
-        if not b.get("kode_akun"):
+        kode = b.get("kode_akun")
+        if not kode:
             v.errors.append(f"Baris {i}: akun belum dipilih.")
+        elif kode_dikenal is not None and kode not in kode_dikenal:
+            v.errors.append(
+                f"Baris {i}: kode akun {kode} tidak ada pada bagan akun. "
+                "Periksa kembali kode akunnya, atau tambahkan akun itu lebih "
+                "dulu pada halaman Bagan Akun.")
         v.total_debit += d
         v.total_kredit += k
 
@@ -97,7 +124,10 @@ def simpan_jurnal(company_id: int, tanggal: str, no_bukti: str, keterangan: str,
                   validasi: bool = True) -> int:
     """Simpan satu bukti jurnal beserta barisnya secara atomik."""
     if validasi:
-        v = validasi_jurnal(baris)
+        # Pemeriksaan menyertakan kecocokan kode akun dengan bagan akun
+        # perusahaan ini, supaya jurnal dengan akun tidak dikenal tertolak
+        # sebelum tersimpan.
+        v = validasi_jurnal(baris, company_id)
         if not v.valid:
             raise ValueError("\n".join(v.errors))
 
@@ -786,7 +816,11 @@ def buat_jurnal_penutup(company_id: int, tahun: int,
     laba = laba_rugi(company_id, tahun, beban_pajak=0).laba_sebelum_pajak
     akun_laba = db.q1("SELECT kode FROM accounts WHERE company_id=? "
                       "AND baris_neraca='Saldo Laba' LIMIT 1", (company_id,))
-    kode_laba = akun_laba["kode"] if akun_laba else "3101"
+    # Bila akun Saldo Laba tidak ditemukan, dipakai akun Laba Tahun Berjalan
+    # yang selalu ada pada bagan akun bawaan. Sebelumnya di sini tertulis
+    # kode 3101 yang tidak ada pada bagan akun, sehingga jurnal penutup
+    # gagal disimpan tepat pada keadaan yang paling membutuhkannya.
+    kode_laba = akun_laba["kode"] if akun_laba else "3007"
     if laba >= 0:
         baris.append({"kode_akun": kode_laba, "debit": 0, "kredit": laba,
                       "catatan": "Laba periode berjalan dipindahkan ke Saldo Laba"})

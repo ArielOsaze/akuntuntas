@@ -806,7 +806,10 @@ def tutup_buku(company_id: int, periode: str, oleh: str = "",
         if baris:
             akun_laba = db.q1("SELECT kode FROM accounts WHERE company_id=? "
                               "AND baris_neraca='Saldo Laba' LIMIT 1", (company_id,))
-            kode_laba = akun_laba["kode"] if akun_laba else "3101"
+            # Cadangannya memakai akun Laba Tahun Berjalan yang selalu ada
+            # pada bagan akun bawaan. Kode 3101 yang dulu tertulis di sini
+            # tidak ada pada bagan akun, sehingga penutupan gagal.
+            kode_laba = akun_laba["kode"] if akun_laba else "3007"
             laba = lr.laba_sebelum_pajak
             if laba >= 0:
                 baris.append({"kode_akun": kode_laba, "debit": 0, "kredit": laba,
@@ -1439,7 +1442,7 @@ def impor_jurnal_massal(company_id: int, isi_csv: str, user_id=None) -> dict:
     pesan: list[str] = []
     for bukti, e in entri.items():
         try:
-            v = acc.validasi_jurnal(e["baris"])
+            v = acc.validasi_jurnal(e["baris"], company_id)
             if not v.valid:
                 gagal += 1
                 pesan.append(f"Bukti {bukti}: {'; '.join(v.errors[:2])}")

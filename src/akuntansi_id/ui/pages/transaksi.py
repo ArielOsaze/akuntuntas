@@ -473,7 +473,7 @@ class DialogJurnal(QDialog):
                     "npwp_nik": b["npwp_nik"], "catatan": b["keterangan"],
                 })
 
-            v = acc.validasi_jurnal(baris)
+            v = acc.validasi_jurnal(baris, self.ctx.company_id)
             if not v.valid:
                 QMessageBox.warning(self, "Jurnal tidak valid", "\n".join(v.errors))
                 return

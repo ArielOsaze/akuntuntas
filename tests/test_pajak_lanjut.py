@@ -151,7 +151,7 @@ def main() -> int:
                               "Akrual beban listrik",
                               [{"kode_akun": "6003", "debit": 5_000_000,
                                 "kredit": 0, "catatan": "Akrual"},
-                               {"kode_akun": "2107", "debit": 0,
+                               {"kode_akun": "2013", "debit": 0,
                                 "kredit": 5_000_000, "catatan": "Utang akrual"}],
                               sumber="penyesuaian")
     jb = P.tandai_jurnal_balik(cid, entry, "2099-01-01", "Balik bulan depan")
