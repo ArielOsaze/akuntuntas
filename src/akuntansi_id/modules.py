@@ -564,9 +564,17 @@ def gudang_utama(company_id: int) -> int:
 # --------------------------------------------------------------------------
 def saldo_stok(company_id: int, product_id: int,
                warehouse_id: Optional[int] = None) -> dict:
+    """
+    Saldo stok satu produk, seluruh gudang atau satu gudang tertentu.
+
+    Penyaringan memakai company_id pada kedua jalur. Tanpa itu, pemanggil
+    yang menyebut perusahaan sendiri tetapi produk atau gudang milik
+    perusahaan lain akan menerima angka perusahaan lain tanpa peringatan.
+    """
     if warehouse_id:
-        row = db.q1("SELECT * FROM stock_balances WHERE product_id=? AND warehouse_id=?",
-                    (product_id, warehouse_id))
+        row = db.q1("""SELECT * FROM stock_balances
+                       WHERE company_id=? AND product_id=? AND warehouse_id=?""",
+                    (company_id, product_id, warehouse_id))
     else:
         row = db.q1("""SELECT COALESCE(SUM(qty),0) AS qty,
                               COALESCE(SUM(nilai_total),0) AS nilai_total
@@ -591,16 +599,20 @@ def stok_masuk(company_id: int, product_id: int, qty: float, harga_satuan: int,
     nilai = int(round(qty * int(harga_satuan)))
 
     with db.tx() as conn:
-        sb = conn.execute("SELECT * FROM stock_balances WHERE product_id=? AND "
-                          "warehouse_id=?", (product_id, wh)).fetchone()
+        sb = conn.execute("""SELECT * FROM stock_balances
+                             WHERE company_id=? AND product_id=?
+                               AND warehouse_id=?""",
+                          (company_id, product_id, wh)).fetchone()
         if sb is None:
             conn.execute("""INSERT INTO stock_balances(company_id, product_id,
                             warehouse_id, qty, nilai_total) VALUES(?,?,?,?,?)""",
                          (company_id, product_id, wh, qty, nilai))
         else:
-            conn.execute("""UPDATE stock_balances SET qty=qty+?, nilai_total=nilai_total+?
-                            WHERE product_id=? AND warehouse_id=?""",
-                         (qty, nilai, product_id, wh))
+            conn.execute("""UPDATE stock_balances
+                            SET qty=qty+?, nilai_total=nilai_total+?
+                            WHERE company_id=? AND product_id=?
+                              AND warehouse_id=?""",
+                         (qty, nilai, company_id, product_id, wh))
         cur = conn.execute(
             """INSERT INTO stock_movements(company_id, product_id, warehouse_id,
                tanggal, tipe, ref_tipe, ref_id, no_ref, qty, harga_satuan, nilai,
@@ -631,8 +643,10 @@ def stok_keluar(company_id: int, product_id: int, qty: float,
     sisa = float(qty)
 
     with db.tx() as conn:
-        sb = conn.execute("SELECT * FROM stock_balances WHERE product_id=? AND "
-                          "warehouse_id=?", (product_id, wh)).fetchone()
+        sb = conn.execute("""SELECT * FROM stock_balances
+                             WHERE company_id=? AND product_id=?
+                               AND warehouse_id=?""",
+                          (company_id, product_id, wh)).fetchone()
         tersedia = float(sb["qty"]) if sb else 0.0
         if qty > tersedia + 1e-9 and not izinkan_negatif:
             raise ValueError(
@@ -641,17 +655,20 @@ def stok_keluar(company_id: int, product_id: int, qty: float,
 
         if metode == "fifo":
             for l in conn.execute(
-                    """SELECT * FROM stock_movements WHERE product_id=? AND
-                       warehouse_id=? AND qty_sisa_fifo > 0 ORDER BY tanggal, id""",
-                    (product_id, wh)).fetchall():
+                    """SELECT * FROM stock_movements
+                       WHERE company_id=? AND product_id=? AND warehouse_id=?
+                         AND qty_sisa_fifo > 0 ORDER BY tanggal, id""",
+                    (company_id, product_id, wh)).fetchall():
                 if sisa <= 1e-9:
                     break
                 ambil = min(sisa, float(l["qty_sisa_fifo"]))
                 nilai = int(round(ambil * int(l["harga_satuan"])))
                 total_hpp += nilai
                 sisa -= ambil
-                conn.execute("UPDATE stock_movements SET qty_sisa_fifo=qty_sisa_fifo-? "
-                             "WHERE id=?", (ambil, l["id"]))
+                conn.execute("""UPDATE stock_movements
+                                SET qty_sisa_fifo=qty_sisa_fifo-?
+                                WHERE company_id=? AND id=?""",
+                             (ambil, company_id, l["id"]))
                 rincian.append({"lapisan_id": l["id"], "qty": ambil,
                                 "harga": int(l["harga_satuan"]), "nilai": nilai})
             if sisa > 1e-9:   # stok negatif diizinkan
@@ -673,9 +690,11 @@ def stok_keluar(company_id: int, product_id: int, qty: float,
                             warehouse_id, qty, nilai_total) VALUES(?,?,?,?,?)""",
                          (company_id, product_id, wh, -qty, -total_hpp))
         else:
-            conn.execute("""UPDATE stock_balances SET qty=qty-?, nilai_total=nilai_total-?
-                            WHERE product_id=? AND warehouse_id=?""",
-                         (qty, total_hpp, product_id, wh))
+            conn.execute("""UPDATE stock_balances
+                            SET qty=qty-?, nilai_total=nilai_total-?
+                            WHERE company_id=? AND product_id=?
+                              AND warehouse_id=?""",
+                         (qty, total_hpp, company_id, product_id, wh))
 
         hpp_satuan_rata = int(round(total_hpp / qty)) if qty else 0
         cur = conn.execute(
