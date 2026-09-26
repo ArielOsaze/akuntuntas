@@ -615,10 +615,11 @@ body {
 
 .paket-ket {
     display: block;
-    font-size: 12.5px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 600;
     color: var(--teks-abu);
-    margin-top: 1px;
+    margin-top: 2px;
+    letter-spacing: 0.01em;
 }
 
 /* Pita penanda paket yang paling lengkap. */
@@ -711,6 +712,56 @@ body {
 
 .banding-tabel tbody tr:hover td:nth-child(3) {
     background: rgba(27, 79, 138, 0.11);
+}
+
+/* Baris penutup tabel: tombol pilih paket pada tiap kolom, supaya
+   pengunjung dapat langsung memilih setelah membaca seluruh daftar. */
+.banding-tabel tfoot td {
+    padding: 18px 22px;
+    border-top: 1.5px solid var(--garis);
+    background: var(--latar-lembut);
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--teks-abu);
+}
+
+.banding-tabel tfoot td:first-child {
+    text-align: left;
+}
+
+.banding-tabel tfoot td.unggulan {
+    background: rgba(27, 79, 138, 0.10);
+}
+
+.tombol-pilih {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 9px;
+    font-size: 14.5px;
+    font-weight: 600;
+    text-decoration: none;
+    background: var(--putih);
+    color: var(--biru);
+    border: 1.5px solid var(--biru);
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.tombol-pilih:hover {
+    background: var(--biru);
+    color: var(--putih);
+    box-shadow: 0 4px 12px rgba(27, 79, 138, 0.20);
+}
+
+.tombol-pilih.unggulan {
+    background: var(--biru);
+    color: var(--putih);
+    border-color: var(--biru);
+}
+
+.tombol-pilih.unggulan:hover {
+    background: var(--biru-tua);
+    border-color: var(--biru-tua);
 }
 
 /* Baris yang membedakan kedua paket diberi penanda garis tepi, supaya

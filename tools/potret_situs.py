@@ -58,11 +58,43 @@ def potret(nama: str, berkas: str, lebar: int = 1280,
     QTimer.singleShot(900, jeda.quit)
     jeda.exec()
 
-    if gulir_ke:
-        skrip = f"document.querySelector('{gulir_ke}')?.scrollIntoView()"
+    if gulir_ke == "penuh":
+        # Setel jendela setinggi isi halaman, lalu potret seluruhnya.
+        tinggi_isi = {"px": 0}
+        selesai_ukur = QEventLoop()
+
+        def terima_tinggi(nilai):
+            tinggi_isi["px"] = int(nilai or 0)
+            selesai_ukur.quit()
+
+        tampilan.page().runJavaScript(
+            "Math.max(document.body.scrollHeight,"
+            " document.documentElement.scrollHeight)",
+            terima_tinggi)
+        QTimer.singleShot(1500, selesai_ukur.quit)
+        selesai_ukur.exec()
+
+        if tinggi_isi["px"] > tinggi:
+            tampilan.resize(lebar, min(tinggi_isi["px"] + 20, 6000))
+            jeda_ukur = QEventLoop()
+            QTimer.singleShot(900, jeda_ukur.quit)
+            jeda_ukur.exec()
+    elif gulir_ke:
+        # Elemen digulir ke tengah layar supaya isi di atas dan di
+        # bawahnya ikut terpotret, bukan hanya bagian bawahnya saja.
+        skrip = (
+            "(() => {"
+            f"  const el = document.querySelector('{gulir_ke}');"
+            "  if (!el) return 'tidak ketemu';"
+            "  const r = el.getBoundingClientRect();"
+            "  const t = window.pageYOffset + r.top"
+            "            - (window.innerHeight - r.height) / 2;"
+            "  window.scrollTo(0, Math.max(0, t));"
+            "  return 'ok';"
+            "})()")
         tampilan.page().runJavaScript(skrip)
         jeda2 = QEventLoop()
-        QTimer.singleShot(700, jeda2.quit)
+        QTimer.singleShot(900, jeda2.quit)
         jeda2.exec()
 
     # Ambil gambar halaman.
@@ -91,6 +123,8 @@ def main() -> int:
         ("beranda_hero", "index.html", 1280, 900, ""),
         ("harga", "index.html", 1280, 1100, "#harga"),
         ("perbandingan", "index.html", 1280, 1100, ".banding"),
+        ("perbandingan_penuh", "index.html", 1280, 900, "penuh"),
+        ("perbandingan_kaki", "index.html", 1280, 900, "tfoot .baris-pilih"),
         ("beli", "beli.html", 1280, 1000, ""),
         ("unduh", "unduh.html", 1280, 900, ""),
         ("privasi", "privasi.html", 1280, 900, ""),
