@@ -638,8 +638,9 @@ class ProdukPage(QWidget):
 
         self.tabel_kartu = w.Tabel([
             ("Tanggal", 110), ("Tipe", 110), ("Referensi", 165),
-            ("Keterangan", -1), ("Masuk", 110), ("Keluar", 110),
-            ("Harga Satuan", 140), ("Nilai", 150), ("Sisa FIFO", 110),
+            ("Keterangan", -1), ("Masuk", 100), ("Keluar", 100),
+            ("Saldo", 100), ("Harga Satuan", 130), ("Nilai", 140),
+            ("Sisa FIFO", 100),
         ])
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
@@ -789,8 +790,15 @@ class ProdukPage(QWidget):
         data = M.kartu_stok(cid, pid,
                             self.inp_dari.date().toString("yyyy-MM-dd"),
                             self.inp_sampai.date().toString("yyyy-MM-dd"))
+
+        # Saldo berjalan dimulai dari stok sebelum rentang tanggal yang
+        # dipilih. Tanpa ini, saldo yang terlihat hanya perubahan di dalam
+        # rentang, sehingga angkanya bukan saldo yang sebenarnya.
+        tanggal_awal = self.inp_dari.date().toString("yyyy-MM-dd")
+        saldo_qty = M.saldo_stok_sebelum(cid, pid, tanggal_awal)
+        saldo_awal = saldo_qty
+
         baris, warna = [], {}
-        saldo_qty = 0
         for i, r in enumerate(data):
             idx = len(baris)
             qty = float(r["qty"])
@@ -802,16 +810,19 @@ class ProdukPage(QWidget):
                 r["keterangan"] or "",
                 f"{qty:g}" if qty > 0 else "",
                 f"{-qty:g}" if qty < 0 else "",
+                f"{saldo_qty:g}",
                 tx.rupiah(r["harga_satuan"]),
                 tx.rupiah(abs(r["nilai"])),
                 f"{r['qty_sisa_fifo']:g}" if r["qty_sisa_fifo"] else "",
             ])
             warna[idx] = C.POSITIF if qty > 0 else C.NEGATIF
-        self.tabel_kartu.isi(baris, warna_baris=warna, align_kanan={4, 5, 6, 7, 8})
+        self.tabel_kartu.isi(baris, warna_baris=warna,
+                             align_kanan={4, 5, 6, 7, 8, 9})
         produk = M.get_produk(pid)
+        satuan = produk["satuan"] if produk else ""
         self.lbl_kartu.setText(
-            f"{len(data)} mutasi · saldo akhir {saldo_qty:g} "
-            f"{produk['satuan'] if produk else ''}")
+            f"{len(data)} mutasi · saldo awal {saldo_awal:g} {satuan} · "
+            f"saldo akhir {saldo_qty:g} {satuan}")
 
     def _tambah(self):
         if not self.ctx.company_id:

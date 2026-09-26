@@ -710,6 +710,25 @@ def penyesuaian_stok(company_id: int, product_id: int, qty_baru: float,
     return {"selisih": selisih, "nilai": r["hpp"], "tipe": "kurang"}
 
 
+def saldo_stok_sebelum(company_id: int, product_id: int, tanggal: str,
+                       warehouse_id: Optional[int] = None) -> float:
+    """
+    Jumlah stok sebelum tanggal tertentu.
+
+    Dipakai sebagai saldo awal pada kartu stok. Tanpa saldo awal ini, kartu
+    stok yang disaring pada rentang tanggal tertentu hanya menampilkan
+    perubahan di dalam rentang itu, sehingga saldo yang terlihat bukan saldo
+    yang sebenarnya.
+    """
+    sql = ("SELECT COALESCE(SUM(qty),0) AS qty FROM stock_movements "
+           "WHERE company_id=? AND product_id=? AND tanggal < ?")
+    params: list = [company_id, product_id, tanggal]
+    if warehouse_id:
+        sql += " AND warehouse_id=?"
+        params.append(warehouse_id)
+    return float(db.scalar(sql, params) or 0)
+
+
 def kartu_stok(company_id: int, product_id: int, tanggal_awal: str = "",
                tanggal_akhir: str = "", warehouse_id: Optional[int] = None) -> list:
     sql = "SELECT * FROM stock_movements WHERE company_id=? AND product_id=?"
