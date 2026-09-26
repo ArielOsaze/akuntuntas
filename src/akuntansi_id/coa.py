@@ -19,6 +19,8 @@ Setiap akun memiliki:
 """
 from __future__ import annotations
 
+from . import db
+
 
 # Perlakuan fiskal yang dikenali mesin rekonsiliasi:
 #   "Deductible/Taxable"  -> netral
@@ -389,6 +391,75 @@ def coa_template_label(entity_type: str) -> str:
         "pt": "PT / CV / Koperasi (lengkap)",
     }
     return labels.get(entity_type, "Lengkap")
+
+
+def akun_belum_ada(company_id: int, bentuk: str = "pt") -> list:
+    """
+    Akun bawaan yang belum ada pada perusahaan tertentu.
+
+    Bagan akun ditulis saat perusahaan dibuat. Bila aplikasi diperbarui dan
+    bagan akunnya bertambah, perusahaan yang sudah ada tidak ikut mendapat
+    akun baru itu. Akibatnya fitur yang memakai akun tersebut gagal pada
+    komputer pengguna lama, meskipun pada perusahaan baru berjalan normal.
+
+    Fungsi ini mencari selisihnya, supaya akun yang kurang dapat
+    ditambahkan tanpa menyentuh akun yang sudah ada.
+    """
+    try:
+        ada = {
+            r["kode"] for r in db.q(
+                "SELECT kode FROM accounts WHERE company_id = ?", (company_id,))
+        }
+    except Exception:
+        return []
+
+    return [baris for baris in get_coa_template(bentuk)
+            if baris[0] not in ada]
+
+
+def lengkapi_akun_bawaan(company_id: int, bentuk: str = "pt") -> int:
+    """
+    Tambahkan akun bawaan yang belum ada pada perusahaan tertentu.
+
+    Mengembalikan jumlah akun yang ditambahkan. Akun yang sudah ada tidak
+    disentuh, sehingga saldo dan jurnal pengguna tidak terpengaruh.
+    """
+    kurang = akun_belum_ada(company_id, bentuk)
+    if not kurang:
+        return 0
+
+    jumlah = 0
+    with db.tx() as conn:
+        for kode, nama_akun, tipe, grup, baris, normal, perl, desk, kas in kurang:
+            conn.execute(
+                """INSERT INTO accounts(company_id, kode, nama, tipe, grup_lr,
+                   baris_neraca, normal, perlakuan_fiskal, deskripsi, is_kas_bank)
+                   VALUES(?,?,?,?,?,?,?,?,?,?)
+                   ON CONFLICT(company_id, kode) DO NOTHING""",
+                (company_id, kode, nama_akun, tipe, grup, baris, normal,
+                 perl, desk, kas),
+            )
+            jumlah += 1
+    return jumlah
+
+
+def lengkapi_semua_perusahaan() -> int:
+    """
+    Tambahkan akun bawaan yang kurang pada seluruh perusahaan.
+
+    Dipanggil sekali saat aplikasi dibuka, supaya pengguna yang sudah
+    memakai versi lama tetap mendapat akun baru tanpa perlu membuat ulang
+    perusahaannya.
+    """
+    try:
+        perusahaan = db.q("SELECT id, bentuk FROM companies")
+    except Exception:
+        return 0
+
+    jumlah = 0
+    for p in perusahaan:
+        jumlah += lengkapi_akun_bawaan(p["id"], p["bentuk"] or "pt")
+    return jumlah
 
 
 # ==========================================================================

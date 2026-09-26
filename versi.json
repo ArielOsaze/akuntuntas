@@ -1,6 +1,6 @@
 {
-  "versi": "1.1.3",
+  "versi": "1.1.4",
   "build": "2026.09",
   "tanggal": "2026-09-26",
-  "catatan": "Perbaikan: jurnal dengan kode akun tidak dikenal ditolak, tambah akun Utang Akrual, perbaiki akun cadangan jurnal penutup"
+  "catatan": "Perusahaan lama otomatis mendapat akun baru saat aplikasi diperbarui"
 }

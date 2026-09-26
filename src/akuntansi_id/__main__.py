@@ -77,10 +77,22 @@ def main() -> int:
 
     # ---------------------------------------------------------------- DB
     try:
-        from akuntansi_id import db
+        from akuntansi_id import coa, db
         from akuntansi_id.core import security as sec
         db.init_db()
         sec.ensure_default_admin()
+
+        # Lengkapi akun bawaan yang belum ada pada perusahaan yang sudah
+        # dibuat. Tanpa langkah ini, pengguna versi lama tidak mendapat akun
+        # baru yang ditambahkan pada pembaruan, sehingga fitur yang memakai
+        # akun tersebut gagal di komputer mereka.
+        try:
+            n_akun = coa.lengkapi_semua_perusahaan()
+            if n_akun:
+                catat(f"Melengkapi bagan akun: {n_akun} akun ditambahkan.")
+        except Exception as galat:
+            catat(f"Bagan akun tidak dapat dilengkapi: {galat}")
+
         catat(f"Aplikasi dimulai. Basis data: {config.DB_PATH}")
 
         # Cadangan otomatis dijalankan di latar belakang supaya pembukaan
