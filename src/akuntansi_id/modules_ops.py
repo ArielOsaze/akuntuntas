@@ -23,6 +23,110 @@ from .modules import (hari_ini, tambah_hari, nomor_berikut, catat_riwayat,
 
 
 # ==========================================================================
+# PENYERAGAMAN TANGGAL
+# ==========================================================================
+# Berkas dari aplikasi lain jarang memakai bentuk tanggal yang sama. Yang
+# umum dijumpai adalah bentuk Indonesia (31/01/2026), bentuk Amerika
+# (01/31/2026), dan bentuk dengan pemisah titik (31.01.2026). Semuanya
+# diubah ke bentuk baku YYYY-MM-DD supaya dapat disimpan dan muncul pada
+# laporan periode. Tanpa penyeragaman ini, seluruh baris ditolak dan
+# pengguna tidak tahu bagian mana yang harus diperbaiki.
+BULAN_INGGRIS = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+    "januari": 1, "februari": 2, "maret": 3, "april": 4, "mei": 5,
+    "juni": 6, "juli": 7, "agustus": 8, "september": 9, "oktober": 10,
+    "november": 11, "desember": 12,
+}
+
+
+def seragamkan_tanggal(teks: str) -> str:
+    """
+    Ubah berbagai bentuk penulisan tanggal menjadi YYYY-MM-DD.
+
+    Bila bentuknya tidak dikenali, teks aslinya dikembalikan apa adanya
+    supaya pesan kesalahan tetap menyebut apa yang diketik pengguna.
+
+    Angka dua digit pada bagian pertama dan kedua ditafsirkan sebagai hari
+    lebih dulu, karena pengguna di Indonesia menulis hari di depan. Bila
+    angka pertama lebih besar dari dua belas, penafsiran itu pasti benar.
+    Bila angka kedua lebih besar dari dua belas, baru ditafsirkan sebagai
+    bulan di depan.
+    """
+    if not teks:
+        return ""
+    asli = str(teks).strip()
+    if not asli:
+        return ""
+
+    # Sudah dalam bentuk baku.
+    if len(asli) >= 10 and asli[4] == "-" and asli[7] == "-":
+        return asli[:10]
+
+    # Buang bagian jam bila ada, tanpa membuang bagian tanggalnya.
+    # Bagian jam dikenali dari tanda titik dua, misalnya 08:30.
+    potong = [b for b in asli.replace(",", " ").split() if ":" not in b]
+    inti = " ".join(potong) if potong else asli
+
+    # Bentuk dengan nama bulan, misalnya 31 Januari 2026 atau 15 Mar 2026.
+    # Pemeriksaan ini dilakukan pada teks utuh, sebelum pemisah tanda baca
+    # diubah, karena nama bulannya dapat berupa kata tersendiri.
+    if any(c.isalpha() for c in inti):
+        bagian = [b for b in inti.replace(",", " ").split() if b]
+        if len(bagian) >= 3:
+            for posisi, kata in enumerate(bagian):
+                bulan = BULAN_INGGRIS.get(kata.strip("-.").lower())
+                if bulan:
+                    angka = [b for i, b in enumerate(bagian)
+                             if i != posisi and b.strip("-.").isdigit()]
+                    if len(angka) >= 2:
+                        try:
+                            if len(angka[0]) == 4:      # 2026 Maret 15
+                                return (f"{int(angka[0]):04d}-{bulan:02d}-"
+                                        f"{int(angka[1]):02d}")
+                            return (f"{int(angka[1]):04d}-{bulan:02d}-"
+                                    f"{int(angka[0]):02d}")
+                        except ValueError:
+                            return asli
+                    break
+        return asli
+
+    inti = inti.replace(".", "-").replace("/", "-")
+
+    bagian = inti.split("-")
+    if len(bagian) < 3:
+        return asli
+    try:
+        satu, dua, tiga = (int(bagian[0]), int(bagian[1]), int(bagian[2]))
+    except ValueError:
+        return asli
+
+    # Bentuk dengan tahun di depan: 2026-03-15.
+    if len(bagian[0]) == 4:
+        tahun, bulan, hari = satu, dua, tiga
+    else:
+        tahun = tiga
+        # Hari di depan bila angka pertama lebih dari dua belas, atau bila
+        # angka kedua juga memungkinkan menjadi bulan.
+        if satu > 12 or dua <= 12:
+            hari, bulan = satu, dua
+        else:
+            bulan, hari = satu, dua
+
+    try:
+        return date(tahun, bulan, hari).isoformat()
+    except ValueError:
+        return asli
+
+
+def _tanggal_dari(baris: list, indeks: int) -> str:
+    """Ambil dan seragamkan tanggal dari satu baris berkas."""
+    if not (0 <= indeks < len(baris)):
+        return ""
+    return seragamkan_tanggal(baris[indeks])
+
+
+# ==========================================================================
 # BIAYA (EXPENSE MANAGEMENT)
 # ==========================================================================
 def buat_kategori_biaya(company_id: int, nama: str, **kw) -> int:
@@ -397,7 +501,7 @@ def impor_mutasi_bank(company_id: int, bank_account_id: int, baris: list[dict],
     masuk = duplikat = 0
     with db.tx() as conn:
         for b in baris:
-            tanggal = str(b.get("tanggal", ""))[:10]
+            tanggal = seragamkan_tanggal(b.get("tanggal", ""))
             if not tanggal:
                 continue
             debit = ringkas_angka(b.get("debit"))
@@ -1425,7 +1529,7 @@ def impor_jurnal_massal(company_id: int, isi_csv: str, user_id=None) -> dict:
                      else f"IMP-{n:04d}")
             if bukti not in entri:
                 entri[bukti] = {
-                    "tanggal": r[i_tgl].strip()[:10],
+                    "tanggal": _tanggal_dari(r, i_tgl),
                     "keterangan": (r[i_ket].strip()
                                    if 0 <= i_ket < len(r) else "Impor jurnal"),
                     "baris": [],
