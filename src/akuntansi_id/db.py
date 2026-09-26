@@ -51,6 +51,122 @@ def get_conn() -> sqlite3.Connection:
     return conn
 
 
+# --------------------------------------------------------------------------
+# PENJAGA KESEIMBANGAN JURNAL
+# --------------------------------------------------------------------------
+# Pemeriksaan di kode aplikasi sudah menolak jurnal yang tidak seimbang.
+# Namun pemeriksaan itu hanya berlaku untuk jalur yang melewatinya. Bila ada
+# jalur lain yang lupa memvalidasi, perbaikan data manual, atau impor dari
+# alat lain yang menulis langsung ke tabel, jurnal tidak seimbang dapat masuk
+# dan membuat neraca tidak seimbang tanpa ada yang menyadari.
+#
+# Karena itu pemeriksaan diulang di lapisan basis data, tepat sebelum sebuah
+# transaksi disimpan. Di titik itu seluruh baris jurnal sudah selesai
+# ditulis, sehingga jurnal yang sah tidak akan tertolak hanya karena
+# barisnya belum lengkap.
+#
+# SQLite tidak mengenal pemeriksaan yang ditunda sampai transaksi selesai
+# seperti pada basis data lain, jadi pemeriksaan ini dijalankan sendiri
+# oleh fungsi tx() sebelum COMMIT.
+#
+# Penandanya memakai trigger sementara pada tabel jurnal. Trigger ini
+# mencatat bahwa jurnal sudah berubah, tanpa memandang jalur mana yang
+# menulisnya. Dengan begitu pemeriksaan menyeluruh hanya dijalankan pada
+# transaksi yang benar benar menyentuh jurnal, dan tidak diulang pada
+# transaksi lain.
+DDL_PENANDA_JURNAL = """
+CREATE TEMP TABLE IF NOT EXISTS _jurnal_berubah (
+    id INTEGER PRIMARY KEY CHECK (id = 1)
+);
+CREATE TEMP TRIGGER IF NOT EXISTS _trg_jurnal_is
+AFTER INSERT ON journal_lines BEGIN
+    INSERT OR REPLACE INTO _jurnal_berubah(id) VALUES(1);
+END;
+CREATE TEMP TRIGGER IF NOT EXISTS _trg_jurnal_us
+AFTER UPDATE ON journal_lines BEGIN
+    INSERT OR REPLACE INTO _jurnal_berubah(id) VALUES(1);
+END;
+CREATE TEMP TRIGGER IF NOT EXISTS _trg_jurnal_ds
+AFTER DELETE ON journal_lines BEGIN
+    INSERT OR REPLACE INTO _jurnal_berubah(id) VALUES(1);
+END;
+CREATE TEMP TRIGGER IF NOT EXISTS _trg_jurnal_ie
+AFTER INSERT ON journal_entries BEGIN
+    INSERT OR REPLACE INTO _jurnal_berubah(id) VALUES(1);
+END;
+CREATE TEMP TRIGGER IF NOT EXISTS _trg_jurnal_ue
+AFTER UPDATE ON journal_entries BEGIN
+    INSERT OR REPLACE INTO _jurnal_berubah(id) VALUES(1);
+END;
+CREATE TEMP TRIGGER IF NOT EXISTS _trg_jurnal_de
+AFTER DELETE ON journal_entries BEGIN
+    INSERT OR REPLACE INTO _jurnal_berubah(id) VALUES(1);
+END;
+"""
+
+
+def pasang_penanda_jurnal(conn) -> None:
+    """Pasang trigger penanda perubahan jurnal pada satu koneksi."""
+    try:
+        conn.executescript(DDL_PENANDA_JURNAL)
+    except Exception as e:
+        logging.getLogger("akuntansiid").warning(
+            "Penanda perubahan jurnal gagal dipasang: %s", e)
+
+
+def _periksa_keseimbangan(conn) -> None:
+    """
+    Batalkan transaksi bila ada bukti jurnal yang tidak seimbang.
+
+    Pemeriksaan ini menutup celah yang tidak tertangkap pemeriksaan di kode
+    aplikasi: jalur tulis langsung ke tabel, perbaikan data manual, dan
+    impor dari alat lain. Dijalankan tepat sebelum transaksi disimpan, saat
+    seluruh baris jurnal sudah selesai ditulis.
+
+    Pesannya menyebut nomor bukti yang bermasalah supaya pengguna tahu
+    bagian mana yang harus diperbaiki, bukan hanya bahwa ada yang salah.
+    """
+    # Hanya diperiksa bila transaksi ini benar benar menyentuh jurnal.
+    try:
+        berubah = conn.execute(
+            "SELECT COUNT(*) FROM _jurnal_berubah").fetchone()[0]
+    except Exception:
+        # Penanda belum terpasang, jadi pemeriksaan dilewati.
+        return
+    if not berubah:
+        return
+
+    temuan = conn.execute(
+        """SELECT je.id, je.no_bukti,
+                  COALESCE(SUM(jl.debit), 0) AS total_debit,
+                  COALESCE(SUM(jl.kredit), 0) AS total_kredit,
+                  COUNT(jl.id) AS jumlah_baris
+           FROM journal_entries je
+           LEFT JOIN journal_lines jl ON jl.entry_id = je.id
+           GROUP BY je.id
+           HAVING total_debit <> total_kredit OR jumlah_baris < 2""").fetchall()
+
+    # Penanda dibersihkan supaya transaksi berikutnya mulai dari keadaan
+    # bersih. Bila pemeriksaan gagal, rollback akan mengembalikannya.
+    conn.execute("DELETE FROM _jurnal_berubah")
+
+    if not temuan:
+        return
+
+    rincian = []
+    for t in temuan[:3]:
+        selisih = int(t["total_debit"]) - int(t["total_kredit"])
+        rincian.append(
+            f"{t['no_bukti']} (debit {int(t['total_debit']):,} "
+            f"vs kredit {int(t['total_kredit']):,}, selisih {selisih:,})")
+    sisa = len(temuan) - len(rincian)
+    pesan = ("Jurnal tidak seimbang sehingga tidak dapat disimpan: "
+             + "; ".join(rincian))
+    if sisa > 0:
+        pesan += f"; dan {sisa} bukti lain"
+    raise ValueError(pesan)
+
+
 @contextmanager
 def tx():
     """
@@ -77,6 +193,7 @@ def tx():
     _local.tx_depth = 1
     try:
         yield conn
+        _periksa_keseimbangan(conn)
         conn.execute("COMMIT")
     except Exception:
         try:
@@ -603,6 +720,11 @@ def init_db() -> None:
         "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
         (config.APP_VERSION,),
     )
+
+    # Penanda perubahan jurnal dipasang paling akhir, setelah tabel jurnal
+    # benar benar ada. Bila dipasang lebih awal, pembuatannya gagal karena
+    # tabel yang dirujuknya belum terbentuk.
+    pasang_penanda_jurnal(conn)
 
 
 # Kolom yang ditambahkan setelah versi awal. Basis data lama akan

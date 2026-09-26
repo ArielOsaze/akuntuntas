@@ -23,7 +23,6 @@ Cara pakai:
 """
 from __future__ import annotations
 
-import io
 import os
 import shutil
 import sys
@@ -37,7 +36,7 @@ sys.path.insert(0, str(AKAR / "src"))
 FOLDER = Path(tempfile.mkdtemp(prefix="akuntuntas_skala_"))
 os.environ["LOCALAPPDATA"] = str(FOLDER)
 
-from akuntansi_id import db, modules, services  # noqa: E402
+from akuntansi_id import db, services  # noqa: E402
 from akuntansi_id import modules_ops as O  # noqa: E402
 from akuntansi_id.core import accounting as acc  # noqa: E402
 
@@ -159,7 +158,7 @@ def main() -> int:
                  '2026-04-01,BKM-004,"Penjualan, termasuk PPN",1001,1100000,0\n'
                  '2026-04-01,BKM-004,"Penjualan, termasuk PPN",4001,0,1000000\n'
                  '2026-04-01,BKM-004,"Penjualan, termasuk PPN",2013,0,100000\n')
-    h4 = O.impor_jurnal_massal(cid, csv_kutip)
+    O.impor_jurnal_massal(cid, csv_kutip)
     ket = db.q1("""SELECT keterangan FROM journal_entries
                    WHERE company_id=? AND no_bukti=?""", (cid, "BKM-004"))
     p.cek("keterangan bertanda koma di dalam kutip terbaca utuh",
