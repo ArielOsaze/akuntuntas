@@ -244,6 +244,29 @@ def _bersihkan(folder: str) -> None:
             except OSError:
                 pass
 
+    # Pustaka video dan audio FFmpeg yang ikut lewat Qt Multimedia. Aplikasi
+    # ini tidak memutar media apa pun, jadi seluruh pustakanya dibuang.
+    for pola in ("avcodec-*", "avformat-*", "avutil-*", "swscale-*",
+                 "swresample-*"):
+        for f in Path(akar).glob(pola):
+            try:
+                f.unlink()
+            except OSError:
+                pass
+
+    # Sisa berkas QML, 3D, dan alat bantu Qt yang tidak dipanggil aplikasi.
+    # Semuanya hanya menambah ukuran unduhan.
+    for pola in ("qt6quick3d*", "qt63d*", "qt6shadertools*", "qt6graphs*",
+                 "qt6qmlcompiler*", "qt6designercomponents*", "qmlls*",
+                 "qmlformat*", "qmlscene*", "qmltestrunner*", "qmlcachegen*",
+                 "qml*.exe", "v8_context_snapshot.debug.bin"):
+        for f in Path(akar).glob(pola):
+            try:
+                if f.is_file():
+                    f.unlink()
+            except OSError:
+                pass
+
     # Sumber daya Qt WebEngine: aplikasi tidak memakai peramban tertanam,
     # tetapi berkas ini ikut tersalin dan berukuran puluhan megabita.
     for pola in ("qtwebengine*", "*webengine*.pak", "*devtools*"):
