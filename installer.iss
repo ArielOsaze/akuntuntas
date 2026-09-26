@@ -15,7 +15,7 @@
 ; ==========================================================================
 
 #define NamaAplikasi "AkunTuntas"
-#define VersiAplikasi "1.1.8"
+#define VersiAplikasi "1.1.9"
 #define Penerbit "Xinet Group"
 #define Deskripsi "Pembukuan & Pajak Perusahaan Indonesia"
 #define NamaExe "AkunTuntas.exe"

@@ -1,6 +1,6 @@
 {
-  "versi": "1.1.8",
+  "versi": "1.1.9",
   "build": "2026.09",
   "tanggal": "2026-09-26",
-  "catatan": "Uji coba menyeluruh sebagai pengguna: seluruh alur dari data kosong sampai tutup buku"
+  "catatan": "Penjaga keseimbangan jurnal di lapisan basis data: menutup jalur tulis langsung"
 }
