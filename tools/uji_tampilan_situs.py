@@ -336,7 +336,37 @@ def main() -> int:
     print()
 
     # ------------------------------------------------------------------
-    print("[9. Tabel dapat digulir pada layar sempit]")
+    print("[9. Tombol bergaris benar benar bergaya garis]")
+    # Tombol bergaris harus berlatar bening dan bertepi, bukan berlatar
+    # penuh. Bila aturan induknya menimpa, tombolnya tampak sama dengan
+    # tombol utama dan pengunjung kehilangan penanda tindakan utama.
+    # Kejadian ini pernah terjadi pada tombol WhatsApp di bagian ajakan.
+    for bagian in ("ajakan",):
+        # Cari aturan induk yang memberi latar penuh.
+        induk = re.search(
+            r"\." + bagian + r"\s+\.tombol\s*\{([^}]*)\}", css)
+        garis = re.search(
+            r"\." + bagian + r"\s+\.tombol-garis\s*\{([^}]*)\}", css)
+        p.cek(f"bagian {bagian} punya aturan tombol bergaris",
+              garis is not None,
+              f"aturan .{bagian} .tombol-garis tidak ada")
+        if garis:
+            isi_garis = garis.group(1)
+            p.cek(f"tombol bergaris di {bagian} berlatar bening",
+                  "transparent" in isi_garis,
+                  f"isi: {' '.join(isi_garis.split())[:80]}")
+            # Aturan bergaris harus ditulis SESUDAH aturan induk, karena
+            # kekuatannya sama sehingga yang terakhir menang.
+            if induk:
+                pos_induk = css.find(f".{bagian} .tombol {{")
+                pos_garis = css.find(f".{bagian} .tombol-garis {{")
+                p.cek(f"aturan tombol bergaris di {bagian} ditulis sesudah "
+                      f"aturan tombol utama", pos_garis > pos_induk,
+                      f"induk di {pos_induk}, garis di {pos_garis}")
+    print()
+
+    # ------------------------------------------------------------------
+    print("[10. Tabel dapat digulir pada layar sempit]")
     p.cek("tabel dibungkus wadah yang dapat digulir",
           "banding-tabel-wadah" in html and "overflow-x: auto" in css)
     p.cek("tabel punya lebar minimum supaya kolom tidak terhimpit",

@@ -152,6 +152,7 @@ def main() -> int:
         ("perbandingan", "index.html", 1280, 1100, ".banding"),
         ("perbandingan_penuh", "index.html", 1280, 900, "penuh"),
         ("perbandingan_kaki", "index.html", 1280, 900, "tfoot .baris-pilih"),
+        ("ajakan", "index.html", 1280, 800, ".ajakan"),
         ("kontak", "kontak.html", 1280, 1000, ""),
         ("kontak_sempit", "kontak.html", 420, 1100, ""),
         ("kontak_bawah", "kontak.html", 1280, 1000, "#formulir"),

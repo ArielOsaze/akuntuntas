@@ -957,8 +957,24 @@ body {
 
 .ajakan .tombol:hover { background: #E8F0F9; }
 
-/* Formulir kontak di bagian ajakan. Latarnya navy, jadi seluruh bidang
-   memakai warna terang supaya terbaca jelas di atas latar gelap. */
+/* Tombol kedua di bagian ajakan bergaya garis supaya terlihat sebagai
+   pilihan kedua, bukan tindakan utama. Latarnya navy, jadi warna teksnya
+   dibuat terang. Aturan ini WAJIB ditulis sesudah .ajakan .tombol, karena
+   keduanya sama kuatnya dan yang terakhir menang. */
+.ajakan .tombol-garis {
+    background: transparent;
+    color: var(--putih);
+    border: 1.5px solid #6E8CA8;
+    box-shadow: none;
+}
+
+.ajakan .tombol-garis:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--putih);
+    box-shadow: none;
+}
+
+/* Baris tombol di bagian ajakan. */
 .kontak-baris {
     margin: 26px 0 30px;
     display: flex;
@@ -966,9 +982,6 @@ body {
     gap: 12px;
     flex-wrap: wrap;
 }
-
-/* Gaya formulir kontak kini berada di halaman kontak tersendiri, jadi
-   tidak lagi dimuat di sini. */
 
 /* ------------------------------------------------------------------ kaki */
 .kaki {
