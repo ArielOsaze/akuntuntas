@@ -1,6 +1,6 @@
 {
-  "versi": "1.1.7",
+  "versi": "1.1.8",
   "build": "2026.09",
   "tanggal": "2026-09-26",
-  "catatan": "Impor jurnal menerima berbagai bentuk tanggal, termasuk format Indonesia"
+  "catatan": "Uji coba menyeluruh sebagai pengguna: seluruh alur dari data kosong sampai tutup buku"
 }
