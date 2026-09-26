@@ -9,8 +9,8 @@
 #
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 1, 9, 0),
-    prodvers=(1, 1, 9, 0),
+    filevers=(1, 2, 0, 0),
+    prodvers=(1, 2, 0, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -26,13 +26,13 @@ VSVersionInfo(
           [StringStruct('CompanyName', 'Xinet Group'),
            StringStruct('FileDescription',
                         'AkunTuntas: Pembukuan dan Pajak Perusahaan Indonesia'),
-           StringStruct('FileVersion', '1.1.9.0'),
+           StringStruct('FileVersion', '1.2.0.0'),
            StringStruct('InternalName', 'AkunTuntas'),
            StringStruct('LegalCopyright',
                         'Xinet Group. Seluruh hak dilindungi.'),
            StringStruct('OriginalFilename', 'AkunTuntas.exe'),
            StringStruct('ProductName', 'AkunTuntas'),
-           StringStruct('ProductVersion', '1.1.9 Edisi Regulasi 2026')])
+           StringStruct('ProductVersion', '1.2.0 Edisi Regulasi 2026')])
       ]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])
   ]

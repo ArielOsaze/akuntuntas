@@ -1,6 +1,6 @@
 {
-  "versi": "1.1.9",
+  "versi": "1.2.0",
   "build": "2026.09",
   "tanggal": "2026-09-26",
-  "catatan": "Penjaga keseimbangan jurnal di lapisan basis data: menutup jalur tulis langsung"
+  "catatan": "Pemisahan data antar perusahaan diperketat: saldo dan mutasi stok kini menyaring perusahaan"
 }
