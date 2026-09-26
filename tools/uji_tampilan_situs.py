@@ -273,7 +273,29 @@ def main() -> int:
     print()
 
     # ------------------------------------------------------------------
-    print("[7. Tabel dapat digulir pada layar sempit]")
+    print("[7. Tidak ada tautan surel yang tidak merespons]")
+    # Tautan surel tidak berfungsi pada komputer yang tidak memiliki
+    # aplikasi surel. Pengunjung yang menekannya tidak melihat apa pun
+    # terjadi, sehingga tombolnya terasa mati. Seluruh tautan kontak
+    # diganti WhatsApp atau formulir pada situs.
+    surel = []
+    for berkas in sorted(WEB.glob("*.html")):
+        isi_h = berkas.read_text(encoding="utf-8")
+        # Hanya periksa tautan yang benar benar diklik pengunjung.
+        if 'href="mailto:' in isi_h:
+            jumlah = isi_h.count('href="mailto:')
+            surel.append(f"{berkas.name}: {jumlah}")
+    p.cek("tidak ada tautan surel yang tidak merespons",
+          not surel, f"temuan: {surel}")
+
+    # WhatsApp harus tersedia sebagai gantinya.
+    ada_wa = sum(1 for f in WEB.glob("*.html")
+                 if "wa.me/" in f.read_text(encoding="utf-8"))
+    p.cek(f"tautan WhatsApp tersedia di {ada_wa} halaman", ada_wa >= 5)
+    print()
+
+    # ------------------------------------------------------------------
+    print("[8. Tabel dapat digulir pada layar sempit]")
     p.cek("tabel dibungkus wadah yang dapat digulir",
           "banding-tabel-wadah" in html and "overflow-x: auto" in css)
     p.cek("tabel punya lebar minimum supaya kolom tidak terhimpit",

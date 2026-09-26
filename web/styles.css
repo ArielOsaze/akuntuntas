@@ -1126,6 +1126,14 @@ body {
 
 .kaki-kolom a:hover { color: var(--putih); }
 
+/* Alamat surel ditampilkan sebagai teks, bukan tautan, karena tautan
+   surel tidak merespons pada komputer tanpa aplikasi surel. */
+.kaki-surel {
+    color: #A8BDD1;
+    font-size: 14px;
+    word-break: break-all;
+}
+
 .kaki-bawah {
     display: flex;
     justify-content: space-between;
