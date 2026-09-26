@@ -100,6 +100,12 @@ def main() -> int:
 
     # Buat hasil login dari akun yang ada, sama seperti setelah pengguna
     # masuk. Bila belum ada akun, buat satu supaya halaman dapat dibuka.
+    #
+    # Mode tampilan dapat dipilih: "pemula" atau "ahli". Sebagian halaman
+    # menampilkan keterangan tambahan pada mode Pemula, jadi keduanya
+    # perlu dapat diperiksa.
+    app_mode = "beginner" if "--pemula" in sys.argv else "expert"
+
     akun = db.q("SELECT id, username, full_name, role, app_mode "
                 "FROM users ORDER BY id LIMIT 1")
     if akun:
@@ -107,11 +113,11 @@ def main() -> int:
         hasil_login = sec.LoginResult(
             ok=True, user_id=a["id"], username=a["username"],
             full_name=a["full_name"], role=a["role"],
-            app_mode=a["app_mode"] or "beginner", mode_dipilih=True)
+            app_mode=app_mode, mode_dipilih=True)
     else:
         hasil_login = sec.LoginResult(
             ok=True, user_id=0, username="potret", full_name="Contoh Potret",
-            role="admin", app_mode="expert", mode_dipilih=True)
+            role="admin", app_mode=app_mode, mode_dipilih=True)
 
     # Lisensi dibaca dengan cara yang sama seperti aplikasi sungguhan,
     # supaya seluruh menu terbuka saat dipotret.

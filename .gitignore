@@ -69,3 +69,6 @@ _backup_user/
 supabase/.temp/
 _cek.exe
 _deploy/
+
+# Berkas pemasang besar: diunggah langsung ke Vercel, tidak lewat git
+web/AkunTuntas-Setup.exe

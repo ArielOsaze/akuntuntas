@@ -345,6 +345,51 @@ class AnalisisPage(QWidget):
             "Rasio bukan penilaian mutlak - tetap perhatikan konteks industri Anda.",
             "info", "Cara membaca rasio"))
 
+        # Pada mode Pemula, istilah rasio keuangan dijelaskan lebih dahulu
+        # dengan bahasa sehari hari. Pengguna yang sudah terbiasa dapat
+        # menutup keterangan ini.
+        if getattr(self.ctx, "beginner", False):
+            penjelasan = w.Card()
+            pl = penjelasan.body()
+            judul_p = QLabel("Arti istilah rasio dalam bahasa sehari hari")
+            judul_p.setObjectName("SectionTitle")
+            pl.addWidget(judul_p)
+
+            for istilah, arti in (
+                ("Rasio lancar",
+                 "Berapa kali aset jangka pendek Anda menutup utang jangka "
+                 "pendek. Di atas 1,5x berarti aman."),
+                ("Rasio kas",
+                 "Seberapa besar uang tunai Anda dibanding utang jangka "
+                 "pendek. Bila negatif, artinya saldo kas Anda minus."),
+                ("Margin",
+                 "Sisa laba dari setiap penjualan setelah dikurangi biaya. "
+                 "Margin 20% berarti dari Rp100 penjualan tersisa Rp20."),
+                ("ROA dan ROE",
+                 "Seberapa besar laba yang dihasilkan dari aset dan dari "
+                 "modal sendiri. Semakin besar semakin baik."),
+                ("Rasio utang",
+                 "Seberapa besar usaha Anda bergantung pada utang. Semakin "
+                 "kecil semakin aman."),
+            ):
+                baris_p = QHBoxLayout()
+                baris_p.setSpacing(10)
+                nama_p = QLabel(istilah)
+                nama_p.setFixedWidth(110)
+                nama_p.setStyleSheet(
+                    f"color: {C.TEXT}; font-size: {theme.FS_SMALL}px; "
+                    "font-weight: 600; background: transparent;")
+                baris_p.addWidget(nama_p, 0)
+                arti_p = QLabel(arti)
+                arti_p.setWordWrap(True)
+                arti_p.setStyleSheet(
+                    f"color: {C.TEXT_MUTED}; font-size: {theme.FS_SMALL}px; "
+                    "background: transparent;")
+                baris_p.addWidget(arti_p, 1)
+                pl.addLayout(baris_p)
+
+            lay.addWidget(penjelasan)
+
         # --- Likuiditas
         lay.addWidget(self._judul_seksi("Likuiditas - kemampuan membayar utang jangka pendek", 0))
         kartu = w.Card()
@@ -355,7 +400,8 @@ class AnalisisPage(QWidget):
         teks_rl = ("Tidak ada utang jangka pendek" if rasio_lancar == float("inf")
                    else f"{rasio_lancar:.2f}x")
         status_rl, warna_rl = self._nilai_rasio(
-            rasio_lancar, baik=2.0, cukup=1.5, bahaya=1.0, teks=teks_rl)
+            rasio_lancar, baik=2.0, cukup=1.5, bahaya=1.0, teks=teks_rl,
+            terbalik=True, maks=1.0)
         grid.addWidget(self._kotak_rasio(
             "Rasio Lancar", teks_rl, status_rl, warna_rl,
             "Aset lancar ÷ utang jangka pendek. Mengukur kemampuan membayar "
@@ -365,11 +411,13 @@ class AnalisisPage(QWidget):
         teks_rk = ("Tidak ada utang jangka pendek" if rasio_kas == float("inf")
                    else f"{rasio_kas:.2f}x")
         status_rk, warna_rk = self._nilai_rasio(
-            rasio_kas, baik=1.0, cukup=0.5, bahaya=0.25, teks=teks_rk)
+            rasio_kas, baik=1.0, cukup=0.5, bahaya=0.25, teks=teks_rk,
+            terbalik=True, maks=0.0)
         grid.addWidget(self._kotak_rasio(
             "Rasio Kas", teks_rk, status_rk, warna_rk,
             "Kas ÷ utang jangka pendek. Mengukur kemampuan membayar utang "
-            "segera dengan uang tunai yang tersedia."), 0, 1)
+            "segera dengan uang tunai yang tersedia. Acuan sehat: di atas "
+            "0,50x. Nilai negatif berarti kas Anda minus."), 0, 1)
         kartu.body().addLayout(grid)
         lay.addWidget(kartu)
 
@@ -505,14 +553,16 @@ class AnalisisPage(QWidget):
         rl = r["rasio_lancar"]
         t = ("Tidak ada utang jangka pendek" if rl == float("inf")
              else f"{rl:.2f}x")
-        s, wrn = self._nilai_rasio(rl, baik=2.0, cukup=1.5, bahaya=1.0, teks=t)
+        s, wrn = self._nilai_rasio(rl, baik=2.0, cukup=1.5, bahaya=1.0, teks=t,
+                                   terbalik=True, maks=1.0)
         daftar.append(baris_rasio("Rasio Lancar", t, s, wrn,
                                   "di atas 1,50x"))
 
         rk = r["rasio_kas"]
         t = ("Tidak ada utang jangka pendek" if rk == float("inf")
              else f"{rk:.2f}x")
-        s, wrn = self._nilai_rasio(rk, baik=1.0, cukup=0.5, bahaya=0.25, teks=t)
+        s, wrn = self._nilai_rasio(rk, baik=1.0, cukup=0.5, bahaya=0.25, teks=t,
+                                   terbalik=True, maks=0.0)
         daftar.append(baris_rasio("Rasio Kas", t, s, wrn, "di atas 1,00x"))
 
         mk = r["margin_kotor"]
@@ -586,13 +636,28 @@ class AnalisisPage(QWidget):
         return kartu
 
     def _nilai_rasio(self, nilai: float, baik: float, cukup: float, bahaya: float,
-                     teks: str, terbalik: bool = False) -> tuple[str, str]:
+                     teks: str, terbalik: bool = False,
+                     maks=None) -> tuple[str, str]:
         """
-        Klasifikasikan rasio.
-        terbalik=True berarti nilai BESAR itu baik (mis. margin laba).
+        Klasifikasikan rasio menjadi status beserta warnanya.
+
+        terbalik=False dipakai untuk rasio yang nilainya KECIL itu baik,
+        misalnya rasio utang. terbalik=True untuk yang nilainya BESAR itu
+        baik, misalnya margin laba.
+
+        maks dipakai untuk rasio yang nilainya kecil itu baik, tetapi
+        terlalu kecil juga tidak sehat, misalnya rasio kas: kas negatif
+        berarti utang, bukan kondisi baik. Bila nilai berada di bawah maks,
+        hasilnya dinilai berbahaya.
         """
         if nilai == float("inf"):
             return ("Data tidak memadai", C.TEXT_MUTED)
+
+        # Nilai di bawah batas bawah berarti kondisinya justru berbahaya,
+        # bukan baik. Contohnya rasio kas -0,58x: kasnya negatif.
+        if maks is not None and nilai < maks:
+            return ("Berisiko Tinggi", C.DANGER)
+
         if terbalik:
             if nilai >= baik:
                 return ("Sangat Baik", C.SUCCESS)

@@ -73,8 +73,16 @@ def di_dalam(widget: QWidget, jenis) -> bool:
 
 
 def lebar_teks(widget, teks: str) -> int:
-    """Lebar teks bila dirender dengan font widget."""
-    return QFontMetrics(widget.font()).horizontalAdvance(teks)
+    """
+    Lebar teks bila dirender dengan font widget.
+
+    Tanda "&" ganda pada tombol ditampilkan sebagai satu tanda oleh Qt,
+    jadi lebarnya dihitung setelah dikembalikan ke satu tanda. Tanpa ini,
+    tombol yang memakai "&&" dilaporkan terlalu sempit padahal teksnya
+    muat.
+    """
+    teks_tampil = teks.replace("&&", "&")
+    return QFontMetrics(widget.font()).horizontalAdvance(teks_tampil)
 
 
 def periksa_teks(x: QWidget, asal: str, temuan: list):

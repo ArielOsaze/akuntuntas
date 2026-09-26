@@ -847,17 +847,19 @@ class TemuanCard(QFrame):
     """
 
     # Nama halaman yang cocok untuk tiap kategori temuan, dipakai tombol
-    # tindak lanjut pada kartu.
+    # tindak lanjut pada kartu. Tanda "&" ditulis ganda karena Qt
+    # memperlakukannya sebagai penanda tombol pintas; dengan satu tanda,
+    # teksnya tampil sebagai "Buka Kas _Bank".
     NAMA_HALAMAN = {
         "jurnal": "Buka Jurnal Umum",
-        "kas_bank": "Buka Kas & Bank",
-        "pajak": "Buka Pajak & SPT",
+        "kas_bank": "Buka Kas && Bank",
+        "pajak": "Buka Pajak && SPT",
         "laporan": "Buka Laporan",
         "aset": "Buka Aset Tetap",
         "penjualan": "Buka Penjualan",
         "pembelian": "Buka Pembelian",
-        "mitra": "Buka Pelanggan & Pemasok",
-        "produk": "Buka Produk & Persediaan",
+        "mitra": "Buka Pelanggan && Pemasok",
+        "produk": "Buka Produk && Persediaan",
     }
 
     def __init__(self, temuan, parent=None, ringkas: bool = False,
