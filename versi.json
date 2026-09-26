@@ -1,6 +1,6 @@
 {
-  "versi": "1.2.3",
+  "versi": "1.2.4",
   "build": "2026.09",
   "tanggal": "2026-09-26",
-  "catatan": "Perbaiki penilaian rasio, penulisan angka Indonesia, dan tambah tindak lanjut temuan"
+  "catatan": "Perbaiki pengulangan bentuk badan usaha pada baris status"
 }

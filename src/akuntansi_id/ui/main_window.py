@@ -834,12 +834,30 @@ class MainWindow(QMainWindow):
 
         self._refresh_status()
 
+    def _sebutan_bentuk(self, comp) -> str:
+        """
+        Sebutan bentuk badan usaha untuk baris status.
+
+        Nama perusahaan sering sudah memuat bentuknya sendiri, misalnya
+        "PT Xinet persada". Menambahkan bentuk sekali lagi membuat baris
+        status berbunyi "PT Xinet persada · PT" sehingga tampak salah.
+        Bentuk hanya ditampilkan bila namanya belum menyebutnya.
+        """
+        bentuk = comp["bentuk"]
+        singkat = config.ENTITY_TYPES.get(bentuk, {}).get("singkat", bentuk)
+        nama = (comp["nama"] or "").strip().lower()
+        awal = singkat.lower().split()[0]
+        if nama.startswith(awal + " ") or nama == awal:
+            return ""
+        return singkat
+
     def _refresh_status(self):
         if self.ctx.company:
             comp = self.ctx.company
+            sebutan = self._sebutan_bentuk(comp)
+            tengah = f" · {sebutan}" if sebutan else ""
             self.lbl_perusahaan.setText(
-                f"{comp['nama']} · {config.ENTITY_TYPES.get(comp['bentuk'], {}).get('singkat', comp['bentuk'])} "
-                f"· Tahun pajak {self.ctx.tahun}")
+                f"{comp['nama']}{tengah} · Tahun pajak {self.ctx.tahun}")
             try:
                 cek = acc.total_neraca_saldo(self.ctx.company_id, self.ctx.tahun)
                 if cek["seimbang"]:
