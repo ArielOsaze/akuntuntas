@@ -34,6 +34,47 @@ def periode(tahun: int, bulan: Optional[int] = None) -> tuple[str, str]:
     return f"{tahun}-{bulan:02d}-01", akhir.isoformat()
 
 
+def tanggal_sah(teks) -> tuple[bool, str]:
+    """
+    Periksa apakah teks berupa tanggal yang benar benar ada.
+
+    Yang diperiksa bukan hanya bentuknya, tetapi juga apakah tanggalnya
+    ada pada kalender. Tanggal seperti 2026-02-30 atau bulan 13 berbentuk
+    benar tetapi tidak pernah ada. Bila lolos, entri jurnalnya tidak akan
+    muncul pada laporan periode mana pun, sehingga angkanya hilang dari
+    laporan tanpa ada yang menyadari.
+
+    Mengembalikan (sah, alasan). Alasan berisi keterangan yang dapat
+    ditampilkan kepada pengguna.
+    """
+    if teks is None:
+        return False, "Tanggal wajib diisi."
+
+    bersih = str(teks).strip()
+    if not bersih:
+        return False, "Tanggal wajib diisi."
+
+    # Hanya bentuk YYYY-MM-DD yang diterima, supaya urutannya benar saat
+    # dibandingkan di dalam basis data.
+    if len(bersih) != 10 or bersih[4] != "-" or bersih[7] != "-":
+        return False, ("Tanggal harus ditulis dengan bentuk YYYY-MM-DD, "
+                       "misalnya 2026-01-31.")
+
+    bagian = bersih.split("-")
+    if not all(b.isdigit() and len(b) == n
+               for b, n in zip(bagian, (4, 2, 2))):
+        return False, ("Tanggal harus berupa angka dengan bentuk "
+                       "YYYY-MM-DD, misalnya 2026-01-31.")
+
+    try:
+        date(int(bagian[0]), int(bagian[1]), int(bagian[2]))
+    except ValueError:
+        return False, (f"Tanggal {bersih} tidak ada pada kalender. "
+                       "Periksa kembali bulan dan harinya.")
+
+    return True, ""
+
+
 # ==========================================================================
 # VALIDASI JURNAL (DOUBLE-ENTRY)
 # ==========================================================================
@@ -130,6 +171,13 @@ def simpan_jurnal(company_id: int, tanggal: str, no_bukti: str, keterangan: str,
         v = validasi_jurnal(baris, company_id)
         if not v.valid:
             raise ValueError("\n".join(v.errors))
+
+        # Tanggal diperiksa terpisah, karena tidak termasuk kaidah
+        # double-entry. Entri bertanggal tidak sah tidak akan muncul pada
+        # laporan periode mana pun, sehingga angkanya hilang tanpa jejak.
+        sah, alasan = tanggal_sah(tanggal)
+        if not sah:
+            raise ValueError(alasan)
 
     with db.tx() as conn:
         cur = conn.execute(
@@ -759,29 +807,51 @@ def rekap_ppn_bulanan(company_id: int, tahun: int) -> list[dict]:
 # ==========================================================================
 def buku_besar(company_id: int, kode_akun: str, tahun: int,
                bulan: Optional[int] = None) -> list[dict]:
-    """Riwayat mutasi satu akun dengan saldo berjalan."""
+    """
+    Riwayat mutasi satu akun dengan saldo berjalan.
+
+    Saldo dinyatakan pada sisi normal akun, sama seperti pada neraca saldo.
+    Akun bersaldo normal kredit, misalnya pendapatan dan utang, karena itu
+    menunjukkan saldo positif saat bertambah. Tanpa penyesuaian ini, akun
+    pendapatan menampilkan saldo negatif meskipun usahanya memperoleh
+    pendapatan, sehingga angkanya sulit dibaca dan tampak seperti kerugian.
+    """
     awal, akhir = periode(tahun, bulan)
     akun = db.q1("SELECT * FROM accounts WHERE company_id=? AND kode=?",
                  (company_id, kode_akun))
     if akun is None:
         return []
-    saldo = akun["saldo_awal"]
+
+    # Saldo awal disimpan sebagai nilai positif pada sisi normal akun.
+    # Untuk akun bersaldo normal kredit, nilainya harus dibalik lebih dulu
+    # supaya penambahan berikutnya menghitung ke arah yang benar.
+    def ke_net(nilai: int) -> int:
+        return -nilai if akun["normal"] == "Kredit" else nilai
+
+    def ke_normal(nilai: int) -> int:
+        return -nilai if akun["normal"] == "Kredit" else nilai
+
+    saldo_net = ke_net(akun["saldo_awal"])
     baris = [{
         "tanggal": awal, "no_bukti": "", "keterangan": "SALDO AWAL",
-        "debit": 0, "kredit": 0, "saldo": saldo, "awal": True,
+        "debit": 0, "kredit": 0, "saldo": ke_normal(saldo_net),
+        "saldo_net": saldo_net, "awal": True,
     }]
+
     rows = db.q(
         """SELECT je.tanggal, je.no_bukti, je.keterangan, jl.debit, jl.kredit
            FROM journal_lines jl JOIN journal_entries je ON je.id=jl.entry_id
            WHERE jl.company_id=? AND jl.kode_akun=? AND je.tanggal BETWEEN ? AND ?
            ORDER BY je.tanggal, je.id""",
         (company_id, kode_akun, awal, akhir))
+
     for r in rows:
-        saldo += r["debit"] - r["kredit"]
+        saldo_net += r["debit"] - r["kredit"]
         baris.append({
             "tanggal": r["tanggal"], "no_bukti": r["no_bukti"],
             "keterangan": r["keterangan"], "debit": r["debit"],
-            "kredit": r["kredit"], "saldo": saldo, "awal": False,
+            "kredit": r["kredit"], "saldo": ke_normal(saldo_net),
+            "saldo_net": saldo_net, "awal": False,
         })
     return baris
 

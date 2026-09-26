@@ -112,6 +112,7 @@ def ex(sql: str, params: Iterable = ()) -> sqlite3.Cursor:
     datanya sudah berubah dan perlu dimuat ulang, tanpa perlu memuat ulang
     setiap kali menu dibuka.
     """
+    _periksa_tanggal(sql, params)
     kursor = get_conn().execute(sql, tuple(params))
 
     # Perintah yang mengubah data dikenali dari katanya. Pembacaan tidak
@@ -122,6 +123,58 @@ def ex(sql: str, params: Iterable = ()) -> sqlite3.Cursor:
         _naikkan_revisi()
 
     return kursor
+
+
+# Nama kolom yang memuat tanggal. Nilai pada kolom ini harus berupa tanggal
+# yang benar benar ada pada kalender.
+KOLOM_TANGGAL = (
+    "tanggal", "tanggal_bayar", "tanggal_balik", "tanggal_jatuh",
+    "tanggal_perolehan", "tanggal_pendirian", "tanggal_npwp",
+    "tanggal_mulai", "tanggal_akhir", "tanggal_selesai", "tanggal_kontrak",
+    "tanggal_faktur", "tanggal_bayar_pajak", "masa_awal", "masa_akhir",
+    "jatuh_tempo", "berlaku_sampai",
+)
+
+
+def _periksa_tanggal(sql: str, params: Iterable) -> None:
+    """
+    Tolak penulisan tanggal yang tidak ada pada kalender.
+
+    Pemeriksaan ini diletakkan di lapisan basis data, bukan di tiap fungsi
+    penyimpanan, karena fungsi penyimpanan jumlahnya puluhan dan mudah ada
+    yang terlewat. Semua penulisan melewati fungsi ini.
+
+    Hanya nilai yang berbentuk mirip tanggal yang diperiksa, yaitu teks
+    sepuluh huruf dengan tanda hubung pada posisi yang benar. Nilai lain
+    dibiarkan, karena kolom tanggal kadang diisi teks kosong untuk data
+    yang belum lengkap.
+    """
+    if not params:
+        return
+
+    teks_sql = sql.lower()
+    nama_kolom = [k for k in KOLOM_TANGGAL if k in teks_sql]
+    if not nama_kolom:
+        return
+
+    for nilai in params:
+        if not isinstance(nilai, str):
+            continue
+        bersih = nilai.strip()
+        # Hanya bentuk tanggal yang diperiksa.
+        if len(bersih) != 10 or bersih[4] != "-" or bersih[7] != "-":
+            continue
+        bagian = bersih.split("-")
+        if not all(b.isdigit() and len(b) == n
+                   for b, n in zip(bagian, (4, 2, 2))):
+            continue
+        try:
+            from datetime import date
+            date(int(bagian[0]), int(bagian[1]), int(bagian[2]))
+        except ValueError:
+            raise ValueError(
+                f"Tanggal {bersih} tidak ada pada kalender. "
+                "Periksa kembali bulan dan harinya.") from None
 
 
 # Penanda revisi data. Dipakai antarmuka untuk mengetahui bahwa isi basis

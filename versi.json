@@ -1,6 +1,6 @@
 {
-  "versi": "1.1.4",
+  "versi": "1.1.5",
   "build": "2026.09",
   "tanggal": "2026-09-26",
-  "catatan": "Perusahaan lama otomatis mendapat akun baru saat aplikasi diperbarui"
+  "catatan": "Perbaikan: tanggal tidak sah ditolak, saldo buku besar pada sisi normal akun"
 }
