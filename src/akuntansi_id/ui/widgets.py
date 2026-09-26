@@ -846,7 +846,22 @@ class TemuanCard(QFrame):
     dampak, dan dasar hukum, dipakai di halaman Analisis Keuangan.
     """
 
-    def __init__(self, temuan, parent=None, ringkas: bool = False):
+    # Nama halaman yang cocok untuk tiap kategori temuan, dipakai tombol
+    # tindak lanjut pada kartu.
+    NAMA_HALAMAN = {
+        "jurnal": "Buka Jurnal Umum",
+        "kas_bank": "Buka Kas & Bank",
+        "pajak": "Buka Pajak & SPT",
+        "laporan": "Buka Laporan",
+        "aset": "Buka Aset Tetap",
+        "penjualan": "Buka Penjualan",
+        "pembelian": "Buka Pembelian",
+        "mitra": "Buka Pelanggan & Pemasok",
+        "produk": "Buka Produk & Persediaan",
+    }
+
+    def __init__(self, temuan, parent=None, ringkas: bool = False,
+                 buka_halaman=None):
         super().__init__(parent)
         self.setObjectName("TemuanCard")
         warna, bg = theme.STATUS_COLORS.get(temuan.tingkat, (C.TEXT_MUTED, C.NEUTRAL_BG))
@@ -915,6 +930,42 @@ class TemuanCard(QFrame):
                     f"color: {C.PRIMARY_DARK}; font-size: {theme.FS_TINY}px; "
                     "font-style: italic; background: transparent;")
                 dalam.addWidget(lbl_h)
+
+        # Tombol tindak lanjut: membuka halaman yang paling relevan untuk
+        # menindaklanjuti temuan ini. Tanpa tombol ini, pengguna harus
+        # mencari sendiri halamannya dari menu.
+        halaman = getattr(temuan, "halaman", "")
+        if halaman and buka_halaman is not None and not ringkas:
+            baris_aksi = QHBoxLayout()
+            baris_aksi.setContentsMargins(0, 0, 0, 0)
+            baris_aksi.setSpacing(8)
+
+            teks_tombol = self.NAMA_HALAMAN.get(halaman, "Buka Halaman")
+            btn = QPushButton(teks_tombol)
+            btn.setCursor(Qt.PointingHandCursor)
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    padding: 8px 16px;
+                    border-radius: 8px;
+                    border: 1px solid {C.PRIMARY};
+                    background: {C.SURFACE};
+                    color: {C.PRIMARY_DARK};
+                    font-size: {theme.FS_SMALL}px;
+                    font-weight: 600;
+                }}
+                QPushButton:hover {{
+                    background: {C.PRIMARY};
+                    color: {C.TEXT_INVERSE};
+                }}
+                QPushButton:pressed {{
+                    background: {C.PRIMARY_DARK};
+                    color: {C.TEXT_INVERSE};
+                }}
+            """)
+            btn.clicked.connect(lambda _=False, h=halaman: buka_halaman(h))
+            baris_aksi.addWidget(btn)
+            baris_aksi.addStretch()
+            dalam.addLayout(baris_aksi)
 
         lay.addWidget(isi)
         self.setStyleSheet(
@@ -1201,7 +1252,8 @@ class PageHeader(QWidget):
         self._wadah_aksi.setMinimumWidth(self.aksi.sizeHint().width())
         return tombol
 
-    def pasang_ekspor_cetak(self, halaman, judul: str = "", nama_tabel=None):
+    def pasang_ekspor_cetak(self, halaman, judul: str = "", nama_tabel=None,
+                            kumpulkan=None):
         """
         Tambahkan tombol Ekspor dan Cetak ke header halaman ini.
 
@@ -1215,6 +1267,10 @@ class PageHeader(QWidget):
                     judul halaman
         nama_tabel: atribut tabel pada halaman; kosong berarti mencari
                     sendiri tabel pertama yang ditemukan
+        kumpulkan : fungsi yang mengembalikan daftar (nama bagian, baris
+                    tabel) untuk halaman yang isinya bukan tabel, misalnya
+                    dashboard yang seluruhnya berupa kartu angka. Bila
+                    diisi, nama_tabel diabaikan.
         """
         from .ekspor_cetak import (cetak_halaman, ekspor_halaman,
                                    tabel_dari_widget)
@@ -1223,6 +1279,12 @@ class PageHeader(QWidget):
         self._judul_ekspor = judul or self.lbl_judul.text()
 
         def ambil_data():
+            # Halaman yang isinya bukan tabel menyediakan datanya sendiri.
+            if kumpulkan is not None:
+                try:
+                    return kumpulkan()
+                except Exception:
+                    return []
             tabel = self._cari_tabel(nama_tabel)
             if tabel is None:
                 return []

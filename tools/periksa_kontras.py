@@ -56,11 +56,38 @@ def rasio(warna_teks: QColor, warna_latar: QColor) -> float:
 
 
 def warna_teks(widget) -> QColor:
-    """Warna teks dari gaya inline, gaya tema, atau palet widget."""
-    for gaya in (widget.styleSheet(),):
+    """
+    Warna teks dari gaya inline, gaya tema, atau palet widget.
+
+    Bila widget sedang dalam keadaan menyala (tombol :checked), warna yang
+    benar benar tampil adalah warna pada keadaan itu, bukan warna keadaan
+    normal. Tanpa memperhitungkannya, tombol yang menyala akan dinilai
+    memakai warna teks keadaan normal.
+    """
+    gaya = widget.styleSheet()
+    if gaya:
+        menyala = False
+        try:
+            menyala = bool(widget.isChecked())
+        except AttributeError:
+            menyala = False
+
+        if menyala:
+            # Cari blok :checked pada gaya inline.
+            for blok in gaya.split("}"):
+                if ":checked" not in blok:
+                    continue
+                # Keadaan :checked:hover lebih khusus, jadi diperiksa lebih
+                # dulu bila penunjuk sedang di atasnya; tanpa penunjuk,
+                # blok :checked biasa yang dipakai.
+                warna = _dari_gaya(blok.split("{")[-1], "color")
+                if warna is not None:
+                    return warna
+
         warna = _dari_gaya(gaya, "color")
         if warna is not None:
             return warna
+
     nama = widget.objectName()
     if nama:
         for bagian in theme.stylesheet().split("}"):

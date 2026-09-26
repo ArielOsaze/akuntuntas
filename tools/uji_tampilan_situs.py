@@ -343,6 +343,13 @@ def main() -> int:
     # Sitemap memuat halaman kontak.
     sm = (WEB / "sitemap.xml").read_text(encoding="utf-8")
     p.cek("halaman kontak terdaftar di sitemap", "/kontak" in sm)
+
+    # Perbandingan memuat fitur analisis, karena fitur itu ada di aplikasi
+    # tetapi sebelumnya tidak disebutkan di situs.
+    p.cek("perbandingan menyebut analisis kesehatan keuangan",
+          "Analisis kesehatan keuangan" in html)
+    p.cek("beranda menyebut analisis kesehatan keuangan",
+          "Analisis Kesehatan Keuangan" in html)
     print()
 
     # ------------------------------------------------------------------

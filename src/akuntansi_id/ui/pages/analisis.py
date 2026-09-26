@@ -9,9 +9,10 @@ from __future__ import annotations
 from datetime import datetime
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QBrush, QColor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QFrame,
-    QGridLayout, QSizePolicy, QTabWidget,
+    QGridLayout, QSizePolicy, QTabWidget, QTableWidgetItem, QPushButton,
 )
 
 from ... import services
@@ -49,6 +50,11 @@ class AnalisisPage(QWidget):
         btn = w.tombol("Muat Ulang", ikon="segarkan")
         btn.clicked.connect(self.muat)
         self.header.tambah_aksi(btn)
+
+        # Ekspor dan cetak memakai jalur yang sama dengan halaman lain,
+        # sehingga hasil analisis dapat disimpan atau dilampirkan ke
+        # laporan tanpa harus difoto layar.
+        self.header.pasang_ekspor_cetak(self, "Analisis Kesehatan Keuangan")
 
         kepala = QWidget()
         theme.latar(kepala, f"background: {C.SURFACE}; "
@@ -186,13 +192,101 @@ class AnalisisPage(QWidget):
                   ("peringatan", " Perlu Perhatian"),
                   ("saran", " Saran Perbaikan"),
                   ("baik", " Kondisi Baik")]
+
+        # Penyaring tingkat temuan. Bila temuan bertambah banyak, pengguna
+        # dapat memusatkan perhatian pada satu tingkat saja tanpa harus
+        # menggulir seluruh daftar.
+        jumlah_per_tingkat = {
+            "semua": len(a.temuan),
+            "kritis": a.jumlah_kritis,
+            "peringatan": a.jumlah_peringatan,
+            "saran": a.jumlah_saran,
+            "baik": a.jumlah_baik,
+        }
+        ada_pilihan = sum(1 for t, _ in urutan if jumlah_per_tingkat[t] > 0)
+        self._saring = "semua"
+        self._kotak_temuan: list = []
+
+        if ada_pilihan > 1:
+            baris_saring = QHBoxLayout()
+            baris_saring.setSpacing(8)
+
+            lbl_saring = QLabel("Tampilkan:")
+            lbl_saring.setStyleSheet(
+                f"color: {C.TEXT_MUTED}; font-size: {theme.FS_SMALL}px; "
+                "background: transparent;")
+            baris_saring.addWidget(lbl_saring)
+
+            self._tombol_saring: dict = {}
+            for kunci, teks in (("semua", "Semua"),
+                                ("kritis", "Kritis"),
+                                ("peringatan", "Perhatian"),
+                                ("saran", "Saran"),
+                                ("baik", "Baik")):
+                jumlah = jumlah_per_tingkat.get(kunci, 0)
+                if kunci != "semua" and jumlah == 0:
+                    continue
+                b = QPushButton(f"{teks} ({jumlah})")
+                b.setCheckable(True)
+                b.setChecked(kunci == "semua")
+                b.setCursor(Qt.PointingHandCursor)
+                b.clicked.connect(
+                    lambda _=False, k=kunci: self._saring_temuan(k))
+                # Tombol yang sedang dipakai diberi warna tegas, sedangkan
+                # yang tidak dipakai dibuat netral. Seluruh keadaan ditulis
+                # lengkap supaya gaya umum QPushButton pada theme.py tidak
+                # menimpanya, dan warna hurufnya disebut ulang pada keadaan
+                # :checked agar teksnya tetap terbaca di atas latar biru.
+                b.setStyleSheet(f"""
+                    QPushButton {{
+                        padding: 7px 15px;
+                        border-radius: 8px;
+                        border: 1px solid {C.BORDER};
+                        background: {C.SURFACE};
+                        color: {C.TEXT_MUTED};
+                        font-size: {theme.FS_SMALL}px;
+                        font-weight: 600;
+                    }}
+                    QPushButton:hover {{
+                        background: {C.SURFACE_ALT};
+                        border-color: {C.PRIMARY};
+                        color: {C.PRIMARY_DARK};
+                    }}
+                    QPushButton:pressed {{
+                        background: {C.NEUTRAL_BG};
+                        color: {C.TEXT};
+                    }}
+                    QPushButton:checked {{
+                        background: {C.PRIMARY};
+                        border-color: {C.PRIMARY};
+                        color: {C.TEXT_INVERSE};
+                    }}
+                    QPushButton:checked:hover {{
+                        background: {C.PRIMARY_DARK};
+                        border-color: {C.PRIMARY_DARK};
+                        color: {C.TEXT_INVERSE};
+                    }}
+                """)
+                baris_saring.addWidget(b)
+                self._tombol_saring[kunci] = b
+
+            baris_saring.addStretch()
+            lay.addLayout(baris_saring)
+
         for tingkat, judul in urutan:
             grup = [t for t in a.temuan if t.tingkat == tingkat]
             if not grup:
                 continue
-            lay.addWidget(self._judul_seksi(judul, len(grup)))
+            kepala_seksi = self._judul_seksi(judul, len(grup))
+            lay.addWidget(kepala_seksi)
+
+            kartu_tingkat = []
             for t in grup:
-                lay.addWidget(w.TemuanCard(t))
+                kartu = w.TemuanCard(
+                    t, buka_halaman=self._buka_halaman_temuan)
+                lay.addWidget(kartu)
+                kartu_tingkat.append(kartu)
+            self._kotak_temuan.append((tingkat, kepala_seksi, kartu_tingkat))
 
         if not a.temuan:
             lay.addWidget(w.InfoBanner(
@@ -200,6 +294,24 @@ class AnalisisPage(QWidget):
                 "ok", "Semua pemeriksaan terlewati"))
 
         lay.addStretch()
+
+    def _buka_halaman_temuan(self, kode: str):
+        """Buka halaman yang berkaitan dengan temuan yang sedang dibaca."""
+        if kode:
+            self.pindah_halaman.emit(kode)
+
+    def _saring_temuan(self, tingkat: str):
+        """Tampilkan hanya temuan pada tingkat yang dipilih."""
+        self._saring = tingkat
+
+        for kunci, tombol in getattr(self, "_tombol_saring", {}).items():
+            tombol.setChecked(kunci == tingkat)
+
+        for tkt, kepala, kartu_list in getattr(self, "_kotak_temuan", []):
+            tampil = tingkat == "semua" or tkt == tingkat
+            kepala.setVisible(tampil)
+            for kartu in kartu_list:
+                kartu.setVisible(tampil)
 
     def _judul_seksi(self, judul: str, jumlah: int) -> QWidget:
         wdg = QWidget()
@@ -369,7 +481,109 @@ class AnalisisPage(QWidget):
         kartu4.body().addLayout(baris2)
         lay.addWidget(kartu4)
 
+        # ------------------------------------------------------------
+        # Tabel ringkas seluruh rasio. Berguna untuk dua hal: pengunjung
+        # dapat melihat seluruh rasio sekaligus dalam satu pandangan, dan
+        # tombol Ekspor pada kepala halaman memakai tabel ini sebagai
+        # sumber datanya.
+        # ------------------------------------------------------------
+        lay.addWidget(self._judul_seksi(
+            "Ringkasan Seluruh Rasio", 0))
+        lay.addWidget(self._tabel_rasio(r))
+
         lay.addStretch()
+
+    def _tabel_rasio(self, r) -> QWidget:
+        """Tabel seluruh rasio beserta nilainya, status, dan acuannya."""
+        kartu = w.Card()
+
+        def baris_rasio(nama, nilai, status, warna, acuan):
+            return nama, nilai, status, warna, acuan
+
+        daftar = []
+
+        rl = r["rasio_lancar"]
+        t = ("Tidak ada utang jangka pendek" if rl == float("inf")
+             else f"{rl:.2f}x")
+        s, wrn = self._nilai_rasio(rl, baik=2.0, cukup=1.5, bahaya=1.0, teks=t)
+        daftar.append(baris_rasio("Rasio Lancar", t, s, wrn,
+                                  "di atas 1,50x"))
+
+        rk = r["rasio_kas"]
+        t = ("Tidak ada utang jangka pendek" if rk == float("inf")
+             else f"{rk:.2f}x")
+        s, wrn = self._nilai_rasio(rk, baik=1.0, cukup=0.5, bahaya=0.25, teks=t)
+        daftar.append(baris_rasio("Rasio Kas", t, s, wrn, "di atas 1,00x"))
+
+        mk = r["margin_kotor"]
+        s, wrn = self._nilai_rasio(mk, baik=0.30, cukup=0.20, bahaya=0.10,
+                                   teks=theme.persen(mk), terbalik=True)
+        daftar.append(baris_rasio("Margin Kotor", theme.persen(mk), s, wrn,
+                                  "di atas 30%"))
+
+        mo = r["margin_operasional"]
+        s, wrn = self._nilai_rasio(mo, baik=0.15, cukup=0.08, bahaya=0.02,
+                                   teks=theme.persen(mo), terbalik=True)
+        daftar.append(baris_rasio("Margin Operasional", theme.persen(mo),
+                                  s, wrn, "di atas 15%"))
+
+        mb = r["margin_bersih"]
+        s, wrn = self._nilai_rasio(mb, baik=0.10, cukup=0.04, bahaya=0.0,
+                                   teks=theme.persen(mb), terbalik=True)
+        daftar.append(baris_rasio("Margin Bersih", theme.persen(mb), s, wrn,
+                                  "di atas 10%"))
+
+        roa = r["roa"]
+        s, wrn = self._nilai_rasio(roa, baik=0.10, cukup=0.04, bahaya=0.0,
+                                   teks=theme.persen(roa), terbalik=True)
+        daftar.append(baris_rasio("ROA", theme.persen(roa), s, wrn,
+                                  "di atas 10%"))
+
+        der = r["rasio_utang_ekuitas"]
+        t = ("Tidak ada utang" if der == 0 else
+             ("Ekuitas negatif" if der == float("inf") else f"{der:.2f}x"))
+        s, wrn = self._nilai_rasio(der, baik=0.5, cukup=1.5, bahaya=3.0, teks=t)
+        daftar.append(baris_rasio("Rasio Utang terhadap Ekuitas", t, s, wrn,
+                                  "di bawah 1,50x"))
+
+        roe = r["roe"]
+        s, wrn = self._nilai_rasio(roe, baik=0.15, cukup=0.08, bahaya=0.0,
+                                   teks=theme.persen(roe), terbalik=True)
+        daftar.append(baris_rasio("ROE", theme.persen(roe), s, wrn,
+                                  "di atas 15%"))
+
+        rua = r["rasio_utang_aset"]
+        s, wrn = self._nilai_rasio(rua, baik=0.3, cukup=0.6, bahaya=0.8,
+                                   teks=theme.persen(rua))
+        daftar.append(baris_rasio("Rasio Utang terhadap Aset",
+                                  theme.persen(rua), s, wrn, "di bawah 60%"))
+
+        bp = r["beban_terhadap_pendapatan"]
+        s, wrn = self._nilai_rasio(bp, baik=0.75, cukup=0.9, bahaya=1.0,
+                                   teks=theme.persen(bp))
+        daftar.append(baris_rasio("Beban terhadap Pendapatan",
+                                  theme.persen(bp), s, wrn, "di bawah 75%"))
+
+        tabel = w.Tabel([("Rasio", -1), ("Nilai", 130),
+                         ("Status", 170), ("Acuan Sehat", 150)])
+        tabel.setObjectName("tabel_rasio")
+        tabel.setRowCount(len(daftar))
+        for i, (nama, nilai, status, warna, acuan) in enumerate(daftar):
+            tabel.setItem(i, 0, QTableWidgetItem(nama))
+
+            it_n = QTableWidgetItem(nilai)
+            it_n.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            tabel.setItem(i, 1, it_n)
+
+            it_s = QTableWidgetItem(status)
+            it_s.setForeground(QBrush(QColor(warna)))
+            tabel.setItem(i, 2, it_s)
+
+            tabel.setItem(i, 3, QTableWidgetItem(acuan))
+        tabel.setMinimumHeight(360)
+
+        kartu.body().addWidget(tabel)
+        return kartu
 
     def _nilai_rasio(self, nilai: float, baik: float, cukup: float, bahaya: float,
                      teks: str, terbalik: bool = False) -> tuple[str, str]:

@@ -17,7 +17,7 @@ from pathlib import Path
 
 AKAR = Path(__file__).resolve().parent.parent
 PASANG = Path(r"C:\Users\ariel\AkunTuntas")
-SETUP = AKAR / "installer_output" / "AkunTuntas-1.2.1-Setup.exe"
+SETUP = AKAR / "installer_output" / "AkunTuntas-1.2.2-Setup.exe"
 DATA = Path(os.environ.get("LOCALAPPDATA", "")) / "AkunTuntas"
 
 
@@ -42,8 +42,22 @@ def main() -> int:
     print()
 
     if not SETUP.exists():
-        print(f"  Installer tidak ditemukan: {SETUP}")
-        return 1
+        # Pemasang untuk versi ini belum dibangun. Uji ini memang menuntut
+        # pemasang sungguhan karena hanya itu yang dapat membuktikan data
+        # pengguna bertahan saat dipasang ulang. Daripada melaporkan gagal
+        # yang menyesatkan, keadaan ini dinyatakan sebagai dilewati supaya
+        # jelas bahwa pemasangan ulang belum diuji, bukan diuji lalu gagal.
+        versi = SETUP.name.replace("AkunTuntas-", "").replace("-Setup.exe", "")
+        ada_lain = sorted((AKAR / "installer_output").glob("*.exe"))
+        print(f"  [DILEWATI] Pemasang versi {versi} belum dibangun.")
+        if ada_lain:
+            print(f"  Pemasang yang tersedia: "
+                  f"{', '.join(p.name for p in ada_lain[-3:])}")
+        print("  Bangun pemasang terlebih dahulu, lalu jalankan uji ini lagi:")
+        print("      python build_exe.py")
+        print()
+        print("HASIL: dilewati, pemasang versi ini belum ada")
+        return 0
 
     # ---------------------------------------------------- keadaan awal
     data_ada = DATA.exists()

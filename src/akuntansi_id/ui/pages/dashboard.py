@@ -401,6 +401,29 @@ class BarChart(QWidget):
 # ==========================================================================
 # DASHBOARD
 # ==========================================================================
+def _angka_dari(teks: str):
+    """
+    Ubah teks angka gaya Indonesia menjadi angka.
+
+    Dipakai untuk data ekspor: "Rp1.074.469.000" menjadi 1074469000 dan
+    "44,9%" menjadi 0.449, sehingga Excel dapat menjumlahkannya. Teks
+    yang bukan angka dikembalikan apa adanya.
+    """
+    if not teks:
+        return teks
+    bersih = str(teks).strip()
+    persen = bersih.endswith("%")
+    bersih = (bersih.replace("Rp", "").replace("%", "")
+              .replace(" ", "").replace(".", "").replace(",", "."))
+    try:
+        angka = float(bersih)
+    except ValueError:
+        return teks
+    if persen:
+        return angka / 100
+    return int(angka) if angka == int(angka) else angka
+
+
 class DashboardPage(QWidget):
     pindah_halaman = Signal(str)
 
@@ -430,6 +453,14 @@ class DashboardPage(QWidget):
         self.cmb_tahun.currentIndexChanged.connect(self._ganti_tahun)
         self.cmb_tahun.setMinimumWidth(105)
         self.header.tambah_aksi(self.cmb_tahun)
+
+        # Ekspor dan cetak memakai jalur yang sama dengan halaman lain,
+        # sehingga ringkasan dashboard dapat disimpan atau dilampirkan ke
+        # laporan tanpa harus difoto layar. Isi dashboard berupa kartu
+        # angka, bukan tabel, jadi datanya dikumpulkan lewat fungsi.
+        self._ringkasan_ekspor: list = []
+        self.header.pasang_ekspor_cetak(
+            self, "Dashboard", kumpulkan=lambda: self._ringkasan_ekspor)
 
         kepala = QWidget()
         theme.latar(kepala, f"background: {C.SURFACE}; "
@@ -882,6 +913,19 @@ class DashboardPage(QWidget):
         for i, (label, nilai, hint, warna, ikon) in enumerate(tiles):
             grid.addWidget(w.KpiTile(label, nilai, hint, warna, ikon),
                            i // 3, i % 3)
+
+        # Data untuk tombol Ekspor dan Cetak. Seluruh isinya sudah tampil
+        # sebagai kartu di atas, jadi tidak perlu widget tambahan; yang
+        # disimpan hanya barisnya, dan angka tetap berupa angka supaya
+        # dapat dijumlahkan di Excel.
+        self._ringkasan_ekspor = [
+            ("Dashboard", [
+                ["Ringkasan", "Nilai", "Keterangan"],
+                ["Perusahaan", comp["nama"], f"Tahun pajak {tahun}"],
+                *[[label, _angka_dari(nilai), hint]
+                  for label, nilai, hint, _w, _i in tiles],
+            ])
+        ]
 
         # peringatan integritas data
         if abs(kpi["selisih_jurnal"]) > 0.5 or abs(kpi["selisih_neraca"]) >= 1:

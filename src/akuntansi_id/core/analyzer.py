@@ -40,6 +40,10 @@ class Temuan:
     dampak: str = ""
     dasar_hukum: str = ""
     angka: str = ""
+    # Kode halaman yang paling relevan untuk menindaklanjuti temuan ini,
+    # dipakai tombol aksi cepat pada kartu temuan. Kosong berarti tidak ada
+    # halaman yang cocok.
+    halaman: str = ""
 
     @property
     def ikon(self) -> str:
@@ -229,6 +233,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
     if jml_jurnal == 0:
         T.append(Temuan(
             tingkat="peringatan", kategori="Pembukuan",
+                halaman="jurnal",
             judul=f"Belum ada transaksi tercatat pada tahun {tahun}",
             penjelasan=(
                 "Aplikasi tidak menemukan satu pun jurnal untuk tahun ini. Laporan "
@@ -257,6 +262,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
     if akun_tanpa_saldo > 0 and jml_jurnal > 0:
         T.append(Temuan(
             tingkat="saran", kategori="Pembukuan",
+                halaman="jurnal",
             judul=f"{akun_tanpa_saldo} akun neraca belum memiliki saldo awal",
             penjelasan=(
                 "Beberapa akun aset/liabilitas/ekuitas belum diisi saldo awal dan belum "
@@ -344,6 +350,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
         elif rl >= 2.0:
             T.append(Temuan(
                 tingkat="baik", kategori="Likuiditas",
+                halaman="kas_bank",
                 judul="Likuiditas kuat",
                 penjelasan=(
                     f"Rasio lancar {rl:.2f}x - aset lancar jauh melebihi kewajiban "
@@ -355,6 +362,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
         elif rl < 1.5:
             T.append(Temuan(
                 tingkat="saran", kategori="Likuiditas",
+                halaman="kas_bank",
                 judul="Likuiditas perlu diperhatikan",
                 penjelasan=(
                     f"Rasio lancar {rl:.2f}x. Masih di atas 1 tetapi di bawah angka "
@@ -439,6 +447,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
         elif lr.margin_bersih >= 0.15:
             T.append(Temuan(
                 tingkat="baik", kategori="Profitabilitas",
+                halaman="laporan",
                 judul="Margin laba bersih sehat",
                 penjelasan=(
                     f"Margin laba bersih {lr.margin_bersih * 100:.1f}% - di atas 15%, "
@@ -469,6 +478,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
         if rasio["beban_terhadap_pendapatan"] > 0.95:
             T.append(Temuan(
                 tingkat="peringatan", kategori="Profitabilitas",
+                halaman="laporan",
                 judul="Beban menyerap hampir seluruh pendapatan",
                 penjelasan=(
                     f"Total HPP + beban operasional = "
@@ -506,6 +516,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
         elif der > 1.5:
             T.append(Temuan(
                 tingkat="saran", kategori="Solvabilitas",
+                halaman="laporan",
                 judul="Struktur modal cukup berutang",
                 penjelasan=(
                     f"Rasio utang/ekuitas {der:.2f}x. Masih terkendali, tetapi perlu "
@@ -628,6 +639,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
     if comp["skema_pph"] == "final_umkm" and not comp["final_eligible"]:
         T.append(Temuan(
             tingkat="kritis", kategori="Pajak",
+                halaman="pajak",
             judul="Skema PPh Final 0,5% dipilih tetapi kelayakan belum dikonfirmasi",
             penjelasan=(
                 "Perusahaan memakai skema PPh Final 0,5% padahal kelayakannya belum "
@@ -653,6 +665,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
     if tanpa_keterangan > 0:
         T.append(Temuan(
             tingkat="saran", kategori="Kualitas Data",
+                halaman="jurnal",
             judul=f"{tanpa_keterangan} jurnal tanpa keterangan",
             penjelasan=(
                 "Beberapa jurnal tidak memiliki keterangan transaksi. Ini menyulitkan "
@@ -690,6 +703,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
     if jml_aset == 0:
         T.append(Temuan(
             tingkat="saran", kategori="Aset Tetap",
+                halaman="aset",
             judul="Belum ada aset tetap yang didaftarkan",
             penjelasan=(
                 "Tidak ada aset tetap tercatat. Bila usaha memiliki peralatan, "
@@ -716,6 +730,7 @@ def analisis_kesehatan(company_id: int, tahun: int,
         if kom == 0 and fis == 0:
             T.append(Temuan(
                 tingkat="peringatan", kategori="Aset Tetap",
+                halaman="aset",
                 judul=f"Penyusutan aset tahun {tahun} belum dihitung",
                 penjelasan=(
                     f"Ada {jml_aset} aset tetap terdaftar tetapi belum ada perhitungan "
@@ -907,6 +922,26 @@ def analisis_kesehatan(company_id: int, tahun: int,
     bobot = {"kritis": 15, "peringatan": 6, "saran": 2, "baik": 0}
     penalti = sum(bobot[t.tingkat] for t in T)
     hasil.skor = max(0, min(100, 100 - penalti))
+
+    # Halaman tindak lanjut diisi dari kategorinya bila belum diisi saat
+    # temuan dibuat. Dengan begitu setiap temuan pasti menunjuk ke halaman
+    # yang tepat, dan tombol aksi cepat pada kartu temuan selalu berguna.
+    peta_halaman = {
+        "Kas": "kas_bank",
+        "Likuiditas": "kas_bank",
+        "Rekonsiliasi": "kas_bank",
+        "Profitabilitas": "laporan",
+        "Solvabilitas": "laporan",
+        "Pajak": "pajak",
+        "Kepatuhan": "pajak",
+        "Aset Tetap": "aset",
+        "Pembukuan": "jurnal",
+        "Kualitas Data": "jurnal",
+    }
+    for t in T:
+        if not t.halaman:
+            t.halaman = peta_halaman.get(t.kategori, "jurnal")
+
     hasil.temuan = sorted(T, key=lambda t: {"kritis": 0, "peringatan": 1,
                                             "saran": 2, "baik": 3}[t.tingkat])
 
