@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hubungi Kami - AkunTuntas</title>
 <meta name="description" content="Hubungi tim AkunTuntas untuk pembelian lisensi, pertanyaan teknis, atau penawaran khusus untuk kantor akuntan dan konsultan pajak.">
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 <style>
     /* Kepala halaman diberi sapuan warna lembut supaya bagian ini punya
        kedalaman, bukan sekadar latar putih rata. */
@@ -63,6 +63,10 @@
            kosong menganga di bawahnya. */
         grid-template-rows: auto auto 1fr;
         align-content: start;
+        /* Anak kisi secara bawaan tidak mau menyusut lebih kecil dari
+           isinya, sehingga pada layar sempit isinya memaksa halaman
+           meluber. */
+        min-width: 0;
     }
 
     /* Kartu jalan cepat: dapat ditekan, dengan penanda warna pada ikon. */
@@ -76,6 +80,7 @@
         padding: 20px 21px;
         text-decoration: none;
         transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+        min-width: 0;
     }
 
     .kontak-jalan:hover {
@@ -105,6 +110,14 @@
     /* WhatsApp memakai warna mereknya sendiri supaya langsung dikenali. */
     .kontak-jalan.wa .kontak-jalan-ikon { background: #E3F6EA; }
     .kontak-jalan.wa .kontak-jalan-ikon svg { stroke: #128C4A; }
+
+    /* Isi kartu harus dapat menyusut dan membungkus teksnya. */
+    .kontak-jalan-isi {
+        min-width: 0;
+        overflow-wrap: break-word;
+    }
+
+    .kontak-jalan-nilai { overflow-wrap: anywhere; }
 
     .kontak-jalan-isi h3 {
         font-size: 16px;
@@ -334,6 +347,18 @@
         .kontak-kotak { padding: 24px 20px 22px; }
         .kontak-dua { grid-template-columns: 1fr; }
         .kontak-aksi .tombol { flex: 1 1 100%; text-align: center; }
+    }
+
+    /* Layar sangat sempit: rapatkan kartu kontak supaya isinya muat. */
+    @media (max-width: 380px) {
+        .kontak-jalan { padding: 15px 14px; gap: 11px; }
+        .kontak-jalan-ikon { width: 38px; height: 38px; border-radius: 10px; }
+        .kontak-jalan-ikon svg { width: 19px; height: 19px; }
+        .kontak-jalan-isi h3 { font-size: 15px; }
+        .kontak-jalan-isi p { font-size: 13px; }
+        .kontak-jalan-nilai { font-size: 14px; }
+        .kontak-kotak { padding: 20px 15px 18px; }
+        .kontak-jam { padding: 16px 14px; }
     }
 </style>
 <link rel="icon" href="favicon.ico" sizes="any">

@@ -150,7 +150,7 @@ def main() -> int:
         p.cek(f"bagian '{bagian}' ada di tabel", bagian in html)
 
     # Harga kedua paket tampil di kepala tabel.
-    p.cek("harga paket Standar tampil di tabel", "Rp3.499.000" in html)
+    p.cek("harga paket Standar tampil di perbandingan", "Rp3.499.000" in html)
     p.cek("harga paket Enterprise tampil di tabel", "Rp5.499.000" in html)
 
     # Pita penanda paket unggulan.
@@ -163,14 +163,14 @@ def main() -> int:
           "&#10003;" in html and "&#10005;" in html)
 
     # Baris pembeda paket.
-    jumlah_beda = html.count('class="baris-beda"')
+    jumlah_beda = html.count("banding-fitur-beda")
     p.cek(f"baris pembeda paket ditandai ({jumlah_beda} baris)",
           jumlah_beda >= 8, f"jumlah: {jumlah_beda}")
-    p.cek("CSS baris pembeda ada", "baris-beda" in css)
+    p.cek("CSS baris pembeda ada", "banding-fitur-beda" in css)
 
     # Kepala tabel melekat saat digulir.
-    p.cek("kepala tabel melekat saat digulir",
-          "position: sticky" in css and "banding-tabel thead th" in css)
+    p.cek("kepala perbandingan memuat nama paket",
+          "banding-kepala" in html and "banding-kepala" in css)
     print()
 
     # ------------------------------------------------------------------
@@ -185,7 +185,7 @@ def main() -> int:
             continue
         versi = re.findall(r'styles\.css\?v=(\d+)', isi_h)
         p.cek(f"{berkas.name} memuat CSS dengan versi",
-              bool(versi) and int(versi[0]) >= 4,
+              bool(versi) and int(versi[0]) >= 5,
               f"versi: {versi}")
     print()
 
@@ -367,10 +367,10 @@ def main() -> int:
 
     # ------------------------------------------------------------------
     print("[10. Tabel dapat digulir pada layar sempit]")
-    p.cek("tabel dibungkus wadah yang dapat digulir",
-          "banding-tabel-wadah" in html and "overflow-x: auto" in css)
-    p.cek("tabel punya lebar minimum supaya kolom tidak terhimpit",
-          "min-width" in css)
+    p.cek("perbandingan memakai kisi, bukan tabel yang perlu digeser",
+          "banding-kisi" in html and "banding-tabel" not in html)
+    p.cek("perbandingan berubah menjadi kartu di layar sempit",
+          "@media (max-width: 760px)" in css and "grid-template-columns: 1fr" in css)
     print()
 
     return p.ringkas()

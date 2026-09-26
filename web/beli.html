@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Beli Lisensi AkunTuntas</title>
 <meta name="description" content="Beli lisensi AkunTuntas. Bayar sekali, pakai selamanya. Kunci lisensi langsung muncul setelah pembayaran.">
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 <style>
     .beli-wadah {
         max-width: 660px;
@@ -54,6 +54,11 @@
         text-align: left;
         font-family: inherit;
         transition: border-color 0.15s ease, background 0.15s ease;
+        /* Tombol sebagai anak kisi secara bawaan tidak mau menyusut lebih
+           kecil dari isinya, sehingga pada layar sempit isinya memaksa
+           halaman meluber. */
+        min-width: 0;
+        overflow-wrap: anywhere;
     }
 
     .beli-paket:hover { border-color: #9CB8D6; }
@@ -83,6 +88,7 @@
         color: var(--teks-abu);
         line-height: 1.5;
         display: block;
+        overflow-wrap: anywhere;
     }
 
     .beli-bidang { margin-bottom: 17px; }
@@ -136,6 +142,8 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
         padding: 16px 18px;
         background: var(--latar-lembut);
         border: 1px solid var(--garis);
@@ -222,6 +230,21 @@
         .beli-kepala h1 { font-size: 26px; }
         .beli-kartu { padding: 22px 18px; }
         .beli-pilih { grid-template-columns: 1fr; }
+    }
+
+    /* Layar sangat sempit: rapatkan tombol pilihan paket dan ringkasan
+       pembayaran supaya keduanya muat tanpa terpotong. */
+    @media (max-width: 380px) {
+        .beli-paket { padding: 14px 12px; }
+        .beli-paket strong { font-size: 15px; }
+        .beli-paket .beli-harga { font-size: 18px; }
+        .beli-paket span { font-size: 12.5px; }
+
+        .beli-ringkas { padding: 13px 14px; gap: 6px; }
+        .beli-ringkas span:first-child { font-size: 13.5px; }
+        .beli-ringkas span:last-child { font-size: 18px; }
+        .beli-wadah { padding: 30px 0 48px; }
+        .beli-kartu { padding: 20px 15px; }
     }
 </style>
 <link rel="icon" href="favicon.ico" sizes="any">
