@@ -167,6 +167,10 @@ def main() -> int:
         ("privasi", "privasi.html", 1280, 900, ""),
         ("rilis", "rilis.html", 1280, 1200, ""),
         ("rilis_sempit", "rilis.html", 420, 1200, ""),
+        ("kaki_beranda", "index.html", 1280, 900, "kaki"),
+        ("kaki_unduh", "unduh.html", 1280, 900, "kaki"),
+        ("store_unduh", "unduh.html", 1280, 900, ".store-kartu"),
+        ("store_unduh_sempit", "unduh.html", 420, 1100, ".store-kartu"),
     ]
 
     if len(sys.argv) > 1:
