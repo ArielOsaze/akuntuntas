@@ -41,6 +41,59 @@ def tunggu(app, detik=0.35):
         time.sleep(0.01)
 
 
+def periksa_kerataan(halaman) -> list[str]:
+    """Cari elemen formulir yang tepinya tidak sejajar dengan yang lain.
+
+    Seluruh elemen formulir harus rata pada satu garis kiri dan satu garis
+    kanan. Bila ada yang meleset beberapa piksel, halaman tampak tidak
+    rapi walaupun tidak ada yang terpotong.
+    """
+    masalah = []
+    elemen = []
+
+    for nama in ("inp_user", "btn_login", "lbl_error"):
+        w = getattr(halaman, nama, None)
+        if w is not None and w.isVisible():
+            elemen.append((nama, w))
+
+    # Kolom password beserta tombol lihat di dalamnya
+    if hasattr(halaman, "inp_pass"):
+        induk = halaman.inp_pass.parent()
+        if induk is not None and induk is not halaman:
+            elemen.append(("kolom password", induk))
+
+    if len(elemen) < 2:
+        return masalah
+
+    kiri = {}
+    kanan = {}
+    for nama, w in elemen:
+        titik = w.mapTo(halaman, w.rect().topLeft())
+        kiri[nama] = titik.x()
+        kanan[nama] = titik.x() + w.width()
+
+    kiri_min, kiri_max = min(kiri.values()), max(kiri.values())
+    kanan_min, kanan_max = min(kanan.values()), max(kanan.values())
+
+    if kiri_max - kiri_min > 1:
+        paling_kiri = min(kiri, key=kiri.get)
+        paling_kanan = max(kiri, key=kiri.get)
+        masalah.append(
+            f"tepi kiri tidak rata {kiri_max - kiri_min}px: "
+            f"'{paling_kiri}' di x={kiri_min}, "
+            f"'{paling_kanan}' di x={kiri_max}")
+
+    if kanan_max - kanan_min > 1:
+        paling_pendek = min(kanan, key=kanan.get)
+        paling_panjang = max(kanan, key=kanan.get)
+        masalah.append(
+            f"tepi kanan tidak rata {kanan_max - kanan_min}px: "
+            f"'{paling_pendek}' berakhir di x={kanan_min}, "
+            f"'{paling_panjang}' di x={kanan_max}")
+
+    return masalah
+
+
 def periksa(halaman, lebar, tinggi):
     """Kembalikan daftar masalah tata letak pada ukuran tertentu."""
     masalah = []
@@ -118,6 +171,7 @@ def main() -> int:
         tunggu(app)
 
         masalah = periksa(halaman, lebar, tinggi)
+        masalah += periksa_kerataan(halaman)
 
         # Ukur juga lebar isian formulir.
         form_lebar = 0

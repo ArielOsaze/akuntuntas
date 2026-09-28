@@ -1404,7 +1404,7 @@ class JendelaAplikasi(QMainWindow):
             f"{pesan}\n\n"
             "Aplikasi tidak dapat dipakai dengan lisensi ini.\n\n"
             "Langkah yang dapat ditempuh:\n"
-            "1. Hubungi penjual untuk memeriksa keadaan lisensi Anda\n"
+            "1. Periksa keadaan lisensi Anda di akuntuntas.xinet.id/beli\n"
             "2. Bila lisensi diaktifkan kembali, masuk kembali ke aplikasi\n"
             "3. Bila Anda memindahkan aplikasi ke komputer lain, lepas dulu\n"
             "   perangkat lama melalui menu Pengaturan")

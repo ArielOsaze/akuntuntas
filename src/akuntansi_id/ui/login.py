@@ -73,13 +73,13 @@ class BrandPanel(QFrame):
 
         sub = QLabel("Pembukuan & Pajak\nPerusahaan Indonesia")
         sub.setObjectName("LoginSub")
-        sub.setStyleSheet("font-size: 17px; color: #E4EDF6; background: transparent; "
+        sub.setStyleSheet("font-size: 17px; color: #F2F7FB; background: transparent; "
                           "line-height: 150%;")
         lay.addWidget(sub)
 
         lay.addSpacing(12)
         versi = QLabel(f"{config.APP_EDITION} · v{config.APP_VERSION}")
-        versi.setStyleSheet("font-size: 11px; color: #C3D4E4; background: transparent;")
+        versi.setStyleSheet("font-size: 11px; color: #DCE7F0; background: transparent;")
         lay.addWidget(versi)
 
         # Nomor regulasi disebutkan supaya klaim "sesuai aturan terbaru" dapat
@@ -87,7 +87,7 @@ class BrandPanel(QFrame):
         # sebelum memutuskan memakai aplikasi pembukuan.
         aturan = QLabel("PP 55/2022 · PP 20/2026 · PMK 81/2024 · PMK 168/2023")
         aturan.setWordWrap(True)
-        aturan.setStyleSheet("font-size: 10px; color: #A9BCCE; "
+        aturan.setStyleSheet("font-size: 10px; color: #C8D8E6; "
                              "background: transparent;")
         lay.addWidget(aturan)
 
@@ -106,18 +106,18 @@ class BrandPanel(QFrame):
         kl.setSpacing(8)
 
         j = QLabel("Penjualan jasa Rp10.000.000 ke pelanggan PKP")
-        j.setStyleSheet("font-size: 11px; font-weight: 700; color: #E4EDF6; "
+        j.setStyleSheet("font-size: 11px; font-weight: 700; color: #F2F7FB; "
                         "background: transparent;")
         kl.addWidget(j)
 
         for kiri, kanan, warna in (
-                ("Piutang usaha", "11.100.000", "#D6E4F0"),
+                ("Piutang usaha", "11.100.000", "#E8F1F8"),
                 ("PPN keluaran 11%", "1.100.000", "#6EE7B7"),
-                ("Pendapatan jasa", "10.000.000", "#D6E4F0")):
+                ("Pendapatan jasa", "10.000.000", "#E8F1F8")):
             b = QHBoxLayout()
             b.setSpacing(8)
             n = QLabel(kiri)
-            n.setStyleSheet("font-size: 11px; color: #D6E4F0; "
+            n.setStyleSheet("font-size: 11px; color: #E8F1F8; "
                             "background: transparent;")
             b.addWidget(n)
             b.addStretch()
@@ -131,7 +131,7 @@ class BrandPanel(QFrame):
         cat = QLabel("PPN dihitung dengan DPP nilai lain (11/12), jurnal "
                      "tetap seimbang.")
         cat.setWordWrap(True)
-        cat.setStyleSheet("font-size: 10px; color: #A9BCCE; "
+        cat.setStyleSheet("font-size: 10px; color: #C8D8E6; "
                           "background: transparent;")
         kl.addWidget(cat)
         lay.addWidget(kartu)
@@ -157,7 +157,7 @@ class BrandPanel(QFrame):
             no.setFixedSize(20, 20)
             no.setAlignment(Qt.AlignCenter)
             theme.latar(no, "background: rgba(195, 212, 228, 0.14); "
-                            "border-radius: 10px; color: #C3D4E4; "
+                            "border-radius: 10px; color: #DCE7F0; "
                             "font-size: 11px; font-weight: 700;")
             b.addWidget(no, 0, Qt.AlignTop)
 
@@ -169,7 +169,7 @@ class BrandPanel(QFrame):
             kolom.addWidget(j)
             r = QLabel(rincian)
             r.setWordWrap(True)
-            r.setStyleSheet("font-size: 11px; color: #A9BCCE; "
+            r.setStyleSheet("font-size: 11px; color: #C8D8E6; "
                             "background: transparent; line-height: 140%;")
             kolom.addWidget(r)
             b.addLayout(kolom, 1)
@@ -186,7 +186,7 @@ class BrandPanel(QFrame):
             "sesuai fakta dan ketentuan terbaru."
         )
         catatan.setWordWrap(True)
-        catatan.setStyleSheet("font-size: 10px; color: #C3D4E4; background: transparent; "
+        catatan.setStyleSheet("font-size: 10px; color: #DCE7F0; background: transparent; "
                               "line-height: 145%;")
         lay.addWidget(catatan)
 
@@ -241,19 +241,15 @@ class LoginPage(QWidget):
         kl.addStretch()
 
         form = QWidget()
-        form.setMaximumWidth(400)
+        # Formulir memakai lebar tetap 400 piksel. Sebelumnya hanya batas
+        # maksimum yang dipasang, sehingga Qt memakai lebar alaminya (259
+        # piksel) dan formulir tampak sempit di tengah ruang yang lapang.
+        # Jendela terkecil yang didukung adalah 920 piksel, sedangkan panel
+        # merek menyusut sampai 380 piksel, jadi 400 piksel selalu muat.
+        form.setFixedWidth(400)
         fl = QVBoxLayout(form)
         fl.setContentsMargins(0, 0, 0, 0)
         fl.setSpacing(0)
-
-        # Garis aksen pendek di atas judul. Detail kecil ini menandai awal
-        # formulir dan memberi kesan halaman yang dirancang, bukan sekadar
-        # susunan kolom bawaan.
-        aksen = QFrame()
-        aksen.setFixedSize(28, 3)
-        theme.latar(aksen, f"background: {C.PRIMARY}; border-radius: 2px;")
-        fl.addWidget(aksen)
-        fl.addSpacing(16)
 
         judul = QLabel("Masuk ke akun Anda")
         judul.setStyleSheet(f"font-size: 25px; font-weight: 700; color: {C.TEXT}; "
@@ -364,28 +360,31 @@ class LoginPage(QWidget):
         self.btn_login.clicked.connect(self._login)
         fl.addWidget(self.btn_login)
 
-        fl.addSpacing(22)
+        fl.addSpacing(18)
+        # Keterangan akun bawaan ditampilkan sebagai teks halus tanpa kotak.
+        # Kotak berlatar abu di tengah formulir membuat halaman masuk tampak
+        # seperti formulir bawaan sistem, bukan halaman masuk yang dirancang.
         self.petunjuk = QFrame()
-        theme.latar(self.petunjuk, f"background: {C.SURFACE_ALT}; border: 1px solid {C.BORDER}; "
-            "border-radius: 8px;")
+        self.petunjuk.setMaximumWidth(400)
+        theme.latar(self.petunjuk, "background: transparent; border: none;")
         pl = QVBoxLayout(self.petunjuk)
-        pl.setContentsMargins(14, 12, 14, 12)
-        pl.setSpacing(5)
-        pj = QLabel("Akun bawaan sistem")
-        pj.setStyleSheet(f"font-weight: 700; font-size: {theme.FS_SMALL}px; "
-                         f"color: {C.TEXT}; background: transparent;")
-        pl.addWidget(pj)
-        pt = w.LabelTinggiOtomatis(f"Pengguna: <b>{config.DEFAULT_ADMIN_USER}</b> &nbsp;·&nbsp; "
-                    f"Password: <b>{config.DEFAULT_ADMIN_PASSWORD}</b><br>"
-                    "<span style='color:#64748B'>Anda akan diminta mengganti password "
-                    "saat pertama kali masuk.</span>")
+        pl.setContentsMargins(0, 0, 0, 0)
+        pl.setSpacing(3)
+        pt = w.LabelTinggiOtomatis(
+            f"Masuk pertama kali? Gunakan <b>{config.DEFAULT_ADMIN_USER}</b> "
+            f"dengan kata sandi <b>{config.DEFAULT_ADMIN_PASSWORD}</b>. "
+            "Anda akan diminta menggantinya.")
         pt.setWordWrap(True)
         pt.setTextFormat(Qt.RichText)
-        pt.setStyleSheet(f"font-size: {theme.FS_SMALL}px; background: transparent;")
-        # Tinggi minimum diambil dari sizeHint, bukan heightForWidth: Qt
-        # menghitung tinggi teks berformat terlalu pendek sehingga baris
-        # terakhirnya terpotong. Tanpa ini, keterangan akun bawaan tampil
-        # sebagai potongan huruf.
+        pt.setAlignment(Qt.AlignCenter)
+        # Keterangan ini penting bagi pengguna baru, jadi warnanya memakai
+        # TEXT (bukan TEXT_MUTED) dan ukurannya satu tingkat lebih besar.
+        # Tulisan yang terlalu samar membuat pengguna baru tidak menemukan
+        # kata sandi bawaannya.
+        pt.setStyleSheet(f"font-size: {theme.FS_SMALL}px; "
+                         f"color: {C.TEXT}; background: transparent;")
+        # Tinggi minimum diambil dari pengukuran teks berformat: Qt
+        # menghitungnya terlalu pendek sehingga baris terakhir terpotong.
         pt.setMinimumHeight(theme.tinggi_rich_text(pt))
         kebijakan_pt = pt.sizePolicy()
         kebijakan_pt.setVerticalPolicy(QSizePolicy.MinimumExpanding)

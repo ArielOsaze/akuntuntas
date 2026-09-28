@@ -45,8 +45,8 @@ class C:
 
     # Teks
     TEXT = "#1A2733"
-    TEXT_MUTED = "#48586B"
-    TEXT_FAINT = "#54637A"
+    TEXT_MUTED = "#3D4C5E"
+    TEXT_FAINT = "#48586B"
     TEXT_INVERSE = "#FFFFFF"
 
     # Status

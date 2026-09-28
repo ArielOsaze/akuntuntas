@@ -1,6 +1,6 @@
 {
-  "versi": "1.2.5",
+  "versi": "1.2.6",
   "build": "2026.09",
   "tanggal": "2026-09-28",
-  "catatan": "Bersihkan judul jendela yang menampilkan nama aplikasi dua kali, rapikan kata sandi demo di dokumen Store"
+  "catatan": "Halaman masuk ditata ulang tanpa kotak abu, formulir rata 400 piksel, kontras teks kecil dinaikkan, alur lisensi diarahkan ke situs resmi"
 }

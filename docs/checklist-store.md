@@ -1,7 +1,7 @@
 # Checklist Pengiriman ke Microsoft Store
 
 Diperiksa: 28 September 2026 (malam)
-Versi aplikasi: 1.2.5
+Versi aplikasi: 1.2.6
 
 ---
 
@@ -15,8 +15,8 @@ Versi aplikasi: 1.2.5
 Sidik jari:
 
 ```
-.msixupload  sha256 4e0a8d103a6c2eea8ed572ef568e869175abea603963b695d937e51fe0a662ba
-.msix        sha256 470b42ecd809c9e06727f82a3d3c0ee9f319b29c3d2f048f75b286392e3a735f
+.msixupload  sha256 d871f01fedb36c5ade1901a0cb75c87632c036d9a297305786d70db57781c501
+.msix        sha256 37c7c3b82c8ae2b28f96034aee65cfd225b53ab42f35dad0c0300b6c8ef06ad8
 ```
 
 ---
@@ -33,7 +33,7 @@ paket ditolak.
 | Penerbit | `CN=82AE483E-A9EB-487B-BDE6-4D690C249608` |
 | Nama penerbit | `Xinet Group` |
 | Nama tampil | `AkunTuntas` |
-| Versi | `1.2.5.0` |
+| Versi | `1.2.6.0` |
 
 Bila Partner Center memberi nilai yang berbeda, perbarui
 `msix/identitas.json` lalu bungkus ulang:
@@ -126,14 +126,14 @@ perilaku yang diinginkan.
 | Audit tampilan (27 halaman + 2 dialog) | Bersih |
 | Kontras WCAG AA | Seluruh teks lulus |
 | Gaya menular | Tidak ada |
-| Keseragaman versi | Seluruh berkas 1.2.5 |
+| Keseragaman versi | Seluruh berkas 1.2.6 |
 | Pemasangan ulang | Data pembukuan tetap utuh |
 | Kompatibilitas | Windows 10 (1809+) dan 11, 64-bit |
 | Uji alur peninjau Store (mode paket) | 20 LULUS, 0 GAGAL |
 | Uji celah keamanan mode uji coba | 9 AMAN, 0 BOCOR |
 | Uji jalan dari susunan folder paket | LULUS, judul jendela bersih |
 | Isi paket MSIX | Manifest, exe, penanda, ikon lengkap |
-| Versi tertanam di EXE | 1.2.5.0 (dibaca lewat Windows API) |
+| Versi tertanam di EXE | 1.2.6.0 (dibaca lewat Windows API) |
 | Sidik EXE di paket vs hasil build | Cocok |
 
 ---
@@ -172,7 +172,7 @@ python tools/bungkus_msix.py --bungkus
 saat paket diterima. Ini justru yang menghilangkan peringatan SmartScreen
 pada pengguna.
 
-**Versi MSIX wajib empat angka.** Tulis `1.2.5.0`, bukan `1.2.5`.
+**Versi MSIX wajib empat angka.** Tulis `1.2.6.0`, bukan `1.2.6`.
 
 **Untuk setiap pembaruan ke Store, terbitkan penanda uji coba baru** supaya
 peninjau dapat menguji versi terbaru.

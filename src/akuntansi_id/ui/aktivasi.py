@@ -187,13 +187,14 @@ class HalamanAktivasi(QWidget):
         fl.addWidget(info)
         fl.addSpacing(6)
 
-        # Alamat email dibuat dapat diklik supaya pengguna yang belum punya
-        # lisensi bisa langsung menghubungi penjual.
+        # Pengguna yang belum punya lisensi diarahkan ke halaman pembelian
+        # di situs resmi. Di sana paket dan harga tampil lengkap, dan
+        # pembeliannya tercatat, berbeda dengan memesan lewat surel.
         self.lbl_bantuan = QLabel(
-            'Belum punya lisensi? Hubungi '
-            '<a href="mailto:akuntuntas@gmail.com" '
+            'Belum punya lisensi? '
+            '<a href="https://akuntuntas.xinet.id/beli" '
             'style="color: #1B4F8A; text-decoration: none;">'
-            'akuntuntas@gmail.com</a>')
+            'Beli lisensi di akuntuntas.xinet.id</a>')
         self.lbl_bantuan.setWordWrap(True)
         self.lbl_bantuan.setOpenExternalLinks(True)
         self.lbl_bantuan.setStyleSheet(
@@ -230,11 +231,11 @@ class HalamanAktivasi(QWidget):
         self.inp_kunci.setText(rapikan_kunci(teks))
         self.inp_kunci.setFocus()
 
-    def _buka_email(self, alamat: str):
-        """Buka aplikasi email untuk menghubungi penjual lisensi."""
+    def _buka_situs(self, alamat: str):
+        """Buka halaman pembelian lisensi di peramban."""
         from PySide6.QtCore import QUrl
         from PySide6.QtGui import QDesktopServices
-        QDesktopServices.openUrl(QUrl(f"mailto:{alamat}"))
+        QDesktopServices.openUrl(QUrl(alamat))
 
     def _saat_mengetik(self, teks: str):
         """Rapikan penulisan kunci sambil diperiksa kelengkapannya."""

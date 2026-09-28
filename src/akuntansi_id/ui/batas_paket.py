@@ -102,8 +102,8 @@ def halaman_terkunci(nama_fitur: str) -> QWidget:
     panel = w.InfoBanner(
         f"{nama_fitur} hanya tersedia pada lisensi AkunTuntas Enterprise. "
         "Paket Standar memuat pembukuan, pajak, dan laporan keuangan dasar.\n\n"
-        "Untuk memakai fitur ini, tingkatkan lisensi Anda ke Enterprise. "
-        "Hubungi akuntuntas@gmail.com untuk informasi peningkatan paket.",
+        "Untuk memakai fitur ini, tingkatkan lisensi Anda ke Enterprise di "
+        "akuntuntas.xinet.id/beli.",
         tingkat="warning", judul="Fitur paket Enterprise")
     il.addWidget(panel)
     il.addStretch()
