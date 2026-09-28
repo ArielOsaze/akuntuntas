@@ -207,3 +207,24 @@ Versi paket    : 1.2.6.0
 
 Versi paket MSIX wajib empat angka. Angka keempat selalu 0 untuk
 pengiriman biasa.
+
+## What's new (untuk pembaruan versi)
+
+Kolom ini muncul di halaman Store sebagai daftar perubahan. Batas 1500
+huruf. Salin yang berikut.
+
+```
+Halaman masuk ditata ulang: kotak abu di bawah tombol masuk dihapus,
+keterangan akun bawaan kini tampil sebagai teks biasa.
+
+Formulir masuk kini sama lebar dan sejajar di semua ukuran jendela.
+Sebelumnya kolom isian lebih sempit daripada keterangan di bawahnya.
+
+Teks keterangan dibuat lebih jelas terbaca, termasuk keterangan kata
+sandi bawaan supaya pengguna baru tidak melewatkannya.
+
+Pengguna yang belum punya lisensi kini diarahkan ke halaman pembelian di
+situs resmi, bukan ke alamat surel.
+
+Seluruh teks aplikasi memenuhi standar kontras WCAG AA.
+```
