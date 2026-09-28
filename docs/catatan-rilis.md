@@ -10,9 +10,50 @@ webnya supaya isinya tidak berbeda.
 
 ---
 
-## Versi 1.2.6 - 28 September 2026
+## Versi 1.2.7 - 28 September 2026
 
 Versi terbaru.
+
+### Masa uji coba 1 hari untuk pemasangan dari Microsoft Store
+
+Aplikasi yang dipasang dari Microsoft Store kini mendapat masa uji coba
+**1 hari** sejak pertama kali dibuka. Seluruh fitur paket Enterprise
+terbuka selama masa itu, sehingga calon pembeli dapat menilai aplikasi
+sepenuhnya sebelum memutuskan.
+
+Setelah masa uji coba berakhir, aplikasi menampilkan layar aktivasi
+dengan keterangan yang jelas dan tautan ke halaman pembelian lisensi.
+
+### Perbaikan penting pada paket Microsoft Store
+
+Versi sebelumnya menyertakan berkas penanda uji coba di dalam paket.
+Karena paket yang diuji peninjau Microsoft adalah paket yang SAMA dengan
+yang diunduh semua orang, berkas itu membuat setiap orang yang memasang
+dari Store mendapat lisensi Enterprise gratis tanpa membayar. Berkas
+tersebut sekarang tidak lagi disertakan.
+
+Masa uji coba yang baru tidak memakai berkas apa pun di dalam paket.
+Waktu mulai dicatat di tiga tempat di komputer pengguna, dan yang dipakai
+adalah catatan paling awal, sehingga menghapus salah satu catatan tidak
+mengembalikan masa uji coba. Memundurkan jam komputer juga tidak
+memperpanjangnya.
+
+### Teks untuk kolom What's new di Partner Center
+
+```
+Masa uji coba 1 hari untuk pemasangan dari Microsoft Store. Seluruh
+fitur paket Enterprise terbuka selama masa itu, sehingga Anda dapat
+menilai aplikasi sepenuhnya sebelum membeli lisensi.
+
+Setelah masa uji coba berakhir, aplikasi meminta kunci lisensi. Lisensi
+dibeli sekali dan berlaku selamanya, tanpa biaya bulanan.
+
+Perbaikan pada paket: berkas penanda uji coba tidak lagi disertakan.
+```
+
+---
+
+## Versi 1.2.6 - 28 September 2026
 
 ### Halaman masuk lebih rapi
 

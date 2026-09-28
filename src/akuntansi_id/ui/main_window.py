@@ -1199,10 +1199,11 @@ class JendelaAplikasi(QMainWindow):
         # Lisensi diperiksa lebih dulu. Tanpa lisensi yang sah, halaman
         # masuk tidak ditampilkan sama sekali.
         #
-        # Paket yang dibungkus untuk Microsoft Store memuat mode uji coba,
-        # karena peninjau tidak memiliki kunci lisensi berbayar. Mode itu
-        # hanya berlaku bila berkas penanda ikut disertakan saat membungkus
-        # paket, sehingga build installer biasa tidak terpengaruh.
+        # Paket yang dipasang dari Microsoft Store mendapat masa uji coba
+        # satu hari sejak pertama kali dibuka, karena peninjau tidak
+        # memiliki kunci lisensi berbayar. Masa uji coba itu dihitung dari
+        # catatan di komputer, bukan dari berkas di dalam paket, supaya
+        # tidak ada paket yang membawa lisensi gratis.
         from ..core import uji_coba
 
         sah, alasan, lisensi = LIS.lisensi_sah(config.DATA_DIR)
@@ -1224,7 +1225,13 @@ class JendelaAplikasi(QMainWindow):
             self.lisensi = uji_coba.lisensi_uji_coba()
             self._siapkan_login()
         else:
-            self._tampilkan_aktivasi(alasan)
+            # Masa uji coba habis diberi keterangan tersendiri, bukan pesan
+            # umum "lisensi belum diaktifkan", supaya pengguna tahu apa yang
+            # sedang terjadi dan apa langkah berikutnya.
+            if uji_coba.kadaluarsa():
+                self._tampilkan_aktivasi(uji_coba.pesan_kadaluarsa())
+            else:
+                self._tampilkan_aktivasi(alasan)
 
     def _coba_perbarui_lisensi(self, alasan: str) -> bool:
         """
@@ -1461,6 +1468,40 @@ class JendelaAplikasi(QMainWindow):
         self.setCentralWidget(self.main_window)
         self.main_window.showMaximized()
         self.setWindowTitle(f"{config.APP_LONG_NAME} - {hasil.full_name}")
+
+        # Beri tahu pengguna bahwa yang sedang dipakai adalah masa uji coba,
+        # supaya mereka tidak terkejut saat masa itu berakhir.
+        self._beri_tahu_uji_coba()
+
+    def _beri_tahu_uji_coba(self):
+        """
+        Tampilkan sisa masa uji coba sekali setelah pengguna masuk.
+
+        Pemberitahuan ini hanya muncul pada masa uji coba, dan hanya sekali
+        per sesi, supaya tidak mengganggu pemakaian sehari hari.
+        """
+        from ..core import uji_coba
+
+        if not uji_coba.aktif():
+            return
+        if getattr(self, "_sudah_beri_tahu_uji_coba", False):
+            return
+        self._sudah_beri_tahu_uji_coba = True
+
+        from PySide6.QtWidgets import QMessageBox
+
+        kotak = QMessageBox(self)
+        kotak.setWindowTitle("Masa uji coba")
+        kotak.setIcon(QMessageBox.Information)
+        kotak.setText(uji_coba.keterangan())
+        kotak.setInformativeText(
+            "Seluruh fitur paket Enterprise terbuka selama masa uji coba.\n\n"
+            "Setelah masa itu berakhir, aplikasi memerlukan kunci lisensi. "
+            "Lisensi dibeli sekali dan berlaku selamanya, tanpa biaya "
+            "bulanan.\n\n"
+            "Beli lisensi di akuntuntas.xinet.id/beli.")
+        kotak.addButton("Mengerti", QMessageBox.AcceptRole)
+        kotak.exec()
 
     def _kembali_ke_login(self):
         """

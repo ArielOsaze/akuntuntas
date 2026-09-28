@@ -1,7 +1,7 @@
 # Checklist Pengiriman ke Microsoft Store
 
 Diperiksa: 28 September 2026 (malam)
-Versi aplikasi: 1.2.6
+Versi aplikasi: 1.2.7
 
 ---
 
@@ -15,8 +15,8 @@ Versi aplikasi: 1.2.6
 Sidik jari:
 
 ```
-.msixupload  sha256 d871f01fedb36c5ade1901a0cb75c87632c036d9a297305786d70db57781c501
-.msix        sha256 37c7c3b82c8ae2b28f96034aee65cfd225b53ab42f35dad0c0300b6c8ef06ad8
+.msixupload  sha256 9721a4880d7e81d5cc556dd7e4a77cf76a438a374b9ddca4f52660fb43135d12
+.msix        sha256 c7f90a303415170aa1bfb30af66834dd4f3c8079fc446a33c7c83929c9e6418d
 ```
 
 ---
@@ -33,7 +33,7 @@ paket ditolak.
 | Penerbit | `CN=82AE483E-A9EB-487B-BDE6-4D690C249608` |
 | Nama penerbit | `Xinet Group` |
 | Nama tampil | `AkunTuntas` |
-| Versi | `1.2.6.0` |
+| Versi | `1.2.7.0` |
 
 Bila Partner Center memberi nilai yang berbeda, perbarui
 `msix/identitas.json` lalu bungkus ulang:
@@ -126,14 +126,14 @@ perilaku yang diinginkan.
 | Audit tampilan (27 halaman + 2 dialog) | Bersih |
 | Kontras WCAG AA | Seluruh teks lulus |
 | Gaya menular | Tidak ada |
-| Keseragaman versi | Seluruh berkas 1.2.6 |
+| Keseragaman versi | Seluruh berkas 1.2.7 |
 | Pemasangan ulang | Data pembukuan tetap utuh |
 | Kompatibilitas | Windows 10 (1809+) dan 11, 64-bit |
 | Uji alur peninjau Store (mode paket) | 20 LULUS, 0 GAGAL |
-| Uji celah keamanan mode uji coba | 9 AMAN, 0 BOCOR |
+| Uji celah masa uji coba | 19 AMAN, 0 BOCOR |
 | Uji jalan dari susunan folder paket | LULUS, judul jendela bersih |
 | Isi paket MSIX | Manifest, exe, penanda, ikon lengkap |
-| Versi tertanam di EXE | 1.2.6.0 (dibaca lewat Windows API) |
+| Versi tertanam di EXE | 1.2.7.0 (dibaca lewat Windows API) |
 | Sidik EXE di paket vs hasil build | Cocok |
 
 ---
@@ -159,20 +159,22 @@ lalu mengirim ulang tanpa biaya tambahan.
 
 ## 8. Hal yang perlu diperhatikan
 
-**Penanda uji coba berlaku sampai 24 November 2026.** Bila pengiriman
-melewati tanggal itu, terbitkan penanda baru:
+**Paket TIDAK boleh memuat `uji_coba.txt`.** Masa uji coba sekarang
+dihitung dari catatan di komputer pengguna selama 1 hari, bukan dari berkas
+di dalam paket. Paket yang diuji peninjau Microsoft adalah paket yang SAMA
+dengan yang diunduh semua orang dari Store, sehingga berkas penanda apa pun
+di dalamnya akan menjadi lisensi gratis untuk seluruh dunia.
 
-```bash
-python tools/terbitkan_uji_coba.py
-python tools/bungkus_msix.py --siapkan
-python tools/bungkus_msix.py --bungkus
-```
+Periksa dengan `python tools/bungkus_msix.py --periksa`. Keluarannya harus
+menyebut `uji_coba.txt tidak ada (benar)`. Bila menyebut BAHAYA, bungkus
+ulang paketnya sebelum dikirim.
 
 **Paket MSIX belum ditandatangani.** Microsoft Store yang menandatanganinya
 saat paket diterima. Ini justru yang menghilangkan peringatan SmartScreen
 pada pengguna.
 
-**Versi MSIX wajib empat angka.** Tulis `1.2.6.0`, bukan `1.2.6`.
+**Versi MSIX wajib empat angka.** Tulis `1.2.7.0`, bukan `1.2.7`.
 
-**Untuk setiap pembaruan ke Store, terbitkan penanda uji coba baru** supaya
-peninjau dapat menguji versi terbaru.
+**Untuk setiap pembaruan ke Store**, naikkan versi dan pastikan paket tidak memuat
+berkas penanda. Masa uji coba 1 hari otomatis berlaku di setiap komputer yang
+baru memasang, sehingga peninjau selalu dapat menguji versi terbaru.

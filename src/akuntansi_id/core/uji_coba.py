@@ -1,50 +1,77 @@
 """
-AkunTuntas - Mode Uji Coba untuk Peninjau Microsoft Store
-=========================================================
+AkunTuntas - Masa Uji Coba
+==========================
 Microsoft Store mewajibkan setiap aplikasi dapat diuji oleh peninjau. Karena
 AkunTuntas bekerja dengan kunci lisensi berbayar, peninjau tidak akan bisa
-melewati layar aktivasi dan aplikasi akan ditolak.
+melewati layar aktivasi dan aplikasi akan ditolak. Masa uji coba menjawab
+kebutuhan itu tanpa membuka jalan memakai aplikasi secara gratis.
 
-Mode uji coba memberi lisensi sementara. Tiga hal menjaganya supaya tidak
-dapat dipakai untuk memakai aplikasi secara gratis:
+RANCANGAN LAMA DAN KENAPA DITINGGALKAN
+======================================
+Sebelumnya masa uji coba ditentukan oleh berkas penanda bertanda tangan
+yang ikut dibungkus ke dalam paket MSIX, berlaku 60 hari. Rancangan itu
+salah besar: paket yang diuji peninjau adalah paket yang SAMA dengan yang
+diunduh semua orang dari Microsoft Store. Akibatnya setiap orang yang
+memasang dari Store langsung mendapat lisensi Enterprise penuh tanpa
+membayar, sampai masa berlakunya habis. Berkas penanda tidak lagi
+disertakan ke dalam paket.
 
-1. Aplikasi harus benar-benar berjalan di dalam paket MSIX yang dipasang
-   Windows. Keadaan itu ditanyakan kepada Windows sendiri, bukan disimpulkan
-   dari keberadaan berkas. Menaruh berkas penanda di folder aplikasi biasa,
-   atau di folder mana pun yang dapat ditulis pengguna, tidak berpengaruh.
+RANCANGAN SEKARANG
+==================
+Masa uji coba dihitung sejak aplikasi PERTAMA KALI DIBUKA di komputer
+pengguna, selama HARI_UJI_COBA hari. Waktu mulai dicatat di tiga tempat
+sekaligus, dan yang dipakai adalah catatan PALING AWAL:
 
-2. Penanda harus memuat keterangan bertanda tangan kunci privat server.
-   Berkas kosong, atau berkas yang disunting untuk memperpanjang masa
-   berlakunya, langsung ditolak karena tanda tangannya tidak lagi cocok.
-   Kunci privatnya tidak ada di dalam aplikasi, sehingga penanda tidak dapat
-   dibuat sendiri.
+1. Tabel `settings` di basis data aplikasi.
+2. Berkas `trial.dat` di folder data aplikasi.
+3. Kunci registry milik aplikasi di HKCU.
 
-3. Masa berlaku ditentukan di dalam penanda bertanda tangan itu, bukan
-   dihitung dari catatan di komputer pengguna. Menghapus atau menyunting
-   berkas apa pun di komputer tidak memperpanjang masa uji coba.
+Menghapus satu tempat tidak mengembalikan masa uji coba, karena waktunya
+dipulihkan dari tempat lain. Menghapus ketiganya sama dengan memasang ulang
+aplikasi, dan itu pun tetap hanya memberi satu masa uji coba.
+
+JAM YANG DIMUNDURKAN
+====================
+Selain waktu mulai, dicatat juga waktu terjauh yang pernah terlihat. Bila
+jam komputer dimundurkan, patokan yang dipakai adalah catatan terjauh itu,
+bukan jam sekarang, sehingga masa uji coba tidak bertambah. Bila jam
+dimajukan, masa uji coba justru langsung habis, dan itu tetap aman karena
+hanya merugikan orang yang mencoba mengakalinya.
 """
 from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 
-# Nama berkas penanda. Isinya keterangan bertanda tangan dari server.
-PENANDA = "uji_coba.txt"
-
-# Nama paket yang berhak memakai mode uji coba. Harus sama dengan nama paket
-# pada msix/identitas.json.
+# Nama paket yang berhak memakai masa uji coba. Harus sama dengan nama paket
+# pada msix/identitas.json. Di luar paket ini, masa uji coba tidak berlaku:
+# pemasangan lewat installer dari situs memang sudah memerlukan kunci
+# lisensi untuk mengunduh, jadi tidak perlu masa uji coba.
 NAMA_PAKET = "XinetGroup.AkunTuntas"
 
-# Berapa lama masa uji coba bila penanda tidak menyebutkan batasnya sendiri.
-# Dipakai hanya sebagai cadangan, karena penanda terbitan server selalu
-# memuat batas waktunya.
-HARI_UJI_COBA = 60
+# Lama masa uji coba dalam hari.
+HARI_UJI_COBA = 1
+
+# Berkas dan kunci tempat waktu mulai dicatat.
+NAMA_BERKAS = "trial.dat"
+KUNCI_DB_MULAI = "trial_mulai"
+KUNCI_DB_PUNCAK = "trial_puncak"
+JALUR_REGISTRY = r"Software\XinetGroup\AkunTuntas"
 
 # Dipakai alat uji untuk meniru keadaan di dalam paket MSIX tanpa benar-benar
 # membungkus paket. Nilai None berarti keadaan sebenarnya yang ditanyakan
 # kepada Windows.
 _paksa_dalam_paket: bool | None = None
+
+# Dipakai alat uji untuk memakai folder data sementara.
+_paksa_data_dir: Path | None = None
+
+# Dipakai alat uji untuk memakai kunci registry lain, supaya menjalankan
+# alat uji tidak mengubah catatan masa uji coba di komputer yang dipakai
+# menguji. Nilai None berarti kunci registry yang sebenarnya.
+_paksa_jalur_registry: str | None = None
 
 
 # ==========================================================================
@@ -100,170 +127,235 @@ def dalam_paket_msix() -> bool:
 
 
 # ==========================================================================
-# PENANDA BERTANDA TANGAN
+# TEMPAT PENCATATAN
 # ==========================================================================
-def _tempat_penanda() -> list[Path]:
-    """
-    Tempat yang mungkin memuat berkas penanda.
+def _folder_data() -> Path:
+    """Folder data aplikasi tempat berkas catatan disimpan."""
+    if _paksa_data_dir is not None:
+        return Path(_paksa_data_dir)
 
-    Aplikasi dibundel PyInstaller dalam mode satu folder, sehingga berkas
-    data berada di dalam `_internal`. Berkas penanda sengaja diletakkan di
-    akar paket MSIX, bukan di dalam `_internal`, karena isi `_internal`
-    dibangun ulang setiap kali aplikasi dibungkus sedangkan penanda
-    ditambahkan setelahnya. Karena itu kedua tempat diperiksa.
-    """
-    tempat = []
-
-    dasar = getattr(sys, "_MEIPASS", None)
-    if dasar:
-        tempat.append(Path(dasar))
-        tempat.append(Path(dasar).parent)
-
-    tempat.append(Path(__file__).resolve().parent.parent.parent.parent)
-    tempat.append(Path(__file__).resolve().parent)
-    return tempat
+    from .. import config
+    return Path(config.DATA_DIR)
 
 
-def _path_penanda() -> Path | None:
-    """Berkas penanda yang ditemukan, atau None bila tidak ada."""
-    for folder in _tempat_penanda():
-        try:
-            berkas = folder / PENANDA
-            if berkas.exists():
-                return berkas
-        except Exception:
-            continue
-    return None
-
-
-def baca_penanda() -> dict | None:
-    """
-    Baca keterangan bertanda tangan dari berkas penanda.
-
-    Mengembalikan None bila berkasnya tidak ada, tidak dapat dibaca, atau
-    isinya bukan keterangan yang lengkap.
-    """
-    berkas = _path_penanda()
-    if berkas is None:
-        return None
-
+def _baca_berkas() -> tuple[float, float] | None:
+    """Waktu mulai dan puncak dari berkas catatan."""
     try:
+        berkas = _folder_data() / NAMA_BERKAS
+        if not berkas.exists():
+            return None
         isi = json.loads(berkas.read_text(encoding="utf-8"))
+        mulai = float(isi["mulai"])
+        puncak = float(isi.get("puncak", mulai))
+        return mulai, puncak
     except Exception:
         return None
 
-    if not isinstance(isi, dict):
-        return None
-    if not isi.get("muatan") or not isi.get("tanda"):
-        return None
-    return isi
 
-
-def penanda_sah() -> tuple[bool, str]:
-    """
-    Apakah penanda ada dan tanda tangannya sah.
-
-    Mengembalikan (sah, alasan). Berkas kosong, berkas yang disunting, dan
-    berkas yang dibuat sendiri tanpa kunci privat server semuanya ditolak.
-    """
-    isi = baca_penanda()
-    if isi is None:
-        return False, "Berkas penanda uji coba tidak ada atau tidak lengkap."
-
-    from . import license as LIS
-
-    if not LIS.tanda_sah(isi["muatan"], isi["tanda"]):
-        return False, ("Berkas penanda uji coba tidak sah. Berkas ini mungkin "
-                       "sudah diubah, atau bukan berasal dari Xinet Group.")
-
+def _tulis_berkas(mulai: float, puncak: float) -> None:
+    """Simpan waktu mulai dan puncak ke berkas catatan."""
     try:
-        muatan = json.loads(isi["muatan"])
+        folder = _folder_data()
+        folder.mkdir(parents=True, exist_ok=True)
+        berkas = folder / NAMA_BERKAS
+        berkas.write_text(json.dumps({
+            "mulai": mulai,
+            "puncak": puncak,
+        }), encoding="utf-8")
     except Exception:
-        return False, "Isi penanda uji coba tidak dapat dibaca."
-
-    if not muatan.get("uji_coba"):
-        return False, "Berkas penanda bukan untuk mode uji coba."
-
-    return True, ""
+        # Pencatatan gagal bukan alasan menghentikan aplikasi. Dua tempat
+        # lain masih mencatat hal yang sama.
+        pass
 
 
-def sisa_hari() -> int:
-    """
-    Sisa hari masa uji coba menurut penanda bertanda tangan.
-
-    Angka negatif berarti masa uji coba sudah lewat. Batas waktu dibaca dari
-    penanda, bukan dari catatan di komputer pengguna, sehingga menghapus
-    berkas apa pun tidak memperpanjang masa uji coba.
-    """
-    isi = baca_penanda()
-    if isi is None:
-        return 0
-
+def _baca_db() -> tuple[float, float] | None:
+    """Waktu mulai dan puncak dari tabel settings."""
     try:
-        muatan = json.loads(isi["muatan"])
+        from .. import db
+
+        baris_mulai = db.q1("SELECT value FROM settings WHERE key=?",
+                            (KUNCI_DB_MULAI,))
+        if baris_mulai is None:
+            return None
+        mulai = float(baris_mulai["value"])
+
+        baris_puncak = db.q1("SELECT value FROM settings WHERE key=?",
+                             (KUNCI_DB_PUNCAK,))
+        puncak = float(baris_puncak["value"]) if baris_puncak else mulai
+        return mulai, puncak
     except Exception:
+        return None
+
+
+def _tulis_db(mulai: float, puncak: float) -> None:
+    """Simpan waktu mulai dan puncak ke tabel settings."""
+    try:
+        from .. import db
+
+        for kunci, nilai in ((KUNCI_DB_MULAI, mulai), (KUNCI_DB_PUNCAK, puncak)):
+            db.ex("INSERT INTO settings(key, value) VALUES(?, ?) "
+                  "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                  (kunci, repr(nilai)))
+    except Exception:
+        pass
+
+
+def _baca_registry() -> tuple[float, float] | None:
+    """Waktu mulai dan puncak dari registry Windows."""
+    if sys.platform != "win32":
+        return None
+    try:
+        import winreg
+
+        jalur = _paksa_jalur_registry or JALUR_REGISTRY
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, jalur) as kunci:
+            mulai = float(winreg.QueryValueEx(kunci, "TrialMulai")[0])
+            try:
+                puncak = float(winreg.QueryValueEx(kunci, "TrialPuncak")[0])
+            except FileNotFoundError:
+                puncak = mulai
+        return mulai, puncak
+    except Exception:
+        return None
+
+
+def _tulis_registry(mulai: float, puncak: float) -> None:
+    """Simpan waktu mulai dan puncak ke registry Windows."""
+    if sys.platform != "win32":
+        return
+    try:
+        import winreg
+
+        jalur = _paksa_jalur_registry or JALUR_REGISTRY
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, jalur) as kunci:
+            winreg.SetValueEx(kunci, "TrialMulai", 0, winreg.REG_SZ,
+                              repr(mulai))
+            winreg.SetValueEx(kunci, "TrialPuncak", 0, winreg.REG_SZ,
+                              repr(puncak))
+    except Exception:
+        pass
+
+
+def _baca_semua() -> tuple[float, float] | None:
+    """
+    Gabungkan catatan dari ketiga tempat.
+
+    Waktu mulai diambil dari catatan PALING AWAL, supaya menghapus salah satu
+    tempat tidak memundurkan awal masa uji coba. Waktu puncak diambil dari
+    catatan PALING AKHIR, supaya memundurkan jam tidak memperpanjangnya.
+    """
+    catatan = [c for c in (_baca_berkas(), _baca_db(), _baca_registry())
+               if c is not None]
+    if not catatan:
+        return None
+
+    mulai = min(c[0] for c in catatan)
+    puncak = max(c[1] for c in catatan)
+    return mulai, puncak
+
+
+def _simpan_semua(mulai: float, puncak: float) -> None:
+    """Simpan waktu mulai dan puncak ke ketiga tempat sekaligus."""
+    _tulis_berkas(mulai, puncak)
+    _tulis_db(mulai, puncak)
+    _tulis_registry(mulai, puncak)
+
+
+# ==========================================================================
+# PERHITUNGAN MASA UJI COBA
+# ==========================================================================
+def mulai_uji_coba() -> float:
+    """
+    Waktu mulai masa uji coba, dicatat pada pemakaian pertama.
+
+    Bila catatan sudah ada, nilainya dipulihkan ke tempat yang belum memuat
+    catatan, sehingga menghapus salah satu tempat tidak berpengaruh.
+    """
+    sekarang = time.time()
+    catatan = _baca_semua()
+
+    if catatan is None:
+        _simpan_semua(sekarang, sekarang)
+        return sekarang
+
+    mulai, puncak = catatan
+    # Jam mundur tidak boleh membuat puncak ikut mundur.
+    puncak_baru = max(puncak, sekarang)
+    if puncak_baru != puncak:
+        _simpan_semua(mulai, puncak_baru)
+    else:
+        # Pastikan ketiga tempat memuat catatan yang sama.
+        _simpan_semua(mulai, puncak)
+    return mulai
+
+
+def sisa_detik() -> float:
+    """
+    Sisa masa uji coba dalam detik.
+
+    Angka nol atau negatif berarti masa uji coba sudah habis. Patokan waktu
+    yang dipakai adalah yang paling jauh antara jam sekarang dan catatan
+    terjauh, sehingga memundurkan jam komputer tidak memperpanjangnya.
+    """
+    mulai = mulai_uji_coba()
+    catatan = _baca_semua()
+    puncak = catatan[1] if catatan else mulai
+
+    patokan = max(time.time(), puncak)
+    batas = mulai + HARI_UJI_COBA * 86400
+    return batas - patokan
+
+
+def sisa_jam() -> int:
+    """Sisa masa uji coba dalam jam, dibulatkan ke atas."""
+    sisa = sisa_detik()
+    if sisa <= 0:
         return 0
-
-    from . import license as LIS
-
-    batas = LIS.waktu_dari_iso(muatan.get("berlaku_sampai"))
-    if not batas:
-        return HARI_UJI_COBA
-
-    import time
-    return int((batas - time.time()) // 86400)
-
-
-def penanda_ada() -> bool:
-    """Apakah paket ini memuat penanda uji coba yang sah dan belum lewat."""
-    sah, _ = penanda_sah()
-    if not sah:
-        return False
-    return sisa_hari() > 0
+    return int((sisa + 3599) // 3600)
 
 
 def aktif() -> bool:
     """
-    Apakah mode uji coba sedang berlaku.
+    Apakah masa uji coba sedang berlaku.
 
-    Dua syarat harus terpenuhi: aplikasi berjalan di dalam paket MSIX yang
-    benar, dan penanda bertanda tangannya sah serta belum lewat masa
-    berlakunya. Tanpa syarat pertama, menyalin berkas penanda ke hasil
-    pemasangan installer biasa tidak membuka apa pun.
+    Masa uji coba hanya berlaku di dalam paket MSIX yang benar. Pemasangan
+    lewat installer dari situs tidak mendapat masa uji coba, karena unduhan
+    itu sendiri sudah memerlukan kunci lisensi.
     """
     if not dalam_paket_msix():
         return False
-    return penanda_ada()
+    return sisa_detik() > 0
+
+
+def kadaluarsa() -> bool:
+    """Apakah masa uji coba sudah habis di dalam paket MSIX."""
+    if not dalam_paket_msix():
+        return False
+    return sisa_detik() <= 0
+
+
+def sudah_mulai() -> bool:
+    """Apakah masa uji coba pernah dimulai di komputer ini."""
+    return _baca_semua() is not None
 
 
 def lisensi_uji_coba():
     """
-    Bentuk objek lisensi sementara untuk peninjau.
+    Bentuk objek lisensi sementara selama masa uji coba.
 
-    Dipakai oleh alur pembuka aplikasi supaya halaman masuk langsung
-    ditampilkan tanpa melewati layar aktivasi. Objek ini tidak disimpan ke
-    berkas dan tidak menghubungi server.
+    Objek ini tidak disimpan ke berkas dan tidak menghubungi server. Seluruh
+    fitur paket Enterprise dibuka supaya pengguna dapat menilai aplikasi
+    sepenuhnya selama masa uji coba.
     """
     from . import license as LIS
 
-    isi = baca_penanda()
-    muatan = {}
-    if isi is not None:
-        try:
-            muatan = json.loads(isi["muatan"])
-        except Exception:
-            muatan = {}
-
-    batas = LIS.waktu_dari_iso(muatan.get("berlaku_sampai"))
-    if not batas:
-        import datetime as dt
-        batas = (dt.datetime.now()
-                 + dt.timedelta(days=HARI_UJI_COBA)).timestamp()
+    mulai = mulai_uji_coba()
+    batas = mulai + HARI_UJI_COBA * 86400
 
     return LIS.Lisensi(
-        kunci="UJI-COBA-STORE",
+        kunci="UJI-COBA",
         paket="enterprise",
-        pemilik="Peninjau Microsoft Store",
+        pemilik="Masa uji coba",
         berlaku_sampai=batas,
         tenggang_sampai=batas,
         fitur={
@@ -279,6 +371,59 @@ def lisensi_uji_coba():
 
 
 def keterangan() -> str:
-    """Kalimat singkat untuk ditampilkan di dalam aplikasi."""
-    return (f"Mode uji coba untuk peninjau Microsoft Store. "
-            f"Sisa {max(sisa_hari(), 0)} hari.")
+    """Kalimat singkat tentang sisa masa uji coba, untuk ditampilkan."""
+    jam = sisa_jam()
+    if jam <= 0:
+        return "Masa uji coba sudah berakhir."
+    if jam <= 1:
+        return "Masa uji coba tersisa kurang dari 1 jam."
+    return f"Masa uji coba tersisa {jam} jam."
+
+
+def pesan_kadaluarsa() -> str:
+    """Keterangan yang ditampilkan setelah masa uji coba berakhir."""
+    return (
+        "Masa uji coba 1 hari sudah berakhir.\n\n"
+        "Untuk terus memakai AkunTuntas, aktifkan lisensi Anda. "
+        "Lisensi dibeli sekali dan berlaku selamanya, tanpa biaya bulanan.\n\n"
+        "Beli lisensi di akuntuntas.xinet.id/beli, lalu masukkan kunci "
+        "lisensi yang Anda terima di layar ini."
+    )
+
+
+def bersihkan_catatan() -> None:
+    """
+    Hapus seluruh catatan masa uji coba.
+
+    Dipakai alat uji saja. Tidak dipanggil oleh aplikasi, karena menghapus
+    catatan di tengah pemakaian sama dengan memberi masa uji coba baru.
+    """
+    try:
+        berkas = _folder_data() / NAMA_BERKAS
+        if berkas.exists():
+            berkas.unlink()
+    except Exception:
+        pass
+
+    try:
+        from .. import db
+
+        for kunci in (KUNCI_DB_MULAI, KUNCI_DB_PUNCAK):
+            db.ex("DELETE FROM settings WHERE key=?", (kunci,))
+    except Exception:
+        pass
+
+    if sys.platform == "win32":
+        try:
+            import winreg
+
+            jalur = _paksa_jalur_registry or JALUR_REGISTRY
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, jalur, 0,
+                                winreg.KEY_SET_VALUE) as kunci:
+                for nama in ("TrialMulai", "TrialPuncak"):
+                    try:
+                        winreg.DeleteValue(kunci, nama)
+                    except FileNotFoundError:
+                        pass
+        except Exception:
+            pass

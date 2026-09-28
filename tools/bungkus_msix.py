@@ -83,7 +83,7 @@ def tulis_manifest(identitas: dict) -> pathlib.Path:
                                   "CN=Isi-Dari-Partner-Center")
     nama_paket = identitas.get("nama_paket", "XinetGroup.AkunTuntas")
     nama_tampil = identitas.get("nama_tampil", NAMA_PAKET)
-    versi = identitas.get("versi", "1.2.6.0")
+    versi = identitas.get("versi", "1.2.7.0")
     deskripsi = identitas.get(
         "deskripsi", "Pembukuan dan pajak perusahaan Indonesia")
 
@@ -219,11 +219,11 @@ def siapkan() -> int:
         print('      "penerbit": "CN=ABC12345-6789-ABCD-EF01-234567890ABC",')
         print('      "nama_penerbit_tampil": "Xinet Group",')
         print('      "nama_tampil": "AkunTuntas",')
-        print('      "versi": "1.2.6.0",')
+        print('      "versi": "1.2.7.0",')
         print('      "deskripsi": "Pembukuan dan pajak perusahaan Indonesia"')
         print("    }")
         print()
-        print("  Catatan: 'versi' wajib empat angka (1.2.6.0), bukan 1.2.6.")
+        print("  Catatan: 'versi' wajib empat angka (1.2.7.0), bukan 1.2.7.")
         return 3
 
     MSIX.mkdir(parents=True, exist_ok=True)
@@ -237,32 +237,25 @@ def siapkan() -> int:
     manifest = tulis_manifest(identitas)
     print(f"    {manifest.name}")
 
-    # Berkas penanda mode uji coba tidak dibuat di sini. Penanda harus memuat
-    # keterangan bertanda tangan kunci privat server, dan kunci itu tidak ada
-    # di komputer pengembang. Penanda diterbitkan lewat:
-    #     python tools/terbitkan_uji_coba.py
-    # Berkas kosong tidak lagi cukup, karena aplikasi memeriksa tanda
-    # tangannya dan memastikan dirinya benar benar berjalan di dalam paket
-    # MSIX.
+    # Berkas penanda TIDAK boleh ikut ke dalam paket. Paket yang diuji
+    # peninjau Microsoft adalah paket yang SAMA dengan yang diunduh semua
+    # orang dari Store, sehingga penanda apa pun yang ikut terbungkus akan
+    # memberi lisensi gratis kepada seluruh dunia. Masa uji coba sekarang
+    # dihitung dari catatan di komputer pengguna, bukan dari berkas ini.
     penanda = MSIX / "uji_coba.txt"
     print()
     print("  Penanda uji coba:")
     if penanda.exists():
-        try:
-            isi = json.loads(penanda.read_text(encoding="utf-8"))
-            lengkap = bool(isi.get("muatan") and isi.get("tanda"))
-        except Exception:
-            lengkap = False
-        if lengkap:
-            print(f"    {penanda.name} (bertanda tangan, siap dipakai)")
-        else:
-            print(f"    {penanda.name} ADA tetapi tidak bertanda tangan")
-            print("    Mode uji coba akan DITOLAK. Terbitkan yang sah:")
-            print("      python tools/terbitkan_uji_coba.py")
+        print(f"    DITEMUKAN {penanda.name} - berkas ini akan DIABAIKAN.")
+        print("    Paket yang dikirim ke Microsoft Store tidak boleh memuat")
+        print("    penanda apa pun: paket yang diuji peninjau sama dengan")
+        print("    paket yang diunduh semua orang, sehingga penanda di")
+        print("    dalamnya menjadi lisensi gratis untuk semua pemasang.")
+        print()
+        print("    Berkas itu dapat dihapus:")
+        print(f"      del \"{penanda}\"")
     else:
-        print("    belum ada. Paket akan dibungkus tanpa mode uji coba.")
-        print("    Untuk paket yang dikirim ke Microsoft Store, terbitkan dulu:")
-        print("      python tools/terbitkan_uji_coba.py")
+        print("    tidak ada (benar).")
 
     print()
     print("  Selesai. Lanjutkan dengan:")
@@ -305,29 +298,14 @@ def bungkus() -> int:
         shutil.rmtree(tujuan_aset)
     shutil.copytree(MSIX / "Assets", tujuan_aset)
 
+    # Berkas penanda sengaja TIDAK disalin ke dalam paket. Paket yang diuji
+    # peninjau Microsoft adalah paket yang sama dengan yang diunduh semua
+    # orang dari Store. Penanda yang ikut terbungkus akan memberi lisensi
+    # Enterprise gratis kepada setiap pemasang, tanpa pernah membayar.
+    # Masa uji coba dihitung dari catatan di komputer pengguna.
     penanda = MSIX / "uji_coba.txt"
     if penanda.exists():
-        # Penanda harus memuat keterangan bertanda tangan, bukan berkas
-        # kosong. Tanpa tanda tangan, siapa pun dapat membuat berkas dengan
-        # nama yang sama dan memakai aplikasi tanpa membeli lisensi.
-        try:
-            isi = json.loads(penanda.read_text(encoding="utf-8"))
-            lengkap = bool(isi.get("muatan") and isi.get("tanda"))
-        except Exception:
-            lengkap = False
-
-        if not lengkap:
-            print()
-            print("  Penanda uji coba tidak dapat dipakai.")
-            print("  Berkas msix/uji_coba.txt tidak memuat keterangan")
-            print("  bertanda tangan, sehingga mode uji coba akan ditolak.")
-            print()
-            print("  Terbitkan penanda yang sah lebih dulu:")
-            print("    python tools/terbitkan_uji_coba.py")
-            return 5
-
-        shutil.copy2(penanda, tahap / "uji_coba.txt")
-        print("  Menyertakan penanda mode uji coba (bertanda tangan).")
+        print("  Penanda uji coba DIABAIKAN (tidak ikut ke dalam paket).")
 
     keluaran = KELUARAN / f"{NAMA_PAKET}.msix"
     if keluaran.exists():
@@ -421,7 +399,6 @@ def periksa() -> int:
             penting = [
                 "AppxManifest.xml",
                 "AkunTuntas.exe",
-                "uji_coba.txt",
                 "Assets/Square150x150Logo.png",
                 "Assets/StoreLogo.png",
             ]
@@ -432,6 +409,19 @@ def periksa() -> int:
 
             jumlah = sum(1 for _ in folder.rglob("*") if _.is_file())
             print(f"    total berkas: {jumlah}")
+
+            # Penanda uji coba TIDAK boleh ada di dalam paket. Bila ada,
+            # setiap orang yang memasang dari Microsoft Store akan mendapat
+            # lisensi Enterprise gratis tanpa membayar.
+            penanda = folder / "uji_coba.txt"
+            if penanda.exists():
+                print()
+                print("    BAHAYA: uji_coba.txt IKUT TERBUNGKUS")
+                print("    Setiap orang yang memasang dari Store akan")
+                print("    mendapat lisensi gratis. Bungkus ulang paket")
+                print("    ini sebelum dikirim ke Partner Center.")
+            else:
+                print("    uji_coba.txt tidak ada (benar)")
 
             # Baca identitas dari manifest
             man = folder / "AppxManifest.xml"

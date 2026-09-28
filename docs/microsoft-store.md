@@ -133,55 +133,67 @@ Setelah diunggah, Microsoft akan menguji aplikasi. Prosesnya **2 sampai 7
 hari kerja**. Bila ada yang kurang, mereka mengirim keterangan lewat email
 dan Anda dapat memperbaikinya lalu mengirim ulang tanpa biaya tambahan.
 
-## Cara kerja mode uji coba
+## Cara kerja masa uji coba
 
-Paket MSIX memuat berkas `uji_coba.txt` yang isinya keterangan bertanda
-tangan kunci rahasia server. Aplikasi memeriksa tanda tangan itu, lalu
-membuka halaman masuk tanpa meminta kunci lisensi.
+Aplikasi yang dipasang dari Microsoft Store mendapat masa uji coba **1 hari**
+sejak pertama kali dibuka. Seluruh fitur paket Enterprise terbuka selama masa
+itu, sehingga peninjau Microsoft dapat menguji aplikasinya sepenuhnya.
 
-**Cara menerbitkan penanda:**
+**Masa uji coba TIDAK memakai berkas di dalam paket.** Ini keputusan yang
+sengaja dan penting. Paket yang diuji peninjau Microsoft adalah paket yang
+SAMA dengan yang diunduh semua orang dari Store. Bila masa uji coba
+ditentukan oleh berkas di dalam paket, berkas itu menjadi lisensi gratis
+untuk setiap orang yang memasang dari Store.
+
+Waktu mulai dicatat di tiga tempat sekaligus, dan yang dipakai adalah
+catatan paling awal:
+
+1. Tabel `settings` di basis data aplikasi.
+2. Berkas `trial.dat` di folder data aplikasi.
+3. Kunci registry `HKCU\Software\XinetGroup\AkunTuntas`.
+
+Menghapus satu tempat tidak mengembalikan masa uji coba, karena waktunya
+dipulihkan dari tempat lain. Menghapus ketiganya sama dengan memasang ulang
+aplikasi, dan itu pun tetap hanya memberi satu masa uji coba.
+
+**Jam yang dimundurkan tidak memperpanjang.** Selain waktu mulai, dicatat
+juga waktu terjauh yang pernah terlihat. Patokan yang dipakai adalah yang
+paling jauh antara jam sekarang dan catatan itu, sehingga memundurkan jam
+tidak menambah masa uji coba. Memajukan jam justru membuatnya langsung
+habis, dan itu tetap aman karena hanya merugikan yang mencoba mengakali.
+
+**Setelah masa uji coba berakhir**, aplikasi menampilkan layar aktivasi
+dengan keterangan bahwa masa uji coba 1 hari sudah berakhir, dan mengarahkan
+pengguna ke halaman pembelian lisensi di akuntuntas.xinet.id/beli.
+
+**Masa uji coba hanya berlaku di dalam paket MSIX.** Keadaan itu ditanyakan
+kepada Windows lewat `GetCurrentPackageFullName`, bukan disimpulkan dari
+keberadaan berkas. Pemasangan lewat installer dari situs tidak mendapat masa
+uji coba, karena unduhan itu sendiri sudah memerlukan kunci lisensi.
+
+**Tidak menyentuh server lisensi.** Masa uji coba tidak mengaktifkan apa pun
+di Supabase dan tidak menulis berkas lisensi, sehingga lisensi asli milik
+pembeli tidak terpengaruh.
+
+**Cara menguji bahwa tidak ada celah:**
 
 ```bash
-python tools/terbitkan_uji_coba.py
-python tools/bungkus_msix.py --siapkan
-python tools/bungkus_msix.py --bungkus
+python tools/uji_celah_uji_coba.py
 ```
 
-Alat itu meminta email dan sandi dashboard admin, karena penanda memberi
-seluruh fitur Enterprise selama masa berlakunya. Kunci rahasianya tidak ada
-di komputer pengembang, sehingga penanda hanya dapat diterbitkan lewat
-server.
-
-Empat pengaman yang mencegahnya bocor ke versi yang dijual:
-
-1. **Aplikasi harus benar-benar berjalan di dalam paket MSIX.** Keadaan itu
-   ditanyakan kepada Windows lewat `GetCurrentPackageFullName`, bukan
-   disimpulkan dari keberadaan berkas. Menaruh berkas penanda di folder
-   aplikasi hasil pemasangan installer biasa, atau di folder mana pun yang
-   dapat ditulis pengguna, tidak membuka apa pun.
-
-2. **Penanda harus bertanda tangan.** Berkas kosong, berkas dengan tanda
-   tangan palsu, dan berkas yang disunting untuk memperpanjang masa
-   berlakunya langsung ditolak, karena tanda tangannya tidak lagi cocok.
-
-3. **Berlaku 60 hari, dihitung dari isi penanda.** Batas waktunya dibaca
-   dari keterangan bertanda tangan, bukan dari catatan di komputer
-   pengguna, sehingga menghapus berkas apa pun tidak memperpanjang masa uji
-   coba. Peninjau Microsoft selalu menguji dalam hitungan hari.
-
-4. **Tidak menyentuh server lisensi.** Mode uji coba tidak mengaktifkan
-   apa pun di Supabase dan tidak menulis berkas lisensi, sehingga lisensi
-   asli milik pembeli tidak terpengaruh.
+Alat itu mencoba sembilan cara memperpanjang masa uji coba secara curang,
+termasuk menghapus ketiga catatan sekaligus dan memundurkan jam komputer.
 
 ## Hal yang perlu diperhatikan
 
-**Terbitkan penanda baru bila mengirim versi baru.** Setiap kali mengirim
-pembaruan ke Store, terbitkan penanda baru supaya peninjau dapat menguji
-versi tersebut. Ini memang disengaja.
+**Paket MSIX TIDAK boleh memuat `uji_coba.txt`.** Berkas itu sudah tidak
+dipakai sama sekali. Bila ikut terbungkus, setiap orang yang memasang dari
+Store akan mendapat lisensi Enterprise gratis tanpa membayar. Perintah
+`--bungkus` mengabaikannya, dan `--periksa` memberi peringatan BAHAYA bila
+berkas itu tetap ada di dalam paket.
 
-**Jangan pernah menaruh `uji_coba.txt` di folder aplikasi versi installer.**
-Meskipun sudah tidak dapat dipakai untuk membuka aplikasi, berkas itu tetap
-tidak ada gunanya di sana. Perintah `--bungkus` sudah menolak membungkus
+**Periksa paket sebelum diunggah.** Jalankan `python tools/bungkus_msix.py
+--periksa`. Keluarannya harus menyebut `uji_coba.txt tidak ada (benar)`.
 paket yang penandanya tidak bertanda tangan.
 
 **Versi MSIX wajib empat angka.** Tulis `1.0.0.0`, bukan `1.0.0`. Store

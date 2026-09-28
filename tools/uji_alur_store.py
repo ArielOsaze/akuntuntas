@@ -50,12 +50,15 @@ def periksa(nama: str, syarat: bool, keterangan: str = "") -> None:
 
 def siapkan_mode_paket(folder_paket: Path) -> bool:
     """
-    Arahkan pembacaan penanda ke susunan folder paket MSIX.
+    Tiru susunan folder paket MSIX.
 
     Pada paket yang sudah dibungkus, aplikasi dijalankan dari AkunTuntas.exe
-    dengan sys._MEIPASS menunjuk ke folder _internal, sedangkan berkas
-    penanda berada di akar paket. Keadaan itu ditiru di sini supaya
-    pembacaan penanda diuji pada susunan yang sebenarnya.
+    dengan sys._MEIPASS menunjuk ke folder _internal. Keadaan itu ditiru di
+    sini supaya alur pembukaan aplikasi diuji pada susunan yang sebenarnya.
+
+    Berkas penanda uji coba TIDAK diharapkan ada. Paket yang dikirim ke
+    Microsoft Store tidak boleh memuatnya, karena paket yang diuji peninjau
+    adalah paket yang sama dengan yang diunduh semua orang.
     """
     if not folder_paket.exists():
         print(f"  Folder paket tidak ada: {folder_paket}")
@@ -64,12 +67,13 @@ def siapkan_mode_paket(folder_paket: Path) -> bool:
     internal = folder_paket / "_internal"
     penanda = folder_paket / "uji_coba.txt"
 
-    print(f"  Folder paket  : {folder_paket}")
-    print(f"  _internal ada : {internal.exists()}")
-    print(f"  penanda ada   : {penanda.exists()}")
+    print(f"  Folder paket    : {folder_paket}")
+    print(f"  _internal ada   : {internal.exists()}")
+    print(f"  penanda uji coba: "
+          f"{'ADA (SALAH)' if penanda.exists() else 'tidak ada (benar)'}")
     print()
 
-    if not internal.exists() or not penanda.exists():
+    if not internal.exists():
         print("  Susunan folder tidak seperti paket MSIX.")
         return False
 
@@ -109,29 +113,42 @@ def main() -> int:
     db.init_db()
     periksa("Basis data dapat disiapkan", True)
 
-    # ------------------------------------------------- mode uji coba aktif
+    # ------------------------------------------------- masa uji coba aktif
     print()
-    print("2. MODE UJI COBA UNTUK PENINJAU")
+    print("2. MASA UJI COBA UNTUK PENINJAU")
     if arg.paket:
-        periksa("Paket ini memuat berkas penanda uji coba",
-                uji_coba.penanda_ada(),
-                "berkas uji_coba.txt tidak terbaca")
+        # Paket yang dikirim ke Store TIDAK boleh memuat berkas penanda.
+        # Bila memuat, setiap orang yang memasang dari Store akan mendapat
+        # lisensi Enterprise gratis tanpa membayar.
+        berkas_penanda = arg.paket / "uji_coba.txt"
+        periksa("Paket ini TIDAK memuat berkas penanda uji coba",
+                not berkas_penanda.exists(),
+                "uji_coba.txt ikut terbungkus - setiap pemasang dari Store "
+                "akan mendapat lisensi gratis")
 
-        # Keadaan "berjalan di dalam paket MSIX" hanya dapat ditanyakan
-        # kepada Windows, dan itu tidak ada di luar Windows. Untuk menguji
-        # pembacaan penandanya, keadaan itu dinyatakan lebih dahulu.
-        # Pemeriksaan bahwa penanda palsu ditolak ada di alat tersendiri
-        # (uji_celah_uji_coba.py).
+        # Masa uji coba dihitung dari catatan di komputer. Keadaan
+        # "berjalan di dalam paket MSIX" hanya dapat ditanyakan kepada
+        # Windows, dan itu tidak ada di luar Windows, jadi dinyatakan lebih
+        # dahulu. Pemeriksaan bahwa masa uji coba tidak dapat diperpanjang
+        # ada di alat tersendiri (uji_celah_uji_coba.py).
         uji_coba._paksa_dalam_paket = True
-        periksa("Mode uji coba aktif", uji_coba.aktif())
+        periksa("Masa uji coba berlaku di dalam paket MSIX",
+                uji_coba.aktif(),
+                "masa uji coba tidak aktif")
+        periksa("Masa uji coba berlangsung 1 hari",
+                uji_coba.HARI_UJI_COBA == 1,
+                f"lama uji coba = {uji_coba.HARI_UJI_COBA} hari")
+        periksa("Masa uji coba dihitung dari pemakaian pertama",
+                uji_coba.sudah_mulai(),
+                "waktu mulai belum tercatat")
         uji_coba._paksa_dalam_paket = None
     else:
-        # Dari kode sumber, penanda memang tidak ada. Yang diperiksa adalah
-        # bahwa mode uji coba TIDAK aktif, supaya build biasa tetap meminta
-        # lisensi sungguhan.
-        periksa("Build biasa tidak terpengaruh mode uji coba",
+        # Dari kode sumber, masa uji coba memang tidak berlaku. Yang
+        # diperiksa adalah bahwa build biasa TETAP meminta lisensi
+        # sungguhan, supaya tidak ada pemasangan gratis dari installer.
+        periksa("Build biasa tidak terpengaruh masa uji coba",
                 not uji_coba.aktif(),
-                "mode uji coba seharusnya mati pada build biasa")
+                "masa uji coba seharusnya mati pada build biasa")
 
     lisensi = uji_coba.lisensi_uji_coba()
     periksa("Lisensi uji coba memakai paket Enterprise", lisensi.enterprise)

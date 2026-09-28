@@ -1,6 +1,6 @@
 {
-  "versi": "1.2.6",
+  "versi": "1.2.7",
   "build": "2026.09",
-  "tanggal": "2026-09-28",
-  "catatan": "Halaman masuk ditata ulang tanpa kotak abu, formulir rata 400 piksel, kontras teks kecil dinaikkan, alur lisensi diarahkan ke situs resmi"
+  "tanggal": "2026-09-29",
+  "catatan": "Ganti mode uji coba berbasis berkas dengan masa uji coba 1 hari yang tidak dapat diperpanjang, hilangkan celah lisensi gratis di paket Microsoft Store"
 }
