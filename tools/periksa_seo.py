@@ -33,6 +33,7 @@ PUBLIK = {
     "index.html": "/",
     "unduh.html": "/unduh",
     "beli.html": "/beli",
+    "rilis.html": "/rilis",
     "kontak.html": "/kontak",
     "privasi.html": "/privasi",
 }

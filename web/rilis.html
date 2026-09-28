@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catatan Rilis AkunTuntas - Riwayat Pembaruan</title>
+<meta name="description" content="Riwayat pembaruan aplikasi AkunTuntas: fitur baru, perbaikan, dan perubahan setiap versi. Aplikasi pembukuan dan pajak untuk perusahaan Indonesia.">
+<link rel="stylesheet" href="styles.css?v=8">
+<style>
+    .rilis-wadah {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 56px 0 80px;
+    }
+
+    .rilis-kepala {
+        border-bottom: 1px solid var(--garis);
+        padding-bottom: 26px;
+        margin-bottom: 34px;
+    }
+
+    .rilis-kepala h1 {
+        font-size: 34px;
+        margin-bottom: 10px;
+    }
+
+    .rilis-kepala p {
+        color: var(--teks-abu);
+        font-size: 15px;
+        line-height: 1.7;
+    }
+
+    .rilis-versi {
+        margin-bottom: 44px;
+        padding-bottom: 36px;
+        border-bottom: 1px solid var(--garis);
+    }
+
+    .rilis-versi:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .rilis-nomor {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 6px;
+    }
+
+    .rilis-nomor h2 {
+        font-size: 26px;
+        margin: 0;
+    }
+
+    .rilis-terbaru {
+        display: inline-block;
+        background: var(--biru);
+        color: var(--putih);
+        font-size: 12px;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.3px;
+    }
+
+    .rilis-tanggal {
+        color: var(--teks-abu);
+        font-size: 14px;
+        margin-bottom: 22px;
+    }
+
+    .rilis-versi h3 {
+        font-size: 17px;
+        margin-top: 26px;
+        margin-bottom: 10px;
+        color: var(--teks);
+    }
+
+    .rilis-versi p {
+        font-size: 15px;
+        line-height: 1.8;
+        color: var(--teks-abu);
+        margin-bottom: 14px;
+    }
+
+    .rilis-versi ul {
+        margin: 0 0 16px 22px;
+    }
+
+    .rilis-versi li {
+        font-size: 15px;
+        line-height: 1.8;
+        color: var(--teks-abu);
+        margin-bottom: 8px;
+    }
+
+    .rilis-versi strong { color: var(--teks); }
+
+    .rilis-sorot {
+        background: var(--latar-lembut);
+        border-left: 3px solid var(--biru);
+        border-radius: 0 10px 10px 0;
+        padding: 18px 22px;
+        margin: 22px 0;
+    }
+
+    .rilis-sorot p {
+        margin-bottom: 0;
+        color: var(--teks);
+    }
+
+    .rilis-unduh {
+        display: inline-block;
+        margin-top: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--biru);
+    }
+
+    .rilis-kaki {
+        margin-top: 46px;
+        padding-top: 22px;
+        border-top: 1px solid var(--garis);
+        font-size: 14px;
+        color: var(--teks-abu);
+    }
+
+    .rilis-kaki a { color: var(--biru); font-weight: 600; }
+
+    @media (max-width: 600px) {
+        .rilis-wadah { padding: 36px 0 60px; }
+        .rilis-kepala h1 { font-size: 27px; }
+        .rilis-nomor h2 { font-size: 22px; }
+    }
+</style>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="logo-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="logo-128.png">
+<link rel="manifest" href="manifest.json">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AkunTuntas">
+<meta property="og:title" content="Catatan Rilis AkunTuntas - Riwayat Pembaruan">
+<meta property="og:description" content="Riwayat pembaruan aplikasi AkunTuntas: fitur baru, perbaikan, dan perubahan setiap versi.">
+<meta property="og:image" content="https://akuntuntas.xinet.id/pratinjau.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AkunTuntas - Pembukuan dan Pajak Perusahaan Indonesia">
+<meta property="og:url" content="https://akuntuntas.xinet.id/rilis">
+<meta property="og:locale" content="id_ID">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Catatan Rilis AkunTuntas - Riwayat Pembaruan">
+<meta name="twitter:description" content="Riwayat pembaruan aplikasi AkunTuntas: fitur baru, perbaikan, dan perubahan setiap versi.">
+<meta name="twitter:image" content="https://akuntuntas.xinet.id/pratinjau.png">
+
+<link rel="canonical" href="https://akuntuntas.xinet.id/rilis">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Catatan Rilis AkunTuntas",
+  "url": "https://akuntuntas.xinet.id/rilis",
+  "inLanguage": "id",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "AkunTuntas",
+    "url": "https://akuntuntas.xinet.id/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Xinet Group"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="kepala">
+    <div class="wadah kepala-isi">
+        <a class="merek" href="index.html">
+            <img src="logo-64.png" alt="AkunTuntas" width="34" height="34">
+            <span>AkunTuntas</span>
+        </a>
+        <nav class="kepala-tombol">
+            <a class="tombol tombol-garis" href="index.html">Beranda</a>
+            <a class="tombol" href="unduh.html">Unduh</a>
+            <a class="tombol tombol-garis" href="kontak.html">Hubungi Kami</a>
+        </nav>
+    </div>
+</header>
+
+<main>
+    <div class="wadah">
+        <div class="rilis-wadah">
+
+            <div class="rilis-kepala">
+                <h1>Catatan Rilis</h1>
+                <p>
+                    Riwayat pembaruan aplikasi AkunTuntas. Setiap versi
+                    mencantumkan apa yang ditambahkan dan apa yang
+                    diperbaiki, supaya Anda tahu perubahan apa yang masuk
+                    ke komputer Anda.
+                </p>
+            </div>
+
+            <div class="rilis-sorot">
+                <p>
+                    <strong>Versi terbaru: 1.2.6.</strong> Halaman masuk
+                    ditata ulang supaya lebih rapi, teks keterangan dibuat
+                    lebih jelas terbaca, dan pengguna yang belum punya
+                    lisensi kini diarahkan ke halaman pembelian di situs
+                    ini.
+                </p>
+            </div>
+
+            <!-- ============================ 1.2.6 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.2.6</h2>
+                    <span class="rilis-terbaru">TERBARU</span>
+                </div>
+                <div class="rilis-tanggal">28 September 2026</div>
+
+                <h3>Halaman masuk lebih rapi</h3>
+                <ul>
+                    <li>
+                        Kotak berlatar abu di bawah tombol masuk dihapus.
+                        Keterangan akun bawaan kini tampil sebagai teks
+                        biasa, sehingga halaman masuk terlihat bersih
+                        seperti halaman lain di aplikasi.
+                    </li>
+                    <li>
+                        Kolom isian, tombol masuk, dan keterangan di
+                        bawahnya kini <strong>sama lebar dan sejajar</strong>.
+                        Sebelumnya kolom isian lebih sempit daripada
+                        keterangan di bawahnya sehingga tampak meluber.
+                    </li>
+                    <li>
+                        Seluruh elemen formulir rata pada satu garis di
+                        semua ukuran jendela, dari layar 1024 piksel
+                        sampai 1920 piksel.
+                    </li>
+                </ul>
+
+                <h3>Teks lebih mudah dibaca</h3>
+                <ul>
+                    <li>
+                        Warna teks keterangan dinaikkan kontrasnya, baik di
+                        panel gelap maupun panel terang.
+                    </li>
+                    <li>
+                        Keterangan kata sandi bawaan kini memakai ukuran
+                        dan warna yang lebih tegas, supaya pengguna baru
+                        tidak melewatkannya.
+                    </li>
+                    <li>
+                        Seluruh teks aplikasi memenuhi standar kontras
+                        <strong>WCAG AA</strong>.
+                    </li>
+                </ul>
+
+                <h3>Alur lisensi diarahkan ke situs</h3>
+                <ul>
+                    <li>
+                        Pengguna yang belum punya lisensi kini diarahkan ke
+                        halaman pembelian di akuntuntas.xinet.id, bukan ke
+                        alamat surel. Di situs tersedia keterangan paket,
+                        harga, dan cara pembayaran yang lengkap.
+                    </li>
+                    <li>
+                        Pesan ketika lisensi dicabut juga menunjuk ke situs,
+                        supaya pengguna tahu langkah yang dapat ditempuh.
+                    </li>
+                </ul>
+
+                <a class="rilis-unduh" href="unduh.html">Unduh versi 1.2.6 &rarr;</a>
+            </div>
+
+            <!-- ============================ 1.2.5 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.2.5</h2>
+                </div>
+                <div class="rilis-tanggal">28 September 2026</div>
+
+                <h3>Perbaikan tampilan</h3>
+                <ul>
+                    <li>
+                        Judul jendela tidak lagi menampilkan nama aplikasi
+                        dua kali. Sebelumnya berbunyi "AkunTuntas -
+                        Pembukuan &amp; Pajak Perusahaan Indonesia -
+                        AkunTuntas".
+                    </li>
+                    <li>
+                        Bila laba besar tetapi kas negatif, muncul
+                        keterangan yang menjelaskan sebabnya, supaya
+                        angkanya tidak membingungkan.
+                    </li>
+                    <li>
+                        Penilaian rasio keuangan diperbaiki. Sebelumnya
+                        rasio kas negatif dinilai "Sangat Baik" dan rasio
+                        lancar yang sehat dinilai "Berisiko Tinggi".
+                    </li>
+                    <li>
+                        Penulisan angka diseragamkan: koma sebagai tanda
+                        desimal dan titik sebagai pemisah ribuan, sesuai
+                        kebiasaan Indonesia. Uang negatif ditulis
+                        "-Rp168.837.000".
+                    </li>
+                </ul>
+
+                <h3>Fitur baru</h3>
+                <ul>
+                    <li>
+                        <strong>Tombol tindak lanjut pada setiap temuan
+                        analisis.</strong> Setelah analisis keuangan
+                        menampilkan temuan, tersedia tombol yang langsung
+                        membuka halaman terkait, misalnya "Buka Kas &amp;
+                        Bank" atau "Buka Jurnal Umum".
+                    </li>
+                    <li>
+                        <strong>Ekspor ke Excel dan cetak A4.</strong>
+                        Seluruh daftar dan laporan dapat diekspor ke berkas
+                        Excel yang angkanya tetap dapat dijumlahkan, serta
+                        dicetak pada ukuran kertas A4.
+                    </li>
+                </ul>
+
+                <h3>Perbaikan lain</h3>
+                <ul>
+                    <li>
+                        Tanda "&amp;" pada tombol tidak lagi tampil sebagai
+                        garis bawah.
+                    </li>
+                    <li>
+                        Nama bentuk badan usaha tidak lagi muncul dua kali,
+                        misalnya "PT Xinet persada - PT".
+                    </li>
+                    <li>
+                        Pemasang aplikasi diperkecil dari 107 MB menjadi
+                        92 MB, sehingga diunduh lebih cepat.
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ============================ 1.2.4 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.2.4</h2>
+                </div>
+                <div class="rilis-tanggal">27 September 2026</div>
+
+                <ul>
+                    <li>
+                        <strong>Penjaga keseimbangan jurnal.</strong>
+                        Jurnal yang tidak seimbang ditolak, walau ditulis
+                        langsung ke tabel. Ini melindungi laporan dari
+                        kesalahan yang sulit dilacak.
+                    </li>
+                    <li>
+                        <strong>Pemisahan data antar perusahaan
+                        diperketat</strong> pada 53 tabel, supaya data satu
+                        perusahaan tidak tercampur dengan perusahaan lain.
+                    </li>
+                    <li>
+                        Impor CSV menerima tanggal gaya Indonesia seperti
+                        <code>15/03/2026</code>, bukan hanya bentuk
+                        <code>2026-03-15</code>.
+                    </li>
+                    <li>
+                        Halaman kontak di situs dengan formulir dan tombol
+                        WhatsApp.
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ============================ 1.2.3 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.2.3</h2>
+                </div>
+                <div class="rilis-tanggal">26 September 2026</div>
+
+                <ul>
+                    <li>
+                        Tabel perbandingan paket di situs ditata ulang
+                        menjadi lebih mudah dibaca.
+                    </li>
+                    <li>
+                        Penanda baris perbandingan dua jenis: fitur khusus
+                        Enterprise, dan fitur yang batasannya berbeda.
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ============================ 1.2.2 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.2.2</h2>
+                </div>
+                <div class="rilis-tanggal">26 September 2026</div>
+
+                <ul>
+                    <li>
+                        Dashboard dan Analisis Keuangan ditata ulang supaya
+                        lebih mudah dipahami.
+                    </li>
+                    <li>
+                        Penjelasan istilah rasio keuangan pada mode Pemula.
+                    </li>
+                    <li>
+                        Panduan langkah awal muncul saat pembukuan masih
+                        kosong, supaya pengguna baru tahu harus mulai dari
+                        mana.
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ============================ 1.2.0 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.2.0</h2>
+                </div>
+                <div class="rilis-tanggal">25 September 2026</div>
+
+                <ul>
+                    <li>
+                        <strong>Pemisahan data antar perusahaan</strong> dan
+                        pemeriksaan keseimbangan jurnal.
+                    </li>
+                    <li>
+                        Perbaikan 4 celah keamanan pada sistem lisensi.
+                    </li>
+                    <li>
+                        Perbaikan buku besar yang menampilkan pendapatan
+                        sebagai angka negatif.
+                    </li>
+                    <li>
+                        Perbaikan kartu stok yang menampilkan saldo
+                        menyesatkan.
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ============================ 1.1.0 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.1.0</h2>
+                </div>
+                <div class="rilis-tanggal">24 September 2026</div>
+
+                <ul>
+                    <li>Kwitansi dan bukti transaksi.</li>
+                    <li>Dashboard admin untuk pengelolaan lisensi.</li>
+                    <li>Pembayaran melalui iPaymu, termasuk QRIS.</li>
+                    <li>
+                        Perbaikan deteksi versi Windows: Windows 11 tidak
+                        lagi terbaca sebagai Windows 10.
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ============================ 1.0.0 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.0.0</h2>
+                </div>
+                <div class="rilis-tanggal">24 September 2026</div>
+
+                <p>Versi pertama AkunTuntas.</p>
+
+                <ul>
+                    <li>
+                        Pembukuan berpasangan dengan pemeriksaan debit dan
+                        kredit.
+                    </li>
+                    <li>
+                        Bagan akun siap pakai untuk lima bentuk badan usaha.
+                    </li>
+                    <li>
+                        Penjualan, pembelian, kas dan bank, biaya,
+                        persediaan dengan metode FIFO dan rata-rata
+                        bergerak, aset tetap beserta penyusutan, kontrak,
+                        dan payroll.
+                    </li>
+                    <li>
+                        Perhitungan PPh 21 TER, PPh Badan, PPh Final UMKM,
+                        PPN, dan PPh 23.
+                    </li>
+                    <li>Checklist kepatuhan pajak.</li>
+                    <li>
+                        Laporan keuangan sesuai SAK EMKM, SAK EP, dan SAK
+                        Umum.
+                    </li>
+                    <li>
+                        Jejak audit yang mencatat setiap perubahan data:
+                        siapa mengubah, kapan, dan dari komputer mana.
+                    </li>
+                    <li>Dua mode pemakaian: Pemula dan Ahli.</li>
+                    <li>Cadangan otomatis dan pemulihan data.</li>
+                    <li>Keranjang sampah dengan pemulihan data.</li>
+                </ul>
+            </div>
+
+            <div class="rilis-kaki">
+                <a href="index.html">Beranda</a> &middot;
+                <a href="unduh.html">Unduh</a> &middot;
+                <a href="beli.html">Beli lisensi</a> &middot;
+                <a href="https://wa.me/6282224293639?text=Halo%2C%20saya%20ingin%20bertanya%20tentang%20AkunTuntas." target="_blank" rel="noopener">Hubungi kami</a>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<footer class="kaki">
+    <div class="wadah">
+        <div class="kaki-bawah">
+            <span>&copy; 2026 Xinet Group. Seluruh hak cipta dilindungi.</span>
+            <span>AkunTuntas - Pembukuan &amp; Pajak Perusahaan Indonesia</span>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>

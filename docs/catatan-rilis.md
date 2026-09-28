@@ -1,36 +1,65 @@
 # Catatan Rilis AkunTuntas
 
-Berkas ini memuat daftar perubahan setiap versi. Dipakai untuk mengisi
+Berkas ini memuat riwayat perubahan setiap versi. Dipakai untuk mengisi
 kolom **What's new** di Microsoft Partner Center, dan untuk memberi tahu
 pengguna apa yang berubah setelah pemasangan.
+
+Versi yang sama tampil untuk umum di https://akuntuntas.xinet.id/rilis
+(berkas `web/rilis.html`). Bila mengubah berkas ini, perbarui juga halaman
+webnya supaya isinya tidak berbeda.
 
 ---
 
 ## Versi 1.2.6 - 28 September 2026
 
-### Perbaikan tampilan halaman masuk
+Versi terbaru.
 
-**Halaman masuk ditata ulang mengikuti gaya yang bersih.**
-Kotak berlatar abu di bawah tombol masuk dihapus. Keterangan akun bawaan
-kini tampil sebagai teks biasa, bukan kotak, sehingga halaman masuk
-terlihat rapi seperti halaman dialog aplikasi lainnya.
+### Halaman masuk lebih rapi
 
-**Formulir memakai lebar penuh yang direncanakan.**
-Sebelumnya kolom isian hanya selebar 259 piksel, sedangkan keterangan di
-bawahnya meluber sampai 640 piksel sehingga tampak tidak sejajar. Kini
-seluruh elemen formulir sama lebar 400 piksel dan rata pada satu garis,
-di semua ukuran jendela.
+- Kotak berlatar abu di bawah tombol masuk dihapus. Keterangan akun
+  bawaan kini tampil sebagai teks biasa, sehingga halaman masuk terlihat
+  bersih seperti halaman lain di aplikasi.
+- Kolom isian, tombol masuk, dan keterangan di bawahnya kini **sama
+  lebar dan sejajar**. Sebelumnya kolom isian hanya selebar 259 piksel,
+  sedangkan keterangan di bawahnya meluber sampai 640 piksel.
+- Seluruh elemen formulir rata pada satu garis di semua ukuran jendela,
+  dari layar 1024 piksel sampai 1920 piksel.
 
-**Teks kecil dibuat lebih jelas terbaca.**
-Warna teks keterangan dinaikkan kontrasnya. Keterangan kata sandi bawaan
-kini memakai ukuran dan warna yang lebih tegas supaya pengguna baru tidak
-melewatkannya. Seluruh teks memenuhi standar kontras WCAG AA.
+### Teks lebih mudah dibaca
 
-### Alur lisensi
+- Warna teks keterangan dinaikkan kontrasnya, baik di panel gelap maupun
+  panel terang.
+- Keterangan kata sandi bawaan kini memakai ukuran dan warna yang lebih
+  tegas, supaya pengguna baru tidak melewatkannya.
+- Seluruh teks aplikasi memenuhi standar kontras **WCAG AA**.
 
-**Pengguna yang belum punya lisensi diarahkan ke situs resmi.**
-Pada layar aktivasi dan layar batas paket, pengguna diarahkan ke halaman
-pembelian di akuntuntas.xinet.id, bukan ke alamat surel.
+### Alur lisensi diarahkan ke situs
+
+- Pengguna yang belum punya lisensi kini diarahkan ke halaman pembelian
+  di akuntuntas.xinet.id, bukan ke alamat surel. Di situs tersedia
+  keterangan paket, harga, dan cara pembayaran yang lengkap.
+- Pesan ketika lisensi dicabut juga menunjuk ke situs, supaya pengguna
+  tahu langkah yang dapat ditempuh.
+
+### Teks untuk kolom What's new di Partner Center
+
+Batas 1500 huruf. Salin yang berikut.
+
+```
+Halaman masuk ditata ulang: kotak abu di bawah tombol masuk dihapus,
+keterangan akun bawaan kini tampil sebagai teks biasa.
+
+Formulir masuk kini sama lebar dan sejajar di semua ukuran jendela.
+Sebelumnya kolom isian lebih sempit daripada keterangan di bawahnya.
+
+Teks keterangan dibuat lebih jelas terbaca, termasuk keterangan kata
+sandi bawaan supaya pengguna baru tidak melewatkannya.
+
+Pengguna yang belum punya lisensi kini diarahkan ke halaman pembelian di
+situs resmi, bukan ke alamat surel.
+
+Seluruh teks aplikasi memenuhi standar kontras WCAG AA.
+```
 
 ---
 
@@ -38,48 +67,26 @@ pembelian di akuntuntas.xinet.id, bukan ke alamat surel.
 
 ### Perbaikan tampilan
 
-**Judul jendela tidak lagi menampilkan nama aplikasi dua kali.**
-Sebelumnya judul jendela berbunyi "AkunTuntas - Pembukuan & Pajak
-Perusahaan Indonesia - AkunTuntas". Nama aplikasi ditambahkan Qt di
-belakang judul yang sudah memuat nama itu. Kini judulnya bersih.
-
-**Halaman masuk ditata ulang.**
-Kolom isian, tombol masuk, dan kotak keterangan akun bawaan kini sama
-lebar dan sejajar. Sebelumnya kolom isian hanya selebar 259 piksel
-sementara kotak keterangan meluber sampai 640 piksel, sehingga halaman
-tampak tidak rapi. Lebar formulir kini tetap 400 piksel pada semua
-ukuran jendela, dan seluruh elemennya rata pada satu garis.
-
-**Laporan keuangan lebih mudah dipahami.**
-Bila laba besar tetapi kas negatif, muncul keterangan yang menjelaskan
-sebabnya, supaya angkanya tidak membingungkan.
-
-**Penilaian rasio keuangan diperbaiki.**
-Sebelumnya rasio kas negatif dinilai "Sangat Baik" dan rasio lancar yang
-sehat dinilai "Berisiko Tinggi". Arah penilaian kini benar.
-
-**Penulisan angka diseragamkan.**
-Seluruh angka memakai koma sebagai tanda desimal dan titik sebagai
-pemisah ribuan, sesuai kebiasaan Indonesia. Uang negatif ditulis
-"-Rp168.837.000", bukan "Rp-168.837.000".
+- Judul jendela tidak lagi menampilkan nama aplikasi dua kali.
+  Sebelumnya berbunyi "AkunTuntas - Pembukuan & Pajak Perusahaan
+  Indonesia - AkunTuntas".
+- Bila laba besar tetapi kas negatif, muncul keterangan yang menjelaskan
+  sebabnya, supaya angkanya tidak membingungkan.
+- Penilaian rasio keuangan diperbaiki. Sebelumnya rasio kas negatif
+  dinilai "Sangat Baik" dan rasio lancar yang sehat dinilai "Berisiko
+  Tinggi".
+- Penulisan angka diseragamkan: koma sebagai tanda desimal dan titik
+  sebagai pemisah ribuan, sesuai kebiasaan Indonesia. Uang negatif
+  ditulis "-Rp168.837.000", bukan "Rp-168.837.000".
 
 ### Fitur baru
 
-**Setiap temuan analisis kini punya tombol tindak lanjut.**
-Setelah analisis keuangan menampilkan temuan, tersedia tombol yang
-langsung membuka halaman terkait untuk menindaklanjuti temuan itu,
-misalnya "Buka Kas & Bank" atau "Buka Jurnal Umum".
-
-**Ekspor ke Excel dan cetak A4.**
-Seluruh daftar dan laporan dapat diekspor ke berkas Excel yang angkanya
-tetap dapat dijumlahkan, serta dicetak pada ukuran kertas A4.
-
-### Alur lisensi
-
-**Pengguna yang belum punya lisensi diarahkan ke situs resmi.**
-Pada layar aktivasi dan layar batas paket, pengguna kini diarahkan ke
-halaman pembelian di akuntuntas.xinet.id, bukan ke alamat surel. Di situs
-tersedia keterangan paket, harga, dan cara pembayaran yang lengkap.
+- **Tombol tindak lanjut pada setiap temuan analisis.** Setelah analisis
+  keuangan menampilkan temuan, tersedia tombol yang langsung membuka
+  halaman terkait, misalnya "Buka Kas & Bank" atau "Buka Jurnal Umum".
+- **Ekspor ke Excel dan cetak A4.** Seluruh daftar dan laporan dapat
+  diekspor ke berkas Excel yang angkanya tetap dapat dijumlahkan, serta
+  dicetak pada ukuran kertas A4.
 
 ### Perbaikan lain
 
@@ -90,8 +97,7 @@ tersedia keterangan paket, harga, dan cara pembayaran yang lengkap.
 - Keterangan pada halaman analisis tidak lagi mewarisi warna ke anak
   elemennya.
 - Pemasang aplikasi diperkecil dari 107 MB menjadi 92 MB dengan membuang
-  pustaka multimedia yang tidak dipakai, sehingga dapat diunggah ke
-  GitHub dan diunduh lebih cepat.
+  pustaka multimedia yang tidak dipakai, sehingga diunduh lebih cepat.
 
 ---
 
