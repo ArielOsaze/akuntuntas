@@ -116,16 +116,24 @@ def main() -> int:
         periksa("Paket ini memuat berkas penanda uji coba",
                 uji_coba.penanda_ada(),
                 "berkas uji_coba.txt tidak terbaca")
-        periksa("Mode uji coba aktif", uji_coba.aktif(config.DATA_DIR))
+
+        # Keadaan "berjalan di dalam paket MSIX" hanya dapat ditanyakan
+        # kepada Windows, dan itu tidak ada di luar Windows. Untuk menguji
+        # pembacaan penandanya, keadaan itu dinyatakan lebih dahulu.
+        # Pemeriksaan bahwa penanda palsu ditolak ada di alat tersendiri
+        # (uji_celah_uji_coba.py).
+        uji_coba._paksa_dalam_paket = True
+        periksa("Mode uji coba aktif", uji_coba.aktif())
+        uji_coba._paksa_dalam_paket = None
     else:
         # Dari kode sumber, penanda memang tidak ada. Yang diperiksa adalah
         # bahwa mode uji coba TIDAK aktif, supaya build biasa tetap meminta
         # lisensi sungguhan.
         periksa("Build biasa tidak terpengaruh mode uji coba",
-                not uji_coba.aktif(config.DATA_DIR),
+                not uji_coba.aktif(),
                 "mode uji coba seharusnya mati pada build biasa")
 
-    lisensi = uji_coba.lisensi_uji_coba(config.DATA_DIR)
+    lisensi = uji_coba.lisensi_uji_coba()
     periksa("Lisensi uji coba memakai paket Enterprise", lisensi.enterprise)
     periksa("Lisensi uji coba masih berlaku", lisensi.masih_berlaku())
     periksa("Fitur dimensi terbuka",

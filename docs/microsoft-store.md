@@ -114,7 +114,10 @@ aplikasi sudah dapat langsung dipakai tanpa kunci lisensi:
 > berikut untuk masuk:
 >
 > Nama pengguna: admin
-> Kata sandi: admin
+> Kata sandi: admin123
+>
+> Aplikasi akan meminta penggantian kata sandi setelah masuk pertama kali.
+> Silakan ganti dengan kata sandi apa pun yang Anda inginkan.
 >
 > Seluruh fitur paket Enterprise terbuka untuk pengujian, termasuk dimensi
 > biaya, konsolidasi grup, dan pajak lanjutan. Data disimpan di komputer

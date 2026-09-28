@@ -27,6 +27,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import zipfile
 
 AKAR = pathlib.Path(__file__).resolve().parent.parent
 DIST = AKAR / "dist" / "AkunTuntas"
@@ -349,6 +350,20 @@ def bungkus() -> int:
     ukuran = keluaran.stat().st_size / 1048576
     print(f"  BERHASIL: {keluaran.name} ({ukuran:.1f} MB)")
     print(f"  Lokasi  : {keluaran}")
+
+    # Partner Center meminta berkas .msixupload untuk pengiriman. Isinya
+    # adalah paket .msix di dalam wadah, bukan format yang berbeda, jadi
+    # wadahnya dibuat dari berkas yang baru saja dibungkus.
+    unggah = KELUARAN / f"{NAMA_PAKET}.msixupload"
+    if unggah.exists():
+        unggah.unlink()
+    try:
+        with zipfile.ZipFile(unggah, "w", zipfile.ZIP_DEFLATED) as z:
+            z.write(keluaran, keluaran.name)
+        ukuran_unggah = unggah.stat().st_size / 1048576
+        print(f"  Siap unggah: {unggah.name} ({ukuran_unggah:.1f} MB)")
+    except Exception as e:
+        print(f"  (wadah .msixupload gagal dibuat: {e})")
     print()
 
     if tahap.exists():
@@ -373,6 +388,13 @@ def periksa() -> int:
         print(f"  Paket belum ada: {keluaran}")
         print("  Jalankan: python tools/bungkus_msix.py --bungkus")
         return 2
+
+    # Sebutkan juga berkas yang diunggah ke Partner Center, supaya jelas
+    # mana yang dipakai saat mengirim.
+    unggah = KELUARAN / f"{NAMA_PAKET}.msixupload"
+    if unggah.exists():
+        print(f"  Unggah  : {unggah.name} "
+              f"({unggah.stat().st_size / 1048576:.1f} MB)")
 
     ukuran = keluaran.stat().st_size / 1048576
     print(f"  Berkas  : {keluaran.name}")
