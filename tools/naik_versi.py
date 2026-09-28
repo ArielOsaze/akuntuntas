@@ -130,6 +130,13 @@ def sebarkan(versi: str, build: str, tanggal: str) -> int:
                   r'"softwareVersion": "[^"]*"',
                   f'"softwareVersion": "{versi}"'):
         jumlah += 1
+    # Halaman unduh memuat versi yang sedang ditawarkan. Bila ini terlewat,
+    # pengunjung melihat versi lama dan mengunduh berkas yang salah.
+    if ganti_teks(AKAR / "web/unduh.html",
+                  r'"softwareVersion": "[^"]*"',
+                  f'"softwareVersion": "{versi}"',
+                  wajib=False):
+        jumlah += 1
     if ganti_teks(AKAR / "web/privasi.html",
                   r"Berlaku untuk aplikasi AkunTuntas versi [\d.]+",
                   f"Berlaku untuk aplikasi AkunTuntas versi {versi}"):
@@ -171,6 +178,7 @@ def periksa(versi: str) -> int:
         ("src/akuntansi_id/config.py", r'APP_VERSION = "([^"]*)"', versi),
         ("installer.iss", r'#define VersiAplikasi "([^"]*)"', versi),
         ("web/index.html", r'"softwareVersion": "([^"]*)"', versi),
+        ("web/unduh.html", r'"softwareVersion": "([^"]*)"', versi),
         ("msix/identitas.json", r'"versi": "([^"]*)"', versi_msix(versi)),
     ]
 

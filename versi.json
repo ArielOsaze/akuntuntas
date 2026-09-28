@@ -1,6 +1,6 @@
 {
-  "versi": "1.2.4",
+  "versi": "1.2.5",
   "build": "2026.09",
-  "tanggal": "2026-09-26",
-  "catatan": "Perbaiki pengulangan bentuk badan usaha pada baris status"
+  "tanggal": "2026-09-28",
+  "catatan": "Bersihkan judul jendela yang menampilkan nama aplikasi dua kali, rapikan kata sandi demo di dokumen Store"
 }
