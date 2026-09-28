@@ -1,7 +1,7 @@
 # Checklist Pengiriman ke Microsoft Store
 
-Diperiksa: 28 September 2026
-Versi aplikasi: 1.2.4
+Diperiksa: 28 September 2026 (malam)
+Versi aplikasi: 1.2.5
 
 ---
 
@@ -15,8 +15,8 @@ Versi aplikasi: 1.2.4
 Sidik jari:
 
 ```
-.msixupload  sha256 1794e752849a9ec94dcbf18bd9d17df884a45978177156e702340aa7955e360f
-.msix        sha256 52fb2ea36225fe6c93bf4dad72e89fa3c41490079d22dfee58ae6d77d549f998
+.msixupload  sha256 4e0a8d103a6c2eea8ed572ef568e869175abea603963b695d937e51fe0a662ba
+.msix        sha256 470b42ecd809c9e06727f82a3d3c0ee9f319b29c3d2f048f75b286392e3a735f
 ```
 
 ---
@@ -33,7 +33,7 @@ paket ditolak.
 | Penerbit | `CN=82AE483E-A9EB-487B-BDE6-4D690C249608` |
 | Nama penerbit | `Xinet Group` |
 | Nama tampil | `AkunTuntas` |
-| Versi | `1.2.4.0` |
+| Versi | `1.2.5.0` |
 
 Bila Partner Center memberi nilai yang berbeda, perbarui
 `msix/identitas.json` lalu bungkus ulang:
@@ -126,14 +126,14 @@ perilaku yang diinginkan.
 | Audit tampilan (27 halaman + 2 dialog) | Bersih |
 | Kontras WCAG AA | Seluruh teks lulus |
 | Gaya menular | Tidak ada |
-| Keseragaman versi | Seluruh berkas 1.2.4 |
+| Keseragaman versi | Seluruh berkas 1.2.5 |
 | Pemasangan ulang | Data pembukuan tetap utuh |
 | Kompatibilitas | Windows 10 (1809+) dan 11, 64-bit |
 | Uji alur peninjau Store (mode paket) | 20 LULUS, 0 GAGAL |
 | Uji celah keamanan mode uji coba | 9 AMAN, 0 BOCOR |
 | Uji jalan dari susunan folder paket | LULUS, judul jendela bersih |
 | Isi paket MSIX | Manifest, exe, penanda, ikon lengkap |
-| Versi tertanam di EXE | 1.2.4.0 (dibaca lewat Windows API) |
+| Versi tertanam di EXE | 1.2.5.0 (dibaca lewat Windows API) |
 | Sidik EXE di paket vs hasil build | Cocok |
 
 ---
@@ -172,7 +172,7 @@ python tools/bungkus_msix.py --bungkus
 saat paket diterima. Ini justru yang menghilangkan peringatan SmartScreen
 pada pengguna.
 
-**Versi MSIX wajib empat angka.** Tulis `1.2.4.0`, bukan `1.2.4`.
+**Versi MSIX wajib empat angka.** Tulis `1.2.5.0`, bukan `1.2.5`.
 
 **Untuk setiap pembaruan ke Store, terbitkan penanda uji coba baru** supaya
 peninjau dapat menguji versi terbaru.
