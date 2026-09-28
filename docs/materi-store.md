@@ -183,7 +183,7 @@ dari berkas tersebut.
 | Penyebab | Pencegahan |
 |---|---|
 | Identitas paket tidak cocok | Salin persis dari Product identity |
-| Versi bukan empat angka | Pakai 1.0.0.0 |
+| Versi bukan empat angka | Pakai 1.2.4.0 |
 | Penguji tidak dapat masuk | Isi kolom Catatan untuk sertifikasi |
 | Tangkapan layar kurang | Ambil minimal tiga gambar |
 | Deskripsi tidak sesuai aplikasi | Pakai teks di berkas ini |
@@ -196,4 +196,14 @@ paketnya sendiri. Halaman unduhan di situs tetap dipertahankan sebagai
 jalur kedua bagi pembeli yang membeli lisensi langsung.
 
 Untuk mengirim pembaruan di kemudian hari, ulangi langkah 5 sampai 8
-dengan nomor versi yang dinaikkan, misalnya 1.0.1.0.
+dengan nomor versi yang dinaikkan, misalnya 1.2.5.0.
+
+## Versi yang sedang dikirim
+
+```
+Versi aplikasi : 1.2.4
+Versi paket    : 1.2.4.0
+```
+
+Versi paket MSIX wajib empat angka. Angka keempat selalu 0 untuk
+pengiriman biasa.

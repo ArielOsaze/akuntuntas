@@ -61,7 +61,11 @@ def main() -> int:
 
     app = QApplication(sys.argv)
     app.setApplicationName(config.APP_NAME)
-    app.setApplicationDisplayName(config.APP_NAME)
+    # Nama tampilan sengaja tidak diset. Bila diset, Qt menambahkan nama itu
+    # di belakang judul setiap jendela, sehingga judul utama berbunyi
+    # "AkunTuntas - Pembukuan & Pajak Perusahaan Indonesia - AkunTuntas".
+    # Tanpa pengaturan ini, judul utama bersih dan dialog yang tidak diberi
+    # judul tetap memakai nama aplikasi sebagai judulnya.
     app.setApplicationVersion(config.APP_VERSION)
     app.setOrganizationName(config.APP_PUBLISHER)
     app.setStyle("Fusion")
