@@ -179,6 +179,7 @@ def periksa(versi: str) -> int:
         ("installer.iss", r'#define VersiAplikasi "([^"]*)"', versi),
         ("web/index.html", r'"softwareVersion": "([^"]*)"', versi),
         ("web/unduh.html", r'"softwareVersion": "([^"]*)"', versi),
+        ("web/rilis.html", r"<strong>Versi ([0-9.]+) sudah tersedia", versi),
         ("msix/identitas.json", r'"versi": "([^"]*)"', versi_msix(versi)),
     ]
 
