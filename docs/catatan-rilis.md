@@ -47,6 +47,12 @@ sama.
 - **Salinan Regulasi Resmi kini dapat dibaca.** Sebelumnya seluruh berkas
   peraturan di halaman Panduan dan Aturan gagal dibuka. Kini seluruh 15
   berkas peraturan terbaca lengkap.
+- **Salinan Regulasi Resmi ditata ulang.** Judul peraturan yang panjang
+  sebelumnya terpotong, sehingga dua peraturan yang mirip sulit dibedakan.
+  Kini judul tampil utuh. Ditambah keterangan peraturan yang sedang dibaca
+  beserta jumlah barisnya, serta tombol Salin Isi.
+- **Tombol pengembali menu tidak lagi menimpa menu Berkas.** Sebelumnya
+  tombol itu menutupi sebagian menu di bagian atas jendela.
 
 ### Teks untuk kolom What's new di Partner Center
 
@@ -59,9 +65,11 @@ seluruh lebar layar. Pilihannya diingat.
 Lokasi penyimpanan data dapat dipindahkan ke folder atau drive lain,
 dengan pengaman agar data tidak pernah hilang bila penyalinan gagal.
 
-Seluruh popup pesan ditata ulang supaya menyatu dengan tampilan aplikasi.
+Seluruh popup pesan ditata ulang supaya menyatu dengan tampilan aplikasi,
+dengan huruf yang lebih besar dan mudah dibaca.
 
-Perbaikan: seluruh berkas salinan regulasi resmi kini dapat dibaca.
+Salinan Regulasi Resmi kini dapat dibaca seluruhnya. Judul peraturan
+tampil utuh, disertai keterangan jumlah baris dan tombol Salin Isi.
 ```
 
 ---

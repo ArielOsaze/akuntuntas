@@ -72,9 +72,11 @@ seluruh lebar layar. Pilihannya diingat.
 Lokasi penyimpanan data dapat dipindahkan ke folder atau drive lain,
 dengan pengaman agar data tidak pernah hilang bila penyalinan gagal.
 
-Seluruh popup pesan ditata ulang supaya menyatu dengan tampilan aplikasi.
+Seluruh popup pesan ditata ulang supaya menyatu dengan tampilan aplikasi,
+dengan huruf yang lebih besar dan mudah dibaca.
 
-Perbaikan: seluruh berkas salinan regulasi resmi kini dapat dibaca.
+Salinan Regulasi Resmi kini dapat dibaca seluruhnya. Judul peraturan
+tampil utuh, disertai keterangan jumlah baris dan tombol Salin Isi.
 ```
 
 Catatan rilis lengkap setiap versi ada di `docs/catatan-rilis.md`.
