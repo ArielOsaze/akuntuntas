@@ -10,9 +10,76 @@ webnya supaya isinya tidak berbeda.
 
 ---
 
-## Versi 1.2.7 - 28 September 2026
+## Versi 1.2.8 - 28 September 2026
 
 Versi terbaru.
+
+### Menu samping dapat disembunyikan
+
+Pada layar sempit, menu samping memakan ruang yang membuat sebagian kolom
+tabel dan laporan terpotong. Kini menu samping dapat disembunyikan:
+
+- Tombol sembunyikan di sudut kanan atas menu samping.
+- Tombol mengambang di sudut kiri atas untuk memunculkannya kembali.
+- Menu **Tampilan > Tampilkan Menu Samping**, atau pintasan
+  **Ctrl+Shift+B**.
+- Pilihannya diingat, sehingga tidak perlu diulang setiap membuka aplikasi.
+
+Menyembunyikan menu menambah lebar area isi sebanyak 320 piksel penuh.
+
+### Lokasi penyimpanan data dapat dipindahkan
+
+Tab baru **Pengaturan > Penyimpanan Data** memungkinkan pemindahan folder
+data ke lokasi lain, misalnya ke drive lain atau folder yang ikut
+dicadangkan. Tersedia juga tombol membuka folder dan mengembalikan ke
+lokasi bawaan.
+
+Pemindahan menyalin seluruh isi lebih dahulu, memeriksa hasilnya, baru
+berpindah. Bila penyalinan gagal, lokasi lama tetap dipakai sehingga data
+tidak pernah hilang. Berkas di lokasi lama tidak dihapus.
+
+### Popup ditata ulang
+
+Seluruh popup pesan kini menyatu dengan tampilan aplikasi, bukan lagi
+tampak seperti jendela sistem: ikon sendiri dengan warna sesuai maksud
+pesan, tombol mengikuti gaya aplikasi, dan tata letak yang lega.
+
+Popup masa uji coba kini memuat pilihan **"Sudah punya lisensi? Aktifkan di
+sini"** yang langsung membuka layar aktivasi, serta tautan membeli lisensi.
+
+### Menu Lisensi & Keamanan dirapikan
+
+Keterangan lisensi disusun dua kolom dengan lencana paket, kunci lisensi
+disamarkan sebagian, dan butir perlindungan lisensi diberi nomor supaya
+mudah dipindai. Tersedia tombol **Aktifkan Lisensi Lain** untuk memasukkan
+kunci lisensi baru tanpa menutup aplikasi.
+
+### Perbaikan
+
+**Salinan Regulasi Resmi tidak dapat dibaca.** Seluruh berkas peraturan di
+halaman Panduan dan Aturan gagal dibuka dengan keterangan
+"Berkas tidak dapat dibaca: 'PySide6.QtGui.QTextCursor' object has no
+attribute 'Start'". Penyebabnya konstanta `MoveOperation.Start` diakses
+lewat objek kursor, bukan lewat kelasnya. Kini seluruh 15 berkas peraturan
+terbaca.
+
+### Teks untuk kolom What's new di Partner Center
+
+```
+Menu samping dapat disembunyikan sehingga tabel dan laporan memakai
+seluruh lebar layar. Pilihannya diingat.
+
+Lokasi penyimpanan data dapat dipindahkan ke folder atau drive lain,
+dengan pengaman agar data tidak pernah hilang bila penyalinan gagal.
+
+Seluruh popup pesan ditata ulang supaya menyatu dengan tampilan aplikasi.
+
+Perbaikan: seluruh berkas salinan regulasi resmi kini dapat dibaca.
+```
+
+---
+
+## Versi 1.2.7 - 28 September 2026
 
 ### Masa uji coba 1 hari untuk pemasangan dari Microsoft Store
 

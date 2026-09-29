@@ -85,6 +85,7 @@ class AppContext:
 # ==========================================================================
 class Sidebar(QFrame):
     navigasi = Signal(str)
+    minta_sembunyi = Signal()
 
     # Kode menu yang disembunyikan bila bentuk badan usaha tidak memakainya.
     # Diisi ulang untuk setiap jendela; disimpan sebagai atribut instance
@@ -168,7 +169,8 @@ class Sidebar(QFrame):
         # Lebar dihitung dari menu terlebar ("Biaya & Pengeluaran") pada
         # huruf 12 px: tombol 275 + margin isi 18 + margin wadah 9 +
         # scrollbar 11 = 313 px, dibulatkan ke atas.
-        self.setFixedWidth(320)
+        self.LEBAR = 320
+        self.setFixedWidth(self.LEBAR)
         theme.latar(self, f"background: {C.SIDEBAR_BG}; border: none;")
         self.tombol: dict[str, QPushButton] = {}
         self._ikon: dict[str, str] = {}
@@ -198,6 +200,24 @@ class Sidebar(QFrame):
         teks.setMinimumWidth(teks.fontMetrics().horizontalAdvance("AkunTuntas") + 6)
         baris.addWidget(teks, 0)
         baris.addStretch()
+
+        # Tombol sembunyikan menu. Pada layar sempit, menu samping memakan
+        # ruang yang dibutuhkan tabel dan laporan, sehingga sebagian kolom
+        # terpotong. Tombol ini menyembunyikannya agar seluruh lebar layar
+        # dipakai untuk isi.
+        self.btn_sembunyi = QPushButton()
+        self.btn_sembunyi.setObjectName("SidebarSembunyi")
+        self.btn_sembunyi.setCursor(Qt.PointingHandCursor)
+        self.btn_sembunyi.setFixedSize(28, 28)
+        self.btn_sembunyi.setToolTip("Sembunyikan menu samping (Ctrl+Shift+B)")
+        self.btn_sembunyi.setIcon(w.icons.ikon("panah_kiri", "#C3D4E4", 16))
+        self.btn_sembunyi.setIconSize(QSize(16, 16))
+        self.btn_sembunyi.setStyleSheet(
+            f"QPushButton#SidebarSembunyi {{ background: transparent; "
+            f"border: none; border-radius: 6px; }}"
+            f"QPushButton#SidebarSembunyi:hover {{ background: {C.SIDEBAR_HOVER}; }}")
+        self.btn_sembunyi.clicked.connect(self.minta_sembunyi.emit)
+        baris.addWidget(self.btn_sembunyi)
         kl.addLayout(baris)
 
         v = QLabel(config.APP_EDITION)
@@ -678,7 +698,27 @@ class MainWindow(QMainWindow):
         # yang tidak dipakai bentuk itu disembunyikan agar antarmuka bersih.
         if self.ctx.company:
             self.sidebar.terapkan_bentuk(self.ctx.company["bentuk"])
+        self.sidebar.minta_sembunyi.connect(self._sembunyikan_sidebar)
         lay.addWidget(self.sidebar)
+        self._sidebar_tersembunyi = False
+
+        # Tombol mengambang untuk memunculkan kembali menu setelah
+        # disembunyikan. Diletakkan di sudut kiri atas area isi, dan hanya
+        # tampil saat menu sedang disembunyikan.
+        self.btn_menu_mengapung = QPushButton(self)
+        self.btn_menu_mengapung.setObjectName("MenuMengapung")
+        self.btn_menu_mengapung.setCursor(Qt.PointingHandCursor)
+        self.btn_menu_mengapung.setFixedSize(34, 34)
+        self.btn_menu_mengapung.setToolTip("Tampilkan menu samping (Ctrl+Shift+B)")
+        self.btn_menu_mengapung.setIcon(w.icons.ikon("panah_kanan", C.PRIMARY_DARK, 18))
+        self.btn_menu_mengapung.setIconSize(QSize(18, 18))
+        self.btn_menu_mengapung.setStyleSheet(
+            f"QPushButton#MenuMengapung {{ background: {C.SURFACE}; "
+            f"border: 1px solid {C.BORDER_STRONG}; border-radius: 8px; }}"
+            f"QPushButton#MenuMengapung:hover {{ background: {C.PRIMARY_SOFT}; "
+            f"border-color: {C.PRIMARY}; }}")
+        self.btn_menu_mengapung.clicked.connect(self._tampilkan_sidebar)
+        self.btn_menu_mengapung.hide()
 
         # area konten
         self.stack = QStackedWidget()
@@ -701,6 +741,10 @@ class MainWindow(QMainWindow):
 
         # halaman awal
         self._navigasi("dashboard")
+
+        # Terapkan pilihan sembunyikan menu yang tersimpan, supaya pengguna
+        # yang menyembunyikannya tidak perlu melakukannya lagi setiap buka.
+        self._muat_pilihan_sidebar()
 
     # ------------------------------------------------------------------
     def _bangun_halaman(self):
@@ -923,6 +967,18 @@ class MainWindow(QMainWindow):
             "beginner" if self.a_pemula.isChecked() else "expert"))
         m_tampilan.addAction(self.a_pemula)
         m_tampilan.addSeparator()
+
+        # Menu samping dapat disembunyikan supaya tabel dan laporan memakai
+        # seluruh lebar layar. Pada layar sempit, menu samping memakan ruang
+        # yang membuat sebagian kolom terpotong.
+        self.a_sidebar = QAction("Tampilkan Menu Samping", self, checkable=True)
+        self.a_sidebar.setChecked(True)
+        self.a_sidebar.setShortcut(QKeySequence("Ctrl+Shift+B"))
+        self.a_sidebar.triggered.connect(
+            lambda: (self._tampilkan_sidebar() if self.a_sidebar.isChecked()
+                     else self._sembunyikan_sidebar()))
+        m_tampilan.addAction(self.a_sidebar)
+        m_tampilan.addSeparator()
         aksi(m_tampilan, "Muat Ulang Halaman", self._muat_halaman_aktif,
              "F5", "segarkan")
         m_tampilan.addSeparator()
@@ -1075,6 +1131,95 @@ class MainWindow(QMainWindow):
         self._muat_halaman_aktif()
 
     # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # SEMBUNYIKAN / TAMPILKAN MENU SAMPING
+    # ------------------------------------------------------------------
+    def _sembunyikan_sidebar(self):
+        """Sembunyikan menu samping supaya isi memakai seluruh lebar layar."""
+        self.sidebar.setVisible(False)
+        self._sidebar_tersembunyi = True
+        self.btn_menu_mengapung.show()
+        self._atur_letak_tombol_mengapung()
+        self._sinkron_menu_sidebar()
+        self._simpan_pilihan_sidebar()
+
+    def _tampilkan_sidebar(self):
+        """Tampilkan kembali menu samping."""
+        self.sidebar.setVisible(True)
+        self._sidebar_tersembunyi = False
+        self.btn_menu_mengapung.hide()
+        self._sinkron_menu_sidebar()
+        self._simpan_pilihan_sidebar()
+
+    def _sinkron_menu_sidebar(self):
+        """Samakan centang menu Tampilan dengan keadaan menu samping."""
+        aksi = getattr(self, "a_sidebar", None)
+        if aksi is None:
+            return
+        aksi.blockSignals(True)
+        aksi.setChecked(not self._sidebar_tersembunyi)
+        aksi.blockSignals(False)
+
+    def _alihkan_sidebar(self):
+        """Balik keadaan menu samping."""
+        if self._sidebar_tersembunyi:
+            self._tampilkan_sidebar()
+        else:
+            self._sembunyikan_sidebar()
+
+    def _atur_letak_tombol_mengapung(self):
+        """Letakkan tombol menu mengapung di sudut kiri atas area isi."""
+        self.btn_menu_mengapung.move(14, 14)
+        self.btn_menu_mengapung.raise_()
+
+    def _simpan_pilihan_sidebar(self):
+        """
+        Ingat pilihan sembunyikan menu supaya tetap sama saat dibuka lagi.
+
+        Kegagalan menyimpan tidak menghentikan pemakaian aplikasi, tetapi
+        juga tidak dibiarkan senyap: sebabnya dicatat supaya dapat ditelusuri
+        bila pengguna melaporkan pilihannya tidak tersimpan.
+        """
+        try:
+            from .. import db
+            db.ex("INSERT INTO settings(key, value) VALUES(?, ?) "
+                  "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                  ("sidebar_tersembunyi",
+                   "1" if self._sidebar_tersembunyi else "0"))
+        except Exception as e:
+            try:
+                from ..core import license as LIS
+                LIS._catat(f"Gagal menyimpan pilihan menu samping: {e}")
+            except Exception:
+                print(f"  Peringatan: gagal menyimpan pilihan menu samping: {e}")
+
+    def _muat_pilihan_sidebar(self):
+        """
+        Terapkan pilihan sembunyikan menu yang tersimpan.
+
+        Bila pembacaan gagal, menu dibiarkan tampil: menampilkan menu yang
+        seharusnya tersembunyi jauh lebih ringan akibatnya daripada menu
+        hilang tanpa cara memunculkannya.
+        """
+        try:
+            from .. import db
+            r = db.q1("SELECT value FROM settings WHERE key=?",
+                      ("sidebar_tersembunyi",))
+            if r and r["value"] == "1":
+                self._sembunyikan_sidebar()
+        except Exception as e:
+            try:
+                from ..core import license as LIS
+                LIS._catat(f"Gagal membaca pilihan menu samping: {e}")
+            except Exception:
+                print(f"  Peringatan: gagal membaca pilihan menu samping: {e}")
+
+    def resizeEvent(self, peristiwa):
+        """Jaga tombol mengapung tetap di tempatnya saat jendela diubah."""
+        super().resizeEvent(peristiwa)
+        if getattr(self, "_sidebar_tersembunyi", False):
+            self._atur_letak_tombol_mengapung()
+
     def _navigasi(self, kode: str):
         if kode == "logout":
             self._keluar()
@@ -1478,7 +1623,9 @@ class JendelaAplikasi(QMainWindow):
         Tampilkan sisa masa uji coba sekali setelah pengguna masuk.
 
         Pemberitahuan ini hanya muncul pada masa uji coba, dan hanya sekali
-        per sesi, supaya tidak mengganggu pemakaian sehari hari.
+        per sesi, supaya tidak mengganggu pemakaian sehari hari. Di dalamnya
+        tersedia tautan pembelian dan pilihan mengaktifkan lisensi yang
+        sudah dimiliki.
         """
         from ..core import uji_coba
 
@@ -1488,20 +1635,51 @@ class JendelaAplikasi(QMainWindow):
             return
         self._sudah_beri_tahu_uji_coba = True
 
-        from PySide6.QtWidgets import QMessageBox
+        from . import popup
 
-        kotak = QMessageBox(self)
-        kotak.setWindowTitle("Masa uji coba")
-        kotak.setIcon(QMessageBox.Information)
-        kotak.setText(uji_coba.keterangan())
-        kotak.setInformativeText(
-            "Seluruh fitur paket Enterprise terbuka selama masa uji coba.\n\n"
-            "Setelah masa itu berakhir, aplikasi memerlukan kunci lisensi. "
-            "Lisensi dibeli sekali dan berlaku selamanya, tanpa biaya "
-            "bulanan.\n\n"
-            "Beli lisensi di akuntuntas.xinet.id/beli.")
-        kotak.addButton("Mengerti", QMessageBox.AcceptRole)
-        kotak.exec()
+        pilihan = popup.pilih(
+            self,
+            "Masa uji coba " + uji_coba.keterangan().lower().replace(
+                "masa uji coba ", ""),
+            "Seluruh fitur paket <b>Enterprise</b> terbuka selama masa uji "
+            "coba. Setelah masa itu berakhir, aplikasi memerlukan kunci "
+            "lisensi.",
+            [
+                ("aktifkan", "Sudah punya lisensi? Aktifkan di sini", "primary"),
+                ("beli", "Beli lisensi", "biasa"),
+                ("nanti", "Nanti", "biasa"),
+            ],
+            rincian="Lisensi dibeli sekali dan berlaku selamanya, tanpa "
+                    "biaya bulanan.")
+
+        if pilihan == "aktifkan":
+            self._buka_aktivasi_lisensi()
+        elif pilihan == "beli":
+            from PySide6.QtCore import QUrl
+            from PySide6.QtGui import QDesktopServices
+            QDesktopServices.openUrl(
+                QUrl("https://akuntuntas.xinet.id/beli"))
+
+    def _buka_aktivasi_lisensi(self):
+        """
+        Buka layar aktivasi lisensi dari dalam aplikasi.
+
+        Dipakai oleh popup masa uji coba supaya pengguna yang sudah membeli
+        lisensi dapat langsung mengaktifkannya tanpa menutup aplikasi.
+        """
+        from PySide6.QtWidgets import QDialog
+
+        from .aktivasi import AktivasiDialog
+
+        dlg = AktivasiDialog(self, boleh_dilewati=True)
+        if dlg.exec() == QDialog.Accepted and dlg.lisensi is not None:
+            self.lisensi = dlg.lisensi
+            # Muat ulang jendela utama supaya menu paket baru langsung
+            # dipakai tanpa perlu menutup aplikasi.
+            hasil = getattr(self, "hasil_login", None)
+            if hasil is not None:
+                mode = getattr(hasil, "app_mode", "expert")
+                self._buka_utama(hasil, mode)
 
     def _kembali_ke_login(self):
         """

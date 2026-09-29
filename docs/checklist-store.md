@@ -1,7 +1,7 @@
 # Checklist Pengiriman ke Microsoft Store
 
 Diperiksa: 28 September 2026 (malam)
-Versi aplikasi: 1.2.7
+Versi aplikasi: 1.2.8
 
 ---
 
@@ -15,8 +15,8 @@ Versi aplikasi: 1.2.7
 Sidik jari:
 
 ```
-.msixupload  sha256 9721a4880d7e81d5cc556dd7e4a77cf76a438a374b9ddca4f52660fb43135d12
-.msix        sha256 c7f90a303415170aa1bfb30af66834dd4f3c8079fc446a33c7c83929c9e6418d
+.msixupload  sha256 372e6c29ef3ae424004ef327efc506bc76021e0619c9099f793a610b3b45970d
+.msix        sha256 a2761ce73c5d33884f4744d6c5051fa5b2ff864191b014b450eafcdcd8354324
 ```
 
 ---
@@ -33,7 +33,7 @@ paket ditolak.
 | Penerbit | `CN=82AE483E-A9EB-487B-BDE6-4D690C249608` |
 | Nama penerbit | `Xinet Group` |
 | Nama tampil | `AkunTuntas` |
-| Versi | `1.2.7.0` |
+| Versi | `1.2.8.0` |
 
 Bila Partner Center memberi nilai yang berbeda, perbarui
 `msix/identitas.json` lalu bungkus ulang:
@@ -126,14 +126,14 @@ perilaku yang diinginkan.
 | Audit tampilan (27 halaman + 2 dialog) | Bersih |
 | Kontras WCAG AA | Seluruh teks lulus |
 | Gaya menular | Tidak ada |
-| Keseragaman versi | Seluruh berkas 1.2.7 |
+| Keseragaman versi | Seluruh berkas 1.2.8 |
 | Pemasangan ulang | Data pembukuan tetap utuh |
 | Kompatibilitas | Windows 10 (1809+) dan 11, 64-bit |
 | Uji alur peninjau Store (mode paket) | 20 LULUS, 0 GAGAL |
 | Uji celah masa uji coba | 19 AMAN, 0 BOCOR |
 | Uji jalan dari susunan folder paket | LULUS, judul jendela bersih |
 | Isi paket MSIX | Manifest, exe, penanda, ikon lengkap |
-| Versi tertanam di EXE | 1.2.7.0 (dibaca lewat Windows API) |
+| Versi tertanam di EXE | 1.2.8.0 (dibaca lewat Windows API) |
 | Sidik EXE di paket vs hasil build | Cocok |
 
 ---
@@ -173,7 +173,7 @@ ulang paketnya sebelum dikirim.
 saat paket diterima. Ini justru yang menghilangkan peringatan SmartScreen
 pada pengguna.
 
-**Versi MSIX wajib empat angka.** Tulis `1.2.7.0`, bukan `1.2.7`.
+**Versi MSIX wajib empat angka.** Tulis `1.2.8.0`, bukan `1.2.8`.
 
 **Untuk setiap pembaruan ke Store**, naikkan versi dan pastikan paket tidak memuat
 berkas penanda. Masa uji coba 1 hari otomatis berlaku di setiap komputer yang

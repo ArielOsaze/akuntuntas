@@ -11,7 +11,7 @@ import os
 from datetime import datetime
 
 from PySide6.QtCore import Qt, Signal, QUrl
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QDesktopServices, QTextCursor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton,
     QDialog, QMessageBox, QInputDialog, QGridLayout, QLineEdit, QCheckBox, QTabWidget,
@@ -128,17 +128,19 @@ class PengaturanPage(QWidget):
         self.tab_preferensi = QWidget()
         self.tab_pengguna = QWidget()
         self.tab_backup = QWidget()
+        self.tab_penyimpanan = QWidget()
         self.tab_audit = QWidget()
         self.tab_lisensi = QWidget()
         self.tabs.addTab(self.tab_preferensi, "Preferensi")
         self.tabs.addTab(self.tab_pengguna, "Pengguna")
         self.tabs.addTab(self.tab_backup, "Cadangan && Data")
+        self.tabs.addTab(self.tab_penyimpanan, "Penyimpanan Data")
         self.tabs.addTab(self.tab_audit, "Jejak Audit")
         self.tabs.addTab(self.tab_lisensi, "Lisensi && Keamanan")
         self.tabs.currentChanged.connect(self.muat)
 
         for t in (self.tab_preferensi, self.tab_pengguna, self.tab_backup,
-                  self.tab_audit, self.tab_lisensi):
+                  self.tab_penyimpanan, self.tab_audit, self.tab_lisensi):
             l = QVBoxLayout(t)
             l.setContentsMargins(0, 12, 0, 0)
             l.setSpacing(13)
@@ -152,6 +154,8 @@ class PengaturanPage(QWidget):
         elif idx == 2:
             self._muat_backup()
         elif idx == 3:
+            self._muat_penyimpanan()
+        elif idx == 4:
             self._muat_audit()
         else:
             self._muat_lisensi()
@@ -963,6 +967,223 @@ class PengaturanPage(QWidget):
     # ------------------------------------------------------------------
     # AUDIT
     # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # PENYIMPANAN DATA
+    # ------------------------------------------------------------------
+    def _muat_penyimpanan(self):
+        """
+        Halaman pengaturan lokasi penyimpanan data.
+
+        Pengguna dapat memindahkan folder data ke lokasi lain, misalnya ke
+        drive lain atau folder yang ikut dicadangkan. Pemindahan menyalin
+        seluruh isi lebih dulu, memeriksa hasilnya, baru berpindah, sehingga
+        data tidak pernah hilang walau penyalinan gagal.
+        """
+        from ... import config as cfg
+
+        lay = self._bersihkan(self.tab_penyimpanan)
+
+        lay.addWidget(w.InfoBanner(
+            "Seluruh data pembukuan disimpan di komputer Anda. Lokasinya "
+            "dapat dipindahkan, misalnya ke drive lain atau folder yang "
+            "ikut dicadangkan.",
+            "info", "Data milik Anda"))
+
+        # ---------------------------------------------------- lokasi sekarang
+        kartu = w.Card()
+        _judul_kartu(kartu, "Lokasi penyimpanan sekarang")
+        bl = kartu.body()
+
+        asal = Path(cfg.DATA_DIR)
+        dipindah = cfg.lokasi_dipindahkan()
+
+        baris = QHBoxLayout()
+        baris.setSpacing(10)
+
+        ikon_lokasi = QLabel()
+        ikon_lokasi.setPixmap(w.icons.pixmap("simpan", C.PRIMARY, 20))
+        ikon_lokasi.setStyleSheet("background: transparent;")
+        baris.addWidget(ikon_lokasi)
+
+        kolom = QVBoxLayout()
+        kolom.setSpacing(2)
+
+        lbl_asal = QLabel(str(asal))
+        lbl_asal.setWordWrap(True)
+        lbl_asal.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        lbl_asal.setStyleSheet(
+            f"font-family: {theme.FONT_ANGKA}; font-size: {theme.FS_SMALL}px; "
+            f"color: {C.TEXT}; background: transparent;")
+        kolom.addWidget(lbl_asal)
+
+        ket_asal = QLabel(
+            "Lokasi pilihan Anda." if dipindah
+            else "Lokasi bawaan aplikasi.")
+        ket_asal.setStyleSheet(
+            f"font-size: {theme.FS_TINY}px; color: {C.TEXT_MUTED}; "
+            "background: transparent;")
+        kolom.addWidget(ket_asal)
+
+        baris.addLayout(kolom, 1)
+        bl.addLayout(baris)
+
+        bl.addSpacing(10)
+
+        # ------------------------------------------------- ukuran data
+        try:
+            ukuran = sum(f.stat().st_size for f in asal.rglob("*")
+                         if f.is_file())
+            teks_ukuran = f"{ukuran / 1048576:.1f} MB"
+        except Exception:
+            teks_ukuran = "tidak dapat dihitung"
+
+        info = QLabel(f"Jumlah data: {teks_ukuran}")
+        info.setStyleSheet(
+            f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
+            "background: transparent;")
+        bl.addWidget(info)
+
+        bl.addSpacing(14)
+
+        # ------------------------------------------------------- tombol
+        tombol_baris = QHBoxLayout()
+        tombol_baris.setSpacing(10)
+
+        b_pindah = w.tombol("Pindahkan ke Folder Lain", gaya="primary",
+                            ikon="transfer")
+        b_pindah.clicked.connect(self._pindah_lokasi)
+        tombol_baris.addWidget(b_pindah)
+
+        b_buka = w.tombol("Buka Folder", ikon="buka")
+        b_buka.clicked.connect(lambda: self._buka_folder(asal))
+        tombol_baris.addWidget(b_buka)
+
+        if dipindah:
+            b_bawaan = w.tombol("Kembalikan ke Lokasi Bawaan", ikon="segarkan")
+            b_bawaan.clicked.connect(self._kembalikan_lokasi)
+            tombol_baris.addWidget(b_bawaan)
+
+        tombol_baris.addStretch()
+        bl.addLayout(tombol_baris)
+
+        lay.addWidget(kartu)
+
+        # -------------------------------------------------------- penjelasan
+        catatan = w.Card()
+        _judul_kartu(catatan, "Yang perlu diketahui")
+        cl = catatan.body()
+        for teks in (
+            "Seluruh berkas di lokasi lama disalin lebih dahulu, lalu "
+            "diperiksa. Bila penyalinan gagal, lokasi lama tetap dipakai "
+            "dan data Anda tidak hilang.",
+            "Setelah pindah, tutup dan buka ulang aplikasi supaya lokasi "
+            "baru dipakai sepenuhnya.",
+            "Aplikasi tidak menghapus berkas di lokasi lama. Hapus sendiri "
+            "setelah Anda yakin lokasi baru berjalan baik.",
+            "Bila lokasi baru tidak dapat ditemukan saat aplikasi dibuka "
+            "(misalnya drive dicabut), aplikasi kembali memakai lokasi "
+            "bawaan supaya tetap dapat dibuka.",
+        ):
+            baris_ket = QHBoxLayout()
+            baris_ket.setSpacing(10)
+            titik = QLabel()
+            titik.setPixmap(w.icons.pixmap("aktif", C.SUCCESS, 14))
+            titik.setStyleSheet("background: transparent;")
+            baris_ket.addWidget(titik, 0, Qt.AlignTop)
+            t = QLabel(teks)
+            t.setWordWrap(True)
+            t.setStyleSheet(
+                f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
+                "background: transparent; line-height: 155%;")
+            baris_ket.addWidget(t, 1)
+            cl.addLayout(baris_ket)
+
+        lay.addWidget(catatan)
+        lay.addStretch()
+
+    def _pindah_lokasi(self):
+        """Minta folder baru, lalu pindahkan seluruh data ke sana."""
+        from ... import config as cfg
+
+        pilihan = QFileDialog.getExistingDirectory(
+            self, "Pilih folder penyimpanan data baru", str(Path.home()))
+        if not pilihan:
+            return
+
+        tujuan = Path(pilihan) / "AkunTuntas"
+
+        konfirmasi = QMessageBox(self)
+        konfirmasi.setWindowTitle("Pindahkan data")
+        konfirmasi.setIcon(QMessageBox.Question)
+        konfirmasi.setText("Pindahkan seluruh data ke folder ini?")
+        konfirmasi.setInformativeText(
+            f"Lokasi baru:\n{tujuan}\n\n"
+            "Seluruh data akan disalin ke sana, lalu aplikasi memakai "
+            "lokasi baru. Berkas di lokasi lama tidak dihapus, sehingga "
+            "Anda dapat memeriksa lebih dahulu.")
+        konfirmasi.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        konfirmasi.setDefaultButton(QMessageBox.No)
+        if konfirmasi.exec() != QMessageBox.Yes:
+            return
+
+        berhasil, pesan = cfg.pindahkan_data(tujuan)
+
+        if berhasil:
+            kotak = QMessageBox(self)
+            kotak.setWindowTitle("Data dipindahkan")
+            kotak.setIcon(QMessageBox.Information)
+            kotak.setText("Seluruh data berhasil dipindahkan.")
+            kotak.setInformativeText(
+                f"Lokasi baru:\n{pesan}\n\n"
+                "Tutup dan buka ulang aplikasi supaya lokasi baru dipakai "
+                "sepenuhnya.\n\n"
+                "Berkas di lokasi lama tidak dihapus. Hapus sendiri setelah "
+                "Anda yakin lokasi baru berjalan baik.")
+            kotak.addButton("Mengerti", QMessageBox.AcceptRole)
+            kotak.exec()
+        else:
+            QMessageBox.warning(
+                self, "Data tidak dipindahkan",
+                f"{pesan}\n\nLokasi lama tetap dipakai, sehingga data Anda "
+                "tetap aman.")
+
+        self._muat_penyimpanan()
+
+    def _kembalikan_lokasi(self):
+        """Kembalikan lokasi data ke folder bawaan aplikasi."""
+        from ... import config as cfg
+
+        konfirmasi = QMessageBox(self)
+        konfirmasi.setWindowTitle("Kembalikan lokasi bawaan")
+        konfirmasi.setIcon(QMessageBox.Question)
+        konfirmasi.setText("Kembalikan penyimpanan data ke lokasi bawaan?")
+        konfirmasi.setInformativeText(
+            "Data TIDAK ikut dipindahkan. Aplikasi akan memakai folder "
+            "bawaan, yang isinya mungkin berbeda dari data Anda sekarang.\n\n"
+            "Pindahkan data ke folder bawaan lebih dahulu bila ingin "
+            "melanjutkan pembukuan yang sama.")
+        konfirmasi.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        konfirmasi.setDefaultButton(QMessageBox.No)
+        if konfirmasi.exec() != QMessageBox.Yes:
+            return
+
+        berhasil, pesan = cfg.kembali_ke_lokasi_bawaan()
+        if berhasil:
+            QMessageBox.information(
+                self, "Lokasi dikembalikan",
+                f"Aplikasi akan memakai folder bawaan:\n{pesan}\n\n"
+                "Tutup dan buka ulang aplikasi.")
+        else:
+            QMessageBox.warning(self, "Gagal", pesan)
+        self._muat_penyimpanan()
+
+    def _buka_folder(self, folder):
+        """Buka folder di penjelajah berkas Windows."""
+        try:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
+        except Exception as e:
+            QMessageBox.warning(self, "Tidak dapat dibuka", str(e))
+
     def _muat_audit(self):
         lay = self._bersihkan(self.tab_audit)
 
@@ -1041,32 +1262,79 @@ class PengaturanPage(QWidget):
             return
 
         # ------------------------------------------------------ identitas
+        # Kunci lisensi disamarkan sebagian. Kunci itu dipakai untuk
+        # mengaktifkan di komputer lain, jadi tidak ditampilkan penuh di
+        # layar yang mungkin terlihat orang lain.
+        kunci_tampil = "-"
+        if lis.kunci:
+            bersih = "".join(c for c in lis.kunci if c.isalnum())
+            kunci_tampil = (f"{bersih[:4]}-{bersih[4:8]}-"
+                            f"{'•' * 4}-{'•' * 4}-{bersih[-4:]}"
+                            if len(bersih) >= 20 else lis.kunci)
+
+        paket_tingkat = ("success" if lis.enterprise else "info")
         kartu = w.Card()
         _judul_kartu(kartu, "Lisensi Anda")
         isi = QVBoxLayout()
-        isi.setSpacing(11)
+        isi.setSpacing(13)
 
-        for nama, nilai in (
-            ("Kunci lisensi", lis.kunci or "-"),
-            ("Paket", lis.nama_paket),
+        # Lencana paket: keterangan paling penting, ditampilkan paling atas.
+        baris_lencana = QHBoxLayout()
+        baris_lencana.setSpacing(9)
+        lencana = QLabel(lis.nama_paket.upper())
+        theme.latar(lencana,
+                    f"background: {C.PRIMARY}; color: {C.TEXT_INVERSE}; "
+                    f"font-size: {theme.FS_TINY}px; font-weight: 700; "
+                    f"letter-spacing: 0.6px; padding: 5px 12px; "
+                    f"border-radius: 11px;")
+        baris_lencana.addWidget(lencana)
+
+        lbl_berlaku = QLabel("Berlaku selamanya")
+        lbl_berlaku.setStyleSheet(
+            f"color: {C.SUCCESS}; font-size: {theme.FS_SMALL}px; "
+            f"font-weight: 600; background: transparent;")
+        baris_lencana.addWidget(lbl_berlaku)
+        baris_lencana.addStretch()
+        isi.addLayout(baris_lencana)
+
+        isi.addSpacing(2)
+
+        # Susunan dua kolom supaya keterangan sejajar rapi dan mudah dibaca.
+        kiri_kolom = QVBoxLayout()
+        kiri_kolom.setSpacing(12)
+        kanan_kolom = QVBoxLayout()
+        kanan_kolom.setSpacing(12)
+
+        keterangan = [
+            ("Kunci lisensi", kunci_tampil),
             ("Pemilik", lis.pemilik or "-"),
             ("Perangkat ini", LIS.nama_perangkat()),
             ("Sistem", LIS.nama_windows()),
-        ):
-            b = QHBoxLayout()
+        ]
+
+        for idx, (nama, nilai) in enumerate(keterangan):
+            kotak = QVBoxLayout()
+            kotak.setSpacing(2)
             k = QLabel(nama)
             k.setStyleSheet(
-                f"color: {C.TEXT_MUTED}; font-size: {theme.FS_SMALL}px; "
+                f"color: {C.TEXT_MUTED}; font-size: {theme.FS_TINY}px; "
                 f"background: transparent;")
-            k.setFixedWidth(140)
+            kotak.addWidget(k)
             v = QLabel(str(nilai))
             v.setStyleSheet(
                 f"color: {C.TEXT}; font-size: {theme.FS_BODY}px; "
                 f"font-weight: 600; background: transparent;")
             v.setWordWrap(True)
-            b.addWidget(k)
-            b.addWidget(v, 1)
-            isi.addLayout(b)
+            v.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            kotak.addWidget(v)
+            (kiri_kolom if idx % 2 == 0 else kanan_kolom).addLayout(kotak)
+
+        dua_kolom = QHBoxLayout()
+        dua_kolom.setSpacing(28)
+        dua_kolom.addLayout(kiri_kolom, 1)
+        dua_kolom.addLayout(kanan_kolom, 1)
+        isi.addLayout(dua_kolom)
+
         kartu.body().addLayout(isi)
         lay.addWidget(kartu)
 
@@ -1132,22 +1400,39 @@ class PengaturanPage(QWidget):
              "selamanya hanya dengan mematikan sambungan internet."),
         ]
 
-        for judul_butir, keterangan in daftar:
-            b = QVBoxLayout()
-            b.setSpacing(3)
+        for nomor, (judul_butir, keterangan) in enumerate(daftar, start=1):
+            b = QHBoxLayout()
+            b.setSpacing(13)
+
+            # Lencana nomor: menandai setiap butir supaya daftar panjang
+            # mudah dipindai, bukan satu blok teks yang tampak rata.
+            no = QLabel(str(nomor))
+            no.setFixedSize(24, 24)
+            no.setAlignment(Qt.AlignCenter)
+            theme.latar(no,
+                        f"background: {C.PRIMARY_SOFT}; "
+                        f"color: {C.PRIMARY_DARK}; "
+                        f"border-radius: 12px; font-size: {theme.FS_TINY}px; "
+                        "font-weight: 700;")
+            b.addWidget(no, 0, Qt.AlignTop)
+
+            kolom = QVBoxLayout()
+            kolom.setSpacing(3)
             j = QLabel(judul_butir)
             j.setStyleSheet(
                 f"color: {C.TEXT}; font-size: {theme.FS_BODY}px; "
                 f"font-weight: 600; background: transparent;")
             j.setWordWrap(True)
+            kolom.addWidget(j)
             d = QLabel(keterangan)
             d.setStyleSheet(
                 f"color: {C.TEXT_MUTED}; font-size: {theme.FS_SMALL}px; "
-                f"background: transparent;")
+                f"background: transparent; line-height: 155%;")
             d.setWordWrap(True)
-            b.addWidget(j)
-            b.addWidget(d)
+            kolom.addWidget(d)
+            b.addLayout(kolom, 1)
             kl.addLayout(b)
+
         keamanan.body().addLayout(kl)
         lay.addWidget(keamanan)
 
@@ -1157,17 +1442,22 @@ class PengaturanPage(QWidget):
         al = QHBoxLayout()
         al.setSpacing(10)
 
-        b_periksa = QPushButton("Periksa Lisensi Sekarang")
-        b_periksa.setCursor(Qt.PointingHandCursor)
+        b_periksa = w.tombol("Periksa Lisensi Sekarang", gaya="primary",
+                             ikon="segarkan")
         b_periksa.setToolTip(
             "Hubungi server untuk memastikan lisensi Anda masih berlaku, "
             "lalu perbarui keterangannya di komputer ini")
         b_periksa.clicked.connect(self._periksa_lisensi_sekarang)
         al.addWidget(b_periksa)
 
-        b_lepas = QPushButton("Lepas Perangkat Ini")
-        b_lepas.setObjectName("TombolBahaya")
-        b_lepas.setCursor(Qt.PointingHandCursor)
+        b_aktif = w.tombol("Aktifkan Lisensi Lain", ikon="kunci")
+        b_aktif.setToolTip(
+            "Masukkan kunci lisensi baru untuk menggantikan lisensi yang "
+            "sedang dipakai di komputer ini")
+        b_aktif.clicked.connect(self._aktifkan_lisensi_lain)
+        al.addWidget(b_aktif)
+
+        b_lepas = w.tombol("Lepas Perangkat Ini", gaya="danger", ikon="keluar")
         b_lepas.setToolTip(
             "Lepaskan komputer ini dari lisensi supaya kunci yang sama "
             "dapat dipakai di komputer lain")
@@ -1188,6 +1478,34 @@ class PengaturanPage(QWidget):
         lay.addWidget(aksi)
 
         lay.addStretch()
+
+    def _aktifkan_lisensi_lain(self):
+        """
+        Buka dialog aktivasi untuk memasukkan kunci lisensi lain.
+
+        Dipakai saat pengguna membeli lisensi baru atau memindahkan lisensi
+        dari komputer lain. Lisensi lama digantikan setelah kunci baru
+        berhasil diaktifkan.
+        """
+        from PySide6.QtWidgets import QDialog
+
+        from ..aktivasi import AktivasiDialog
+
+        dlg = AktivasiDialog(self, boleh_dilewati=True)
+        if dlg.exec() != QDialog.Accepted or dlg.lisensi is None:
+            return
+
+        from ...core import license as LIS
+        LIS.simpan(config.DATA_DIR, dlg.lisensi)
+
+        from .. import popup
+        popup.sukses(
+            self, "Lisensi berhasil diaktifkan",
+            f"Paket <b>{dlg.lisensi.nama_paket}</b> kini aktif di komputer "
+            "ini dan berlaku selamanya.",
+            rincian="Tutup dan buka ulang aplikasi supaya seluruh menu "
+                    "menyesuaikan paket baru.")
+        self._muat_lisensi()
 
     def _periksa_lisensi_sekarang(self):
         """Periksa lisensi ke server dan beri tahu hasilnya."""
@@ -1922,7 +2240,13 @@ class BantuanPage(QWidget):
             path = berkas[baris_ke][2]
             try:
                 isi.setPlainText(path.read_text(encoding="utf-8", errors="replace"))
-                isi.moveCursor(isi.textCursor().Start)
+                # Kembalikan tampilan ke awal berkas setiap kali berganti
+                # peraturan. QTextCursor.MoveOperation.Start adalah nilai
+                # enum, bukan atribut pada objek kursor, sehingga harus
+                # diakses lewat kelasnya.
+                kursor = isi.textCursor()
+                kursor.movePosition(QTextCursor.MoveOperation.Start)
+                isi.setTextCursor(kursor)
             except Exception as e:
                 isi.setPlainText(f"Berkas tidak dapat dibaca: {e}")
 

@@ -17,7 +17,7 @@ from pathlib import Path
 # --------------------------------------------------------------------------
 APP_NAME = "AkunTuntas"
 APP_LONG_NAME = "AkunTuntas - Pembukuan & Pajak Perusahaan Indonesia"
-APP_VERSION = "1.2.7"
+APP_VERSION = "1.2.8"
 APP_BUILD = "2026.09"
 APP_PUBLISHER = "AkunTuntas"
 APP_EDITION = "Edisi Regulasi 2026"
@@ -25,15 +25,147 @@ APP_EDITION = "Edisi Regulasi 2026"
 # --------------------------------------------------------------------------
 # LOKASI DATA (LOCAL DATABASE — tidak ada server, tidak ada cloud)
 # --------------------------------------------------------------------------
+# Berkas penunjuk lokasi data. Isinya satu baris berisi folder yang dipilih
+# pengguna. Berkas ini sengaja diletakkan di folder bawaan, bukan di folder
+# pilihan, supaya aplikasi tetap dapat menemukan data walau lokasinya
+# dipindahkan.
+NAMA_PENUNJUK = "lokasi_data.txt"
+
+
+def _folder_bawaan() -> Path:
+    """Folder data bawaan, sebelum pengguna memindahkannya."""
+    if sys.platform == "win32":
+        dasar = Path(os.environ.get("LOCALAPPDATA",
+                                    Path.home() / "AppData" / "Local"))
+        return dasar / "AkunTuntas"
+    return Path.home() / ".akuntuntas"
+
+
+def _folder_penunjuk() -> Path:
+    """
+    Tempat berkas penunjuk lokasi data.
+
+    Pada Windows, berkas ini disimpan di folder bawaan. Berkas itu dibaca
+    lebih dulu sebelum folder data ditentukan, sehingga pemindahan lokasi
+    oleh pengguna tetap terbaca pada pembukaan berikutnya.
+    """
+    return _folder_bawaan() / NAMA_PENUNJUK
+
+
+def _baca_penunjuk() -> Path | None:
+    """Folder data pilihan pengguna, bila pernah dipindahkan."""
+    try:
+        berkas = _folder_penunjuk()
+        if not berkas.exists():
+            return None
+        isi = berkas.read_text(encoding="utf-8").strip()
+        if not isi:
+            return None
+        folder = Path(isi)
+        # Folder yang sudah tidak ada (mis. drive dicabut) diabaikan, supaya
+        # aplikasi tidak gagal membuka sama sekali.
+        if not folder.exists():
+            return None
+        return folder
+    except Exception:
+        return None
+
+
 def _default_data_dir() -> Path:
-    """Direktori data aplikasi. Bisa dioverride lewat env AKUNTANSIID_DATA."""
+    """
+    Direktori data aplikasi.
+
+    Urutan penentuan: variabel lingkungan, lalu lokasi pilihan pengguna,
+    lalu lokasi bawaan.
+    """
     env = os.environ.get("AKUNTANSIID_DATA")
     if env:
         return Path(env)
-    if sys.platform == "win32":
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
-        return base / "AkunTuntas"
-    return Path.home() / ".akuntuntas"
+
+    dipilih = _baca_penunjuk()
+    if dipilih is not None:
+        return dipilih
+
+    return _folder_bawaan()
+
+
+def pindahkan_data(folder_baru: Path) -> tuple[bool, str]:
+    """
+    Pindahkan seluruh data ke folder lain.
+
+    Seluruh isi folder data lama disalin lebih dulu, diperiksa, baru berkas
+    penunjuk ditulis. Bila penyalinan gagal, lokasi lama tetap dipakai
+    sehingga data pengguna tidak pernah hilang.
+
+    Mengembalikan (berhasil, keterangan).
+    """
+    import shutil
+
+    tujuan = Path(folder_baru)
+    asal = DATA_DIR
+
+    if tujuan == asal:
+        return False, "Folder itu sudah dipakai sekarang."
+    if asal in tujuan.parents or tujuan in asal.parents:
+        return False, ("Folder baru tidak boleh berada di dalam atau memuat "
+                       "folder data yang sekarang.")
+
+    try:
+        tujuan.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        return False, f"Folder tidak dapat dibuat: {e}"
+
+    # Folder tujuan harus benar-benar dapat ditulis, bukan hanya ada.
+    uji = tujuan / ".uji_tulis"
+    try:
+        uji.write_text("uji", encoding="utf-8")
+        uji.unlink()
+    except Exception as e:
+        return False, f"Folder itu tidak dapat ditulis: {e}"
+
+    try:
+        for isi in asal.iterdir():
+            if isi.name == NAMA_PENUNJUK:
+                continue
+            sasaran = tujuan / isi.name
+            if isi.is_dir():
+                if sasaran.exists():
+                    shutil.rmtree(sasaran)
+                shutil.copytree(isi, sasaran)
+            else:
+                shutil.copy2(isi, sasaran)
+    except Exception as e:
+        return False, f"Penyalinan data gagal: {e}"
+
+    # Berkas utama harus benar-benar ada di lokasi baru sebelum berpindah.
+    utama = asal / "akuntuntas.db"
+    if utama.exists() and not (tujuan / "akuntuntas.db").exists():
+        return False, "Basis data tidak ikut tersalin. Lokasi lama tetap dipakai."
+
+    try:
+        berkas = _folder_penunjuk()
+        berkas.parent.mkdir(parents=True, exist_ok=True)
+        berkas.write_text(str(tujuan), encoding="utf-8")
+    except Exception as e:
+        return False, f"Gagal menyimpan penunjuk lokasi: {e}"
+
+    return True, str(tujuan)
+
+
+def kembali_ke_lokasi_bawaan() -> tuple[bool, str]:
+    """Kembalikan lokasi data ke folder bawaan."""
+    try:
+        berkas = _folder_penunjuk()
+        if berkas.exists():
+            berkas.unlink()
+        return True, str(_folder_bawaan())
+    except Exception as e:
+        return False, f"Gagal mengembalikan lokasi bawaan: {e}"
+
+
+def lokasi_dipindahkan() -> bool:
+    """Apakah lokasi data sedang dipindahkan dari folder bawaan."""
+    return _baca_penunjuk() is not None
 
 
 DATA_DIR: Path = _default_data_dir()

@@ -12,7 +12,8 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget)
+    QDialog, QFrame, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+    QVBoxLayout, QWidget)
 
 from .. import config
 from ..core import license as LIS
@@ -307,3 +308,65 @@ class HalamanAktivasi(QWidget):
         # beri jeda singkat supaya keterangan berhasil terbaca
         from PySide6.QtCore import QTimer
         QTimer.singleShot(1200, lambda: self.berhasil.emit(lisensi))
+
+
+# ==========================================================================
+# DIALOG AKTIVASI (DIPAKAI DARI DALAM APLIKASI)
+# ==========================================================================
+class AktivasiDialog(QDialog):
+    """
+    Aktivasi lisensi dalam bentuk dialog.
+
+    Dipakai saat pengguna sudah membuka aplikasi lalu ingin mengaktifkan
+    lisensi yang baru dibeli, tanpa menutup aplikasi. Halaman aktivasi biasa
+    hanya muncul sebelum layar masuk, sehingga tidak dapat dipakai untuk
+    keperluan ini.
+    """
+
+    def __init__(self, parent=None, boleh_dilewati: bool = True):
+        super().__init__(parent)
+        self.lisensi = None
+        self.setWindowTitle("Aktivasi Lisensi")
+        self.setModal(True)
+        self.setMinimumWidth(560)
+
+        luar = QVBoxLayout(self)
+        luar.setContentsMargins(0, 0, 0, 0)
+        luar.setSpacing(0)
+
+        self.halaman = HalamanAktivasi()
+        # Panel merek hanya cocok pada layar penuh, bukan di dalam dialog.
+        luar.addWidget(self._tanpa_panel_merek(self.halaman), 1)
+
+        self.halaman.berhasil.connect(self._selesai)
+
+        if boleh_dilewati:
+            kaki = QFrame()
+            theme.latar(kaki, f"background: {C.SURFACE_ALT}; border: none; "
+                              f"border-top: 1px solid {C.BORDER};")
+            kl = QHBoxLayout(kaki)
+            kl.setContentsMargins(20, 12, 20, 12)
+            kl.addStretch()
+            b = QPushButton("Nanti Saja")
+            b.setCursor(Qt.PointingHandCursor)
+            b.setMinimumHeight(34)
+            b.setStyleSheet(
+                f"QPushButton {{ background: {C.SURFACE}; color: {C.TEXT}; "
+                f"border: 1px solid {C.BORDER_STRONG}; "
+                f"border-radius: {theme.SUDUT_KONTROL}px; padding: 7px 18px; "
+                f"font-size: {theme.FS_SMALL}px; font-weight: 600; }}"
+                f"QPushButton:hover {{ background: {C.BG}; }}")
+            b.clicked.connect(self.reject)
+            kl.addWidget(b)
+            luar.addWidget(kaki)
+
+    def _tanpa_panel_merek(self, halaman: QWidget) -> QWidget:
+        """Sembunyikan panel merek di dalam dialog."""
+        for anak in halaman.findChildren(QWidget):
+            if anak.__class__.__name__ == "BrandPanel":
+                anak.hide()
+        return halaman
+
+    def _selesai(self, lisensi):
+        self.lisensi = lisensi
+        self.accept()

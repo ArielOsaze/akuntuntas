@@ -1,6 +1,6 @@
 {
-  "versi": "1.2.7",
+  "versi": "1.2.8",
   "build": "2026.09",
   "tanggal": "2026-09-29",
-  "catatan": "Ganti mode uji coba berbasis berkas dengan masa uji coba 1 hari yang tidak dapat diperpanjang, hilangkan celah lisensi gratis di paket Microsoft Store"
+  "catatan": "Menu samping bisa disembunyikan, lokasi penyimpanan data bisa dipindah, popup ditata ulang, perbaikan salinan regulasi resmi"
 }

@@ -251,6 +251,67 @@ QMainWindow, QDialog {{
     background: {C.BG};
 }}
 
+/* ---------------------------------------------------------- popup pesan
+   Popup bawaan Qt tampak seperti kotak abu sistem: sudut tajam, tombol
+   kecil berjarak rapat, dan judul tanpa penekanan. Gaya di bawah membuat
+   seluruh popup di aplikasi terlihat sebagai bagian dari aplikasi ini,
+   bukan jendela sistem yang menyusup. */
+QMessageBox {{
+    background: {C.SURFACE};
+}}
+QMessageBox QLabel {{
+    background: transparent;
+    color: {C.TEXT};
+    font-size: {_px(FS_BODY)}px;
+    line-height: 150%;
+}}
+QMessageBox QLabel#qt_msgbox_label {{
+    font-size: {_px(FS_H3)}px;
+    font-weight: 600;
+    color: {C.TEXT};
+    margin-bottom: 2px;
+}}
+QMessageBox QLabel#qt_msgbox_informativelabel {{
+    color: {C.TEXT_MUTED};
+    font-size: {_px(FS_SMALL)}px;
+}}
+QMessageBox QPushButton {{
+    background: {C.SURFACE};
+    color: {C.TEXT};
+    border: 1px solid {C.BORDER_STRONG};
+    border-radius: {SUDUT_KONTROL}px;
+    padding: 9px 22px;
+    min-width: 96px;
+    font-size: {_px(FS_BODY)}px;
+    font-weight: 600;
+}}
+QMessageBox QPushButton:hover {{
+    background: {C.BG};
+    border-color: {C.PRIMARY_LIGHT};
+}}
+QMessageBox QPushButton:default {{
+    background: {C.PRIMARY};
+    color: {C.TEXT_INVERSE};
+    border: 1px solid {C.PRIMARY};
+}}
+QMessageBox QPushButton:default:hover {{
+    background: {C.PRIMARY_DARK};
+    border-color: {C.PRIMARY_DARK};
+}}
+QMessageBox QPushButton:disabled {{
+    color: {C.TEXT_FAINT};
+    border-color: {C.BORDER};
+}}
+
+/* Kotak pesan galat memakai judul berwarna bahaya supaya langsung
+   terbaca berbeda dari pesan biasa. */
+QMessageBox[pesan="galat"] QLabel#qt_msgbox_label {{
+    color: {C.DANGER};
+}}
+QMessageBox[pesan="tanya"] QLabel#qt_msgbox_label {{
+    color: {C.TEXT};
+}}
+
 /* ---------------------------------------------------------- kartu */
 QFrame#Card {{
     background: {C.SURFACE};
