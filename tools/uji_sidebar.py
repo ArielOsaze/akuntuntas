@@ -1,8 +1,12 @@
 """
 Uji sembunyikan/tampilkan menu samping pada beberapa ukuran jendela.
 
-Memastikan menu dapat disembunyikan, tombol mengapung muncul, dan area isi
-benar-benar bertambah lebar setelah menu disembunyikan.
+Memastikan menu dapat disembunyikan, jalur sempit pengganti muncul, dan
+area isi benar-benar bertambah lebar setelah menu disembunyikan.
+
+Saat menu disembunyikan, sebagian ruangnya dipakai jalur sempit berisi
+tombol pengembali. Karena itu area isi bertambah selebar menu dikurangi
+lebar jalur sempit, bukan selebar menu penuh.
 
 Cara pakai:
     python tools/uji_sidebar.py
@@ -91,17 +95,21 @@ for lebar, tinggi in ((1366, 768), (1920, 1080)):
     tunggu(0.5)
 
     cek("Menu samping tersembunyi", not w.sidebar.isVisible())
-    cek("Tombol mengapung muncul", w.btn_menu_mengapung.isVisible())
+    cek("Tombol pengembali muncul", w.btn_menu_mengapung.isVisible())
+    cek("Jalur sempit pengganti tampil", w.rel_menu.isVisible())
 
     lebar_isi_baru = w.stack.width()
     print(f"    lebar area isi setelah disembunyikan: {lebar_isi_baru}")
     cek("Area isi bertambah lebar",
         lebar_isi_baru > lebar_isi_awal,
         f"{lebar_isi_awal} -> {lebar_isi_baru}")
-    cek("Pertambahan selebar menu samping",
-        abs((lebar_isi_baru - lebar_isi_awal) - w.sidebar.LEBAR) <= 2,
+    # Sebagian ruang menu dipakai jalur sempit, jadi pertambahannya
+    # adalah lebar menu dikurangi lebar jalur sempit itu.
+    harapan = w.sidebar.LEBAR - MainWindow.REL_LEBAR
+    cek("Pertambahan selebar menu dikurangi jalur sempit",
+        abs((lebar_isi_baru - lebar_isi_awal) - harapan) <= 2,
         f"bertambah {lebar_isi_baru - lebar_isi_awal}, "
-        f"menu {w.sidebar.LEBAR}")
+        f"seharusnya {w.sidebar.LEBAR} - {MainWindow.REL_LEBAR} = {harapan}")
 
     berkas = HASIL / f"tersembunyi_{lebar}.png"
     w.grab().save(str(berkas))
@@ -112,8 +120,9 @@ for lebar, tinggi in ((1366, 768), (1920, 1080)):
     tunggu(0.5)
 
     cek("Menu samping tampil kembali", w.sidebar.isVisible())
-    cek("Tombol mengapung disembunyikan",
+    cek("Tombol pengembali disembunyikan",
         not w.btn_menu_mengapung.isVisible())
+    cek("Jalur sempit ikut tersembunyi", not w.rel_menu.isVisible())
     cek("Lebar area isi kembali seperti semula",
         abs(w.stack.width() - lebar_isi_awal) <= 2,
         f"{w.stack.width()} vs {lebar_isi_awal}")

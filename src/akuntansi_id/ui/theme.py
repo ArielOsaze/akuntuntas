@@ -171,6 +171,10 @@ FS_H3 = 14
 FS_BODY = 13
 FS_SMALL = 12
 FS_TINY = 11
+# Ukuran khusus popup pesan. Popup dibaca sambil lalu, sering kali saat
+# pengguna sedang menyelesaikan hal lain, jadi teksnya dibuat lebih
+# besar daripada teks badan biasa supaya tidak perlu dizoom.
+FS_PESAN = 15
 
 # Skala ukuran teks aplikasi; diubah dari menu Tampilan → Ukuran Teks.
 UKURAN_TEKS = 1.0

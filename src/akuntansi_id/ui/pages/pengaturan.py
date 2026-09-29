@@ -10,12 +10,13 @@ from __future__ import annotations
 import os
 from datetime import datetime
 
-from PySide6.QtCore import Qt, Signal, QUrl
+from PySide6.QtCore import Qt, Signal, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QTextCursor
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton,
-    QDialog, QMessageBox, QInputDialog, QGridLayout, QLineEdit, QCheckBox, QTabWidget,
-    QFileDialog, QListWidget, QStackedWidget, QTextEdit, QSpinBox,
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
+    QPushButton, QDialog, QMessageBox, QInputDialog, QGridLayout, QLineEdit,
+    QCheckBox, QTabWidget, QFileDialog, QListWidget, QListWidgetItem,
+    QStackedWidget, QTextEdit, QSpinBox,
 )
 
 from ... import config, coa, db, services
@@ -73,6 +74,24 @@ def _daftar_regulasi() -> list:
 def _buka_regulasi(berkas: list, baris: int) -> None:
     if 0 <= baris < len(berkas):
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(berkas[baris][2])))
+
+
+def _salin_regulasi(isi, tombol, baris: int, berkas: list) -> None:
+    """
+    Salin isi peraturan yang sedang tampil ke papan klip.
+
+    Berguna saat pengguna perlu mengutip pasalnya di dokumen lain tanpa
+    harus membuka berkas teksnya.
+    """
+    if not (0 <= baris < len(berkas)):
+        return
+    teks = isi.toPlainText()
+    if not teks:
+        return
+    QApplication.clipboard().setText(teks)
+    asli = tombol.text()
+    tombol.setText("Tersalin")
+    QTimer.singleShot(1600, lambda: tombol.setText(asli))
 
 
 # ==========================================================================
@@ -1272,7 +1291,6 @@ class PengaturanPage(QWidget):
                             f"{'•' * 4}-{'•' * 4}-{bersih[-4:]}"
                             if len(bersih) >= 20 else lis.kunci)
 
-        paket_tingkat = ("success" if lis.enterprise else "info")
         kartu = w.Card()
         _judul_kartu(kartu, "Lisensi Anda")
         isi = QVBoxLayout()
@@ -2187,7 +2205,7 @@ class BantuanPage(QWidget):
         wadah = QWidget()
         lay = QVBoxLayout(wadah)
         lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(14)
+        lay.setSpacing(16)
 
         j = QLabel("Salinan Regulasi Resmi")
         j.setStyleSheet("font-size: 20px; font-weight: 700; background: transparent;")
@@ -2197,7 +2215,9 @@ class BantuanPage(QWidget):
             "Aplikasi menyertakan salinan teks peraturan resmi yang menjadi dasar "
             "seluruh perhitungan pajak. Anda dapat membacanya langsung di sini "
             "untuk memeriksa kesesuaiannya.\n\n"
-            "Pilih peraturan pada daftar di bawah untuk menampilkan isinya.")
+            "Pilih peraturan pada daftar di kiri untuk menampilkan isinya. "
+            "Jumlah peraturan dan ukuran berkasnya tercantum pada bilah di atas "
+            "daftar.")
         pengantar.setWordWrap(True)
         pengantar.setStyleSheet(f"font-size: {theme.FS_BODY}px; line-height: 165%; "
                                 "background: transparent;")
@@ -2211,35 +2231,116 @@ class BantuanPage(QWidget):
             lay.addStretch()
             return w.scroll(wadah)
 
+        # Kartu pembungkus: menyatukan daftar dan isi supaya terbaca sebagai
+        # satu alat, bukan dua kotak terpisah.
+        kartu = w.Card()
+        kl = kartu.body()
+
         baris = QHBoxLayout()
-        baris.setSpacing(12)
+        baris.setSpacing(14)
+
+        # ---------------------------------------------------------- kiri
+        kiri = QVBoxLayout()
+        kiri.setSpacing(8)
+
+        lbl_daftar = QLabel(f"{len(berkas)} peraturan tersedia")
+        lbl_daftar.setStyleSheet(
+            f"font-size: {theme.FS_SMALL}px; font-weight: 700; "
+            f"color: {C.TEXT_MUTED}; background: transparent; "
+            "letter-spacing: 0.4px;")
+        kiri.addWidget(lbl_daftar)
 
         daftar = QListWidget()
-        daftar.setFixedWidth(280)
+        daftar.setFixedWidth(300)
         daftar.setStyleSheet(
             f"QListWidget {{ background: {C.SURFACE}; border: 1px solid {C.BORDER}; "
-            f"border-radius: 8px; padding: 6px; font-size: {theme.FS_SMALL}px; }}"
-            f"QListWidget::item {{ padding: 9px 11px; border-radius: 6px; }}"
-            f"QListWidget::item:selected {{ background: {C.PRIMARY_SOFT}; "
-            f"color: {C.PRIMARY_DARK}; font-weight: 600; }}")
+            f"border-radius: 8px; padding: 6px; }}\n"
+            f"QListWidget::item {{ border-radius: 6px; }}\n"
+            f"QListWidget::item:hover {{ background: {C.BG}; }}\n"
+            f"QListWidget::item:selected {{ background: {C.PRIMARY_SOFT}; }}")
+        daftar.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        # Setiap judul ditampilkan dua baris: kode peraturan di atas, uraian
+        # di bawahnya. Cara ini dipilih setelah membandingkan empat cara
+        # penataan, karena hanya cara ini yang menampilkan judul panjang
+        # secara utuh sekaligus paling mudah dipindai mata. Menghitung
+        # tinggi baris sendiri tidak cukup: daftar tetap memotong teksnya
+        # dengan titik-titik, dan teks yang dibungkus pun tidak serapi
+        # pemisahan dua baris ini.
         for _, judul, _ in berkas:
-            daftar.addItem(judul)
-        baris.addWidget(daftar)
+            kode, _, uraian = judul.partition(" - ")
+
+            item = QListWidgetItem()
+            item.setToolTip(judul)
+
+            # Nama variabelnya sengaja berbeda dari wadah halaman. Memakai
+            # nama yang sama akan menimpa acuan ke wadah halaman, sehingga
+            # wadah itu dibuang Python dan tata letaknya ikut terhapus.
+            baris_wadah = QWidget()
+            bl = QVBoxLayout(baris_wadah)
+            bl.setContentsMargins(12, 9, 12, 9)
+            bl.setSpacing(1)
+
+            lbl_kode = QLabel(kode)
+            lbl_kode.setStyleSheet(
+                f"font-size: {theme.FS_BODY}px; font-weight: 600; "
+                f"color: {C.TEXT}; background: transparent;")
+            bl.addWidget(lbl_kode)
+
+            if uraian:
+                lbl_uraian = QLabel(uraian)
+                lbl_uraian.setWordWrap(True)
+                lbl_uraian.setStyleSheet(
+                    f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
+                    "background: transparent;")
+                bl.addWidget(lbl_uraian)
+
+            baris_wadah.setFixedWidth(300 - 18)
+            item.setSizeHint(baris_wadah.sizeHint())
+            daftar.addItem(item)
+            daftar.setItemWidget(item, baris_wadah)
+        kiri.addWidget(daftar, 1)
+        baris.addLayout(kiri)
+
+        # --------------------------------------------------------- kanan
+        kanan = QVBoxLayout()
+        kanan.setSpacing(8)
+
+        # Judul berkas yang sedang tampil, supaya pembaca tidak perlu
+        # menengok ke daftar untuk tahu peraturan mana yang dibaca.
+        lbl_berkas = QLabel("")
+        lbl_berkas.setWordWrap(True)
+        lbl_berkas.setStyleSheet(
+            f"font-size: {theme.FS_BODY}px; font-weight: 700; "
+            f"color: {C.TEXT}; background: transparent;")
+        kanan.addWidget(lbl_berkas)
 
         isi = QTextEdit()
         isi.setReadOnly(True)
-        theme.latar(isi, f"background: {C.SURFACE}; border: 1px solid {C.BORDER}; "
-            f"border-radius: 8px; padding: 10px; "
-            f"font-family: {theme.FONT_ANGKA}; font-size: {theme.FS_TINY}px;")
-        baris.addWidget(isi, 1)
-        lay.addLayout(baris)
+        # Isi berkas peraturan sudah dibungkus sekitar 64 sampai 85 huruf,
+        # yaitu lebar yang nyaman dibaca. Pembungkusan ulang oleh kotak teks
+        # justru merusak tata letak aslinya, terutama pada tabel angka yang
+        # perataannya bergantung pada spasi. Karena itu pembungkusan
+        # dimatikan dan teks ditampilkan apa adanya, dengan penggeser
+        # mendatar bila ada baris yang lebih panjang.
+        isi.setLineWrapMode(QTextEdit.NoWrap)
+        theme.latar(isi, f"background: {C.BG}; border: 1px solid {C.BORDER}; "
+            f"border-radius: 8px; padding: 14px; "
+            f"font-family: {theme.FONT_ANGKA}; font-size: {theme.FS_SMALL}px;")
+        kanan.addWidget(isi, 1)
+        baris.addLayout(kanan, 1)
+
+        kl.addLayout(baris, 1)
+        lay.addWidget(kartu, 1)
 
         def tampilkan(baris_ke: int):
             if baris_ke < 0 or baris_ke >= len(berkas):
                 return
-            path = berkas[baris_ke][2]
+            _, judul, path = berkas[baris_ke]
+            lbl_berkas.setText(judul)
             try:
-                isi.setPlainText(path.read_text(encoding="utf-8", errors="replace"))
+                teks = path.read_text(encoding="utf-8", errors="replace")
+                isi.setPlainText(teks)
                 # Kembalikan tampilan ke awal berkas setiap kali berganti
                 # peraturan. QTextCursor.MoveOperation.Start adalah nilai
                 # enum, bukan atribut pada objek kursor, sehingga harus
@@ -2247,16 +2348,28 @@ class BantuanPage(QWidget):
                 kursor = isi.textCursor()
                 kursor.movePosition(QTextCursor.MoveOperation.Start)
                 isi.setTextCursor(kursor)
+                # Keterangan ukuran membantu pengguna memperkirakan berapa
+                # lama berkas perlu dibaca.
+                jumlah_baris = teks.count("\n") + 1
+                lbl_berkas.setText(f"{judul}  -  {jumlah_baris:,} baris"
+                                   .replace(",", "."))
             except Exception as e:
+                lbl_berkas.setText(judul)
                 isi.setPlainText(f"Berkas tidak dapat dibaca: {e}")
 
         daftar.currentRowChanged.connect(tampilkan)
         daftar.setCurrentRow(0)
 
         tombol = QHBoxLayout()
+        tombol.setSpacing(10)
         b = w.tombol("Buka di Aplikasi Lain", ikon="dokumen")
         b.clicked.connect(lambda: _buka_regulasi(berkas, daftar.currentRow()))
         tombol.addWidget(b)
+
+        b_salin = w.tombol("Salin Isi", ikon="dokumen", gaya="garis")
+        b_salin.clicked.connect(
+            lambda: _salin_regulasi(isi, b_salin, daftar.currentRow(), berkas))
+        tombol.addWidget(b_salin)
         tombol.addStretch()
         lay.addLayout(tombol)
 

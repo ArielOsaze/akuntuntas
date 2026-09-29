@@ -101,6 +101,8 @@ PEMERIKSAAN = [
     ("buruh_bug_akuntansi.py", "Perhitungan akuntansi, HPP, FIFO, dan rata-rata"),
     ("buruh_bug_kesalahan.py", "Tidak ada kegagalan penyimpanan yang ditelan"),
     ("periksa_catatan_rilis.py", "Catatan rilis publik bebas info sensitif"),
+    ("ukur_tombol_mengapung.py", "Jalur sempit tidak menimpa menu bar atau judul"),
+    ("ukur_daftar_regulasi.py", "Judul peraturan tampil utuh, teks nyaman dibaca"),
 ]
 
 

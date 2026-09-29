@@ -657,6 +657,11 @@ class PetaHalaman(dict):
 
 
 class MainWindow(QMainWindow):
+    # Lebar jalur sempit pengganti menu samping. Cukup untuk satu tombol
+    # berukuran 34 piksel beserta tepinya, tetapi jauh lebih hemat ruang
+    # daripada menu samping penuh.
+    REL_LEBAR = 44
+
     # Dipancarkan saat pengguna keluar dari akunnya. Jendela pembungkus
     # memakainya untuk kembali ke halaman masuk tanpa menutup aplikasi.
     kembali_ke_login = Signal()
@@ -685,6 +690,7 @@ class MainWindow(QMainWindow):
         lay = QHBoxLayout(pusat)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
+        self.lay_utama = lay
 
         # sidebar
         self.sidebar = Sidebar(lisensi=lisensi)
@@ -702,23 +708,41 @@ class MainWindow(QMainWindow):
         lay.addWidget(self.sidebar)
         self._sidebar_tersembunyi = False
 
-        # Tombol mengambang untuk memunculkan kembali menu setelah
-        # disembunyikan. Diletakkan di sudut kiri atas area isi, dan hanya
-        # tampil saat menu sedang disembunyikan.
-        self.btn_menu_mengapung = QPushButton(self)
+        # Jalur sempit pengganti menu samping saat disembunyikan.
+        #
+        # Sebelumnya tombol pengembali diletakkan mengapung di atas area isi,
+        # sehingga menimpa menu bar di atasnya dan judul halaman di
+        # bawahnya. Kini tombol punya jalurnya sendiri di samping area isi,
+        # jadi tidak mungkin menimpa apa pun, dan area isi tetap lega.
+        self.rel_menu = QFrame()
+        self.rel_menu.setObjectName("RelMenu")
+        self.rel_menu.setFixedWidth(self.REL_LEBAR)
+        self.rel_menu.setStyleSheet(
+            f"QFrame#RelMenu {{ background: {C.SIDEBAR_BG}; "
+            f"border: none; }}")
+        rel_lay = QVBoxLayout(self.rel_menu)
+        rel_lay.setContentsMargins(0, 8, 0, 8)
+        rel_lay.setSpacing(0)
+
+        self.btn_menu_mengapung = QPushButton(self.rel_menu)
         self.btn_menu_mengapung.setObjectName("MenuMengapung")
         self.btn_menu_mengapung.setCursor(Qt.PointingHandCursor)
         self.btn_menu_mengapung.setFixedSize(34, 34)
         self.btn_menu_mengapung.setToolTip("Tampilkan menu samping (Ctrl+Shift+B)")
-        self.btn_menu_mengapung.setIcon(w.icons.ikon("panah_kanan", C.PRIMARY_DARK, 18))
+        self.btn_menu_mengapung.setIcon(w.icons.ikon("panah_kanan", C.SIDEBAR_TEXT, 18))
         self.btn_menu_mengapung.setIconSize(QSize(18, 18))
         self.btn_menu_mengapung.setStyleSheet(
-            f"QPushButton#MenuMengapung {{ background: {C.SURFACE}; "
-            f"border: 1px solid {C.BORDER_STRONG}; border-radius: 8px; }}"
-            f"QPushButton#MenuMengapung:hover {{ background: {C.PRIMARY_SOFT}; "
-            f"border-color: {C.PRIMARY}; }}")
+            f"QPushButton#MenuMengapung {{ background: transparent; "
+            f"border: 1px solid transparent; border-radius: 8px; }}"
+            f"QPushButton#MenuMengapung:hover {{ background: {C.SIDEBAR_HOVER}; "
+            f"border-color: {C.SIDEBAR_ACTIVE}; }}")
         self.btn_menu_mengapung.clicked.connect(self._tampilkan_sidebar)
-        self.btn_menu_mengapung.hide()
+        rel_lay.addWidget(self.btn_menu_mengapung, 0, Qt.AlignHCenter)
+        rel_lay.addStretch()
+        self.rel_menu.hide()
+
+        # Jalur masuk ke tata letak: menu samping, jalur sempit, lalu isi.
+        lay.addWidget(self.rel_menu)
 
         # area konten
         self.stack = QStackedWidget()
@@ -1138,8 +1162,7 @@ class MainWindow(QMainWindow):
         """Sembunyikan menu samping supaya isi memakai seluruh lebar layar."""
         self.sidebar.setVisible(False)
         self._sidebar_tersembunyi = True
-        self.btn_menu_mengapung.show()
-        self._atur_letak_tombol_mengapung()
+        self.rel_menu.show()
         self._sinkron_menu_sidebar()
         self._simpan_pilihan_sidebar()
 
@@ -1147,7 +1170,7 @@ class MainWindow(QMainWindow):
         """Tampilkan kembali menu samping."""
         self.sidebar.setVisible(True)
         self._sidebar_tersembunyi = False
-        self.btn_menu_mengapung.hide()
+        self.rel_menu.hide()
         self._sinkron_menu_sidebar()
         self._simpan_pilihan_sidebar()
 
@@ -1166,11 +1189,6 @@ class MainWindow(QMainWindow):
             self._tampilkan_sidebar()
         else:
             self._sembunyikan_sidebar()
-
-    def _atur_letak_tombol_mengapung(self):
-        """Letakkan tombol menu mengapung di sudut kiri atas area isi."""
-        self.btn_menu_mengapung.move(14, 14)
-        self.btn_menu_mengapung.raise_()
 
     def _simpan_pilihan_sidebar(self):
         """
@@ -1215,10 +1233,8 @@ class MainWindow(QMainWindow):
                 print(f"  Peringatan: gagal membaca pilihan menu samping: {e}")
 
     def resizeEvent(self, peristiwa):
-        """Jaga tombol mengapung tetap di tempatnya saat jendela diubah."""
+        """Jaga tata letak saat jendela diubah ukurannya."""
         super().resizeEvent(peristiwa)
-        if getattr(self, "_sidebar_tersembunyi", False):
-            self._atur_letak_tombol_mengapung()
 
     def _navigasi(self, kode: str):
         if kode == "logout":

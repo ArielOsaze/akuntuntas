@@ -76,4 +76,19 @@ berkas2 = HASIL / "lisensi_keamanan.png"
 h.grab().save(str(berkas2))
 print(f"  [OK] lisensi_keamanan  {berkas2.stat().st_size // 1024} KB")
 
+# Tab Panduan & Aturan, lalu buka Salinan Regulasi Resmi dari daftar isi.
+from PySide6.QtWidgets import QListWidget  # noqa: E402
+
+h.tabs.setCurrentIndex(4)
+tunggu(0.9)
+for daftar in h.findChildren(QListWidget):
+    for i in range(daftar.count()):
+        if "Regulasi" in daftar.item(i).text():
+            daftar.setCurrentRow(i)
+            tunggu(1.6)
+            berkas3 = HASIL / "regulasi.png"
+            h.grab().save(str(berkas3))
+            print(f"  [OK] regulasi          {berkas3.stat().st_size // 1024} KB")
+            break
+
 print(f"\n  tersimpan di: {HASIL}")

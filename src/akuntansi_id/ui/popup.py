@@ -60,7 +60,7 @@ class KotakPesan(QDialog):
     """
 
     def __init__(self, induk, judul: str, isi: str, jenis: str = "info",
-                 rincian: str = "", lebar: int = 460):
+                 rincian: str = "", lebar: int = 540):
         super().__init__(induk)
         self.setWindowTitle(judul)
         self.setModal(True)
@@ -99,7 +99,7 @@ class KotakPesan(QDialog):
         lbl_judul = QLabel(judul)
         lbl_judul.setWordWrap(True)
         lbl_judul.setStyleSheet(
-            f"font-size: {theme.FS_H3}px; font-weight: 700; color: {C.TEXT}; "
+            f"font-size: {theme.FS_H2}px; font-weight: 700; color: {C.TEXT}; "
             "background: transparent;")
         kolom.addWidget(lbl_judul)
 
@@ -107,16 +107,16 @@ class KotakPesan(QDialog):
         lbl_isi.setWordWrap(True)
         lbl_isi.setTextFormat(Qt.RichText)
         lbl_isi.setStyleSheet(
-            f"font-size: {theme.FS_BODY}px; color: {C.TEXT_MUTED}; "
-            "background: transparent; line-height: 155%;")
+            f"font-size: {theme.FS_PESAN}px; color: {C.TEXT}; "
+            "background: transparent; line-height: 170%;")
         kolom.addWidget(lbl_isi)
 
         if rincian:
             lbl_rinci = QLabel(rincian)
             lbl_rinci.setWordWrap(True)
             lbl_rinci.setStyleSheet(
-                f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
-                "background: transparent; line-height: 150%;")
+                f"font-size: {theme.FS_BODY}px; color: {C.TEXT_MUTED}; "
+                "background: transparent; line-height: 160%;")
             kolom.addWidget(lbl_rinci)
 
         kl.addLayout(kolom, 1)
@@ -135,7 +135,7 @@ class KotakPesan(QDialog):
                                f"border-top: 1px solid {C.BORDER};")
         kkl = QHBoxLayout(self.kaki)
         kkl.setContentsMargins(24, 16, 24, 16)
-        kkl.setSpacing(10)
+        kkl.setSpacing(12)
         kkl.addStretch()
         self._baris_tombol = kkl
         luar.addWidget(self.kaki)
@@ -153,15 +153,15 @@ class KotakPesan(QDialog):
         """
         b = QPushButton(teks)
         b.setCursor(Qt.PointingHandCursor)
-        b.setMinimumHeight(38)
-        b.setMinimumWidth(120)
+        b.setMinimumHeight(42)
+        b.setMinimumWidth(132)
 
         if gaya == "primary":
             b.setStyleSheet(
                 f"QPushButton {{ background: {C.PRIMARY}; color: "
                 f"{C.TEXT_INVERSE}; border: 1px solid {C.PRIMARY}; "
                 f"border-radius: {theme.SUDUT_KONTROL}px; "
-                f"padding: 9px 20px; font-size: {theme.FS_BODY}px; "
+                f"padding: 10px 24px; font-size: {theme.FS_PESAN}px; "
                 "font-weight: 600; }"
                 f"QPushButton:hover {{ background: {C.PRIMARY_DARK}; "
                 f"border-color: {C.PRIMARY_DARK}; }}")
@@ -170,7 +170,7 @@ class KotakPesan(QDialog):
                 f"QPushButton {{ background: {C.SURFACE}; color: {C.TEXT}; "
                 f"border: 1px solid {C.BORDER_STRONG}; "
                 f"border-radius: {theme.SUDUT_KONTROL}px; "
-                f"padding: 9px 20px; font-size: {theme.FS_BODY}px; "
+                f"padding: 10px 24px; font-size: {theme.FS_PESAN}px; "
                 "font-weight: 600; }"
                 f"QPushButton:hover {{ background: {C.BG}; "
                 f"border-color: {C.PRIMARY_LIGHT}; }}")
@@ -240,7 +240,7 @@ def tanya(induk, judul: str, isi: str, rincian: str = "",
 
 
 def pilih(induk, judul: str, isi: str, pilihan: list[tuple],
-          rincian: str = "", lebar: int = 470) -> str:
+          rincian: str = "", lebar: int = 540) -> str:
     """
     Tampilkan beberapa pilihan sekaligus.
 
