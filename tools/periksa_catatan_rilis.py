@@ -134,7 +134,7 @@ def utama() -> int:
         print(f"\n  --- {nama} ---")
 
         if not p.exists():
-            print(f"      GAGAL berkas tidak ada")
+            print("      GAGAL berkas tidak ada")
             jumlah_gagal += 1
             continue
 
