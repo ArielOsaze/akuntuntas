@@ -12,15 +12,15 @@ sama.
 
 ---
 
-## Versi 1.2.8 - 28 September 2026
+## Versi 1.2.8 - 29 September 2026
 
 ### Fitur baru
 
 - **Menu samping dapat disembunyikan.** Pada layar sempit, menu samping
   memakan ruang sehingga sebagian kolom tabel terpotong. Kini menu dapat
   disembunyikan lewat tombol di sudut kanan atas, menu Tampilan, atau
-  pintasan **Ctrl+Shift+B**. Tombol mengambang di sudut kiri atas
-  memunculkannya kembali.
+  pintasan **Ctrl+Shift+B**. Sebuah jalur sempit di sisi kiri memuat
+  tombol untuk memunculkannya kembali.
 - **Pilihan menu diingat.** Bila Anda menyembunyikan menu samping, pilihan
   itu tetap berlaku saat aplikasi dibuka lagi.
 - **Lokasi penyimpanan data dapat dipindahkan.** Tersedia di
@@ -34,7 +34,8 @@ sama.
 
 - **Popup pesan ditata ulang.** Seluruh kotak pesan, pertanyaan, dan
   pemberitahuan kini menyatu dengan tampilan aplikasi, dengan ikon dan
-  tombol yang sesuai maksud pesannya.
+  tombol yang sesuai maksud pesannya. Hurufnya diperbesar supaya tidak
+  perlu dizoom, dan tombolnya lebih tinggi sehingga mudah ditekan.
 - **Popup masa uji coba lebih jelas.** Memuat pilihan langsung untuk
   mengaktifkan lisensi yang sudah dimiliki, membeli lisensi, atau
   menundanya.
