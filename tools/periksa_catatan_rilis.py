@@ -58,6 +58,23 @@ BAGIAN_DIKECUALIKAN = {
     ],
 }
 
+# Kalimat yang sengaja dibiarkan pada berkas tertentu, beserta alasannya.
+#
+# Menyembunyikan bagian ini justru melanggar aturan, dan menyebutnya tidak
+# membuka celah apa pun karena tidak menjelaskan cara kerja perlindungannya.
+# Berkasnya tetap diperiksa seluruhnya; hanya kalimat yang tercantum di sini
+# yang dilewati, sehingga kebocoran baru tetap tertangkap.
+IZIN_KHUSUS = {
+    "privasi.html": [
+        # UU Pelindungan Data Pribadi mewajibkan kebijakan privasi menyebut
+        # data apa yang dikirim ke server dan bagaimana penanganannya.
+        "penanda perangkat",
+        "sidik perangkat",
+        "kebocoran data",
+        "kegagalan pelindungan data",
+    ],
+}
+
 
 def buang_bagian_dikecualikan(nama: str, teks: str) -> str:
     """Buang bagian yang memang bukan untuk publik."""
@@ -82,6 +99,7 @@ def bersihkan(teks: str) -> str:
 
 def periksa(nama: str, teks: str) -> list[tuple[str, str, str]]:
     """Kembalikan daftar (pola, alasan, potongan teks)."""
+    izin = IZIN_KHUSUS.get(nama, [])
     temuan = []
     for pola, alasan in TERLARANG:
         for m in re.finditer(pola, teks, re.I):
@@ -89,6 +107,9 @@ def periksa(nama: str, teks: str) -> list[tuple[str, str, str]]:
             akhir = min(len(teks), m.end() + 70)
             potongan = " ".join(teks[awal:akhir].split())
             if any(re.search(p, potongan, re.I) for p in PENGECUALIAN):
+                continue
+            # Kalimat yang diizinkan khusus untuk berkas ini.
+            if any(kata.lower() in potongan.lower() for kata in izin):
                 continue
             temuan.append((pola, alasan, potongan))
     return temuan
@@ -101,7 +122,6 @@ def utama() -> int:
 
     berkas = [
         ("docs/catatan-rilis.md", False),
-        ("web/rilis.html", True),
         ("docs/teks-siap-tempel.md", False),
         ("docs/catatan-rilis-internal.md", False),
     ]
@@ -142,6 +162,30 @@ def utama() -> int:
         else:
             print("      LULUS tidak memuat info sensitif")
             jumlah_lulus += 1
+
+    # Seluruh halaman web diperiksa, bukan hanya halaman rilis. Kebocoran
+    # bisa muncul di halaman mana saja, dan halaman yang sudah tayang tidak
+    # dapat ditarik kembali.
+    print("\n  --- seluruh halaman web ---")
+    halaman = sorted((AKAR / "web").glob("*.html"))
+    kotor = []
+    for p in halaman:
+        isi = p.read_text(encoding="utf-8")
+        temuan = periksa(p.name, bersihkan(isi))
+        if temuan:
+            kotor.append(p.name)
+            print(f"\n      GAGAL {p.name}: {len(temuan)} temuan")
+            for pola, alasan, potongan in temuan[:4]:
+                print(f"            [{pola}] {alasan}")
+                print(f"            ...{potongan[:120]}...")
+            jumlah_gagal += len(temuan)
+
+    if kotor:
+        pass
+    else:
+        print(f"      LULUS {len(halaman)} halaman "
+              f"diperiksa, tidak ada yang bocor")
+        jumlah_lulus += 1
 
     print()
     print("=" * 78)
