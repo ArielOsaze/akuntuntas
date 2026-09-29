@@ -12,48 +12,25 @@ sama.
 
 ---
 
-## Versi 1.2.8 - 29 September 2026
+## Versi 1.2.9 - 29 September 2026
 
-### Fitur baru
-
-- **Menu samping dapat disembunyikan.** Pada layar sempit, menu samping
-  memakan ruang sehingga sebagian kolom tabel terpotong. Kini menu dapat
-  disembunyikan lewat tombol di sudut kanan atas, menu Tampilan, atau
-  pintasan **Ctrl+Shift+B**. Sebuah jalur sempit di sisi kiri memuat
-  tombol untuk memunculkannya kembali.
-- **Pilihan menu diingat.** Bila Anda menyembunyikan menu samping, pilihan
-  itu tetap berlaku saat aplikasi dibuka lagi.
-- **Lokasi penyimpanan data dapat dipindahkan.** Tersedia di
-  **Pengaturan > Penyimpanan Data**. Pindahkan folder data ke drive lain
-  atau folder yang ikut dicadangkan, buka folder lewat tombol, atau
-  kembalikan ke lokasi bawaan.
-- **Aktifkan lisensi lain tanpa menutup aplikasi.** Tersedia tombol
-  Aktifkan Lisensi Lain di menu Lisensi & Keamanan.
+Versi terbaru.
 
 ### Penyempurnaan
 
-- **Popup pesan ditata ulang.** Seluruh kotak pesan, pertanyaan, dan
-  pemberitahuan kini menyatu dengan tampilan aplikasi, dengan ikon dan
-  tombol yang sesuai maksud pesannya. Hurufnya diperbesar supaya tidak
-  perlu dizoom, dan tombolnya lebih tinggi sehingga mudah ditekan.
-- **Popup masa uji coba lebih jelas.** Memuat pilihan langsung untuk
-  mengaktifkan lisensi yang sudah dimiliki, membeli lisensi, atau
-  menundanya.
-- **Menu Lisensi & Keamanan dirapikan.** Keterangan lisensi disusun dua
-  kolom dengan lencana paket, kunci lisensi disamarkan sebagian demi
-  keamanan, dan butir keterangan diberi nomor supaya mudah dipindai.
-
-### Perbaikan
-
-- **Salinan Regulasi Resmi kini dapat dibaca.** Sebelumnya seluruh berkas
-  peraturan di halaman Panduan dan Aturan gagal dibuka. Kini seluruh 15
-  berkas peraturan terbaca lengkap.
+- **Menu samping kini memakai jalur sempit.** Sebelumnya tombol pengembali
+  menu diletakkan mengapung di atas area isi, sehingga menutupi sebagian
+  menu **Berkas** di bagian atas jendela. Kini tombol itu punya jalurnya
+  sendiri di sisi kiri, jadi tidak menutupi apa pun. Area isi tetap
+  bertambah lebar 276 piksel saat menu disembunyikan.
+- **Popup pesan memakai huruf lebih besar.** Judul, isi pesan, dan tombol
+  diperbesar, serta tombolnya dibuat lebih tinggi. Popup kini nyaman
+  dibaca tanpa perlu dizoom.
 - **Salinan Regulasi Resmi ditata ulang.** Judul peraturan yang panjang
-  sebelumnya terpotong, sehingga dua peraturan yang mirip sulit dibedakan.
-  Kini judul tampil utuh. Ditambah keterangan peraturan yang sedang dibaca
-  beserta jumlah barisnya, serta tombol Salin Isi.
-- **Tombol pengembali menu tidak lagi menimpa menu Berkas.** Sebelumnya
-  tombol itu menutupi sebagian menu di bagian atas jendela.
+  sebelumnya terpotong dengan titik-titik, sehingga dua peraturan yang
+  mirip sulit dibedakan. Kini judul tampil utuh. Ditambah keterangan
+  peraturan yang sedang dibaca beserta jumlah barisnya, serta tombol
+  Salin Isi.
 
 ### Teks untuk kolom What's new di Partner Center
 
@@ -72,6 +49,44 @@ dengan huruf yang lebih besar dan mudah dibaca.
 Salinan Regulasi Resmi kini dapat dibaca seluruhnya. Judul peraturan
 tampil utuh, disertai keterangan jumlah baris dan tombol Salin Isi.
 ```
+
+---
+
+## Versi 1.2.8 - 28 September 2026
+
+### Fitur baru
+
+- **Menu samping dapat disembunyikan.** Pada layar sempit, menu samping
+  memakan ruang sehingga sebagian kolom tabel terpotong. Kini menu dapat
+  disembunyikan lewat tombol di sudut kanan atas, menu Tampilan, atau
+  pintasan **Ctrl+Shift+B**. Pilihannya diingat, sehingga tidak perlu
+  diulang setiap membuka aplikasi.
+- **Lokasi penyimpanan data dapat dipindahkan.** Tersedia di
+  **Pengaturan > Penyimpanan Data**. Pindahkan folder data ke drive lain
+  atau folder yang ikut dicadangkan, buka folder lewat tombol, atau
+  kembalikan ke lokasi bawaan. Pemindahan menyalin seluruh isi lebih
+  dahulu, memeriksa hasilnya, baru berpindah, sehingga data tidak pernah
+  hilang bila penyalinan gagal.
+- **Aktifkan lisensi lain tanpa menutup aplikasi.** Tersedia tombol
+  Aktifkan Lisensi Lain di menu Lisensi & Keamanan.
+
+### Penyempurnaan
+
+- **Popup pesan ditata ulang.** Seluruh kotak pesan, pertanyaan, dan
+  pemberitahuan kini menyatu dengan tampilan aplikasi, dengan ikon dan
+  tombol yang sesuai maksud pesannya.
+- **Popup masa uji coba lebih jelas.** Memuat pilihan langsung untuk
+  mengaktifkan lisensi yang sudah dimiliki, membeli lisensi, atau
+  menundanya.
+- **Menu Lisensi & Keamanan dirapikan.** Keterangan lisensi disusun dua
+  kolom dengan lencana paket, kunci lisensi disamarkan sebagian demi
+  keamanan, dan butir keterangan diberi nomor supaya mudah dipindai.
+
+### Perbaikan
+
+- **Salinan Regulasi Resmi kini dapat dibaca.** Sebelumnya seluruh berkas
+  peraturan di halaman Panduan dan Aturan gagal dibuka. Kini seluruh 15
+  berkas peraturan terbaca lengkap.
 
 ---
 

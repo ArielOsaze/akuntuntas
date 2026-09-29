@@ -183,7 +183,7 @@ dari berkas tersebut.
 | Penyebab | Pencegahan |
 |---|---|
 | Identitas paket tidak cocok | Salin persis dari Product identity |
-| Versi bukan empat angka | Pakai 1.2.8.0 |
+| Versi bukan empat angka | Pakai 1.2.9.0 |
 | Penguji tidak dapat masuk | Isi kolom Catatan untuk sertifikasi |
 | Tangkapan layar kurang | Ambil minimal tiga gambar |
 | Deskripsi tidak sesuai aplikasi | Pakai teks di berkas ini |
@@ -201,8 +201,8 @@ dengan nomor versi yang dinaikkan, misalnya 1.2.6.0.
 ## Versi yang sedang dikirim
 
 ```
-Versi aplikasi : 1.2.8
-Versi paket    : 1.2.8.0
+Versi aplikasi : 1.2.9
+Versi paket   : 1.2.9.0
 ```
 
 Versi paket MSIX wajib empat angka. Angka keempat selalu 0 untuk

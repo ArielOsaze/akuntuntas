@@ -1,6 +1,6 @@
 {
-  "versi": "1.2.8",
+  "versi": "1.2.9",
   "build": "2026.09",
   "tanggal": "2026-09-29",
-  "catatan": "Menu samping bisa disembunyikan, lokasi penyimpanan data bisa dipindah, popup ditata ulang, perbaikan salinan regulasi resmi"
+  "catatan": "Menu samping bisa disembunyikan dengan jalur sempit, lokasi penyimpanan data bisa dipindah, popup ditata ulang dengan huruf lebih besar, salinan regulasi resmi tampil utuh dan bisa disalin"
 }

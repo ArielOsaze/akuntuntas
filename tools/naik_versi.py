@@ -141,6 +141,13 @@ def sebarkan(versi: str, build: str, tanggal: str) -> int:
                   r"Berlaku untuk aplikasi AkunTuntas versi [\d.]+",
                   f"Berlaku untuk aplikasi AkunTuntas versi {versi}"):
         jumlah += 1
+    # Halaman rilis menyoroti versi terbaru di bagian atas. Bila terlewat,
+    # pengunjung membaca versi lama sebagai versi terbaru.
+    if ganti_teks(AKAR / "web/rilis.html",
+                  r"<strong>Versi [\d.]+ sudah tersedia\.</strong>",
+                  f"<strong>Versi {versi} sudah tersedia.</strong>",
+                  wajib=False):
+        jumlah += 1
     if ganti_teks(AKAR / "web/privasi.html",
                   r"Terakhir diperbarui [^<]*",
                   f"Terakhir diperbarui {tanggal}"):
