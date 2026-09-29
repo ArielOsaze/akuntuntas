@@ -59,8 +59,27 @@ Aplikasi ini membantu administrasi dan estimasi perpajakan. Transaksi khusus dan
 
 ## What's new in this version
 
-Kosongkan saja. Halaman itu menyatakan "Leave blank if this is the first
-submission for this product". Ini memang pengiriman pertama.
+Bila ini pengiriman **pertama**, kosongkan saja. Halaman itu menyatakan
+"Leave blank if this is the first submission for this product".
+
+Bila ini pengiriman **pembaruan**, isi dengan teks berikut. Batas 1500
+huruf. Teks ini sengaja hanya menyebut hal yang terlihat pengguna.
+
+```
+Menu samping dapat disembunyikan sehingga tabel dan laporan memakai
+seluruh lebar layar. Pilihannya diingat.
+
+Lokasi penyimpanan data dapat dipindahkan ke folder atau drive lain,
+dengan pengaman agar data tidak pernah hilang bila penyalinan gagal.
+
+Seluruh popup pesan ditata ulang supaya menyatu dengan tampilan aplikasi.
+
+Perbaikan: seluruh berkas salinan regulasi resmi kini dapat dibaca.
+```
+
+Catatan rilis lengkap setiap versi ada di `docs/catatan-rilis.md`.
+Sebelum menempel, jalankan `python tools/periksa_catatan_rilis.py` untuk
+memastikan tidak ada info sensitif yang ikut terbawa.
 
 ## Product features
 

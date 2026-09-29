@@ -100,6 +100,7 @@ PEMERIKSAAN = [
     ("buruh_bug_data.py", "Integritas data: jurnal, stok, saldo, rujukan"),
     ("buruh_bug_akuntansi.py", "Perhitungan akuntansi, HPP, FIFO, dan rata-rata"),
     ("buruh_bug_kesalahan.py", "Tidak ada kegagalan penyimpanan yang ditelan"),
+    ("periksa_catatan_rilis.py", "Catatan rilis publik bebas info sensitif"),
 ]
 
 
