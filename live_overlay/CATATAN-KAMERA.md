@@ -174,3 +174,40 @@ tanpa terpotong.
 Bila ingin gambar lebih tajam, minta resolusi lebih tinggi pada aplikasi
 siaran. Pilih 1024x768, bukan 1280x720, karena 1024x768 tetap 4:3
 sehingga cocok dengan kotaknya.
+
+## Ukuran huruf agar terbaca di ponsel
+
+Penonton TikTok sebagian besar menonton dari ponsel, dan ponsel
+menampilkan siaran pada lebar sekitar 360 sampai 400 piksel. Overlay
+dirancang pada lebar 1080, jadi semuanya tampil sekitar sepertiga
+ukurannya.
+
+Artinya ukuran huruf di rancangan harus cukup besar. Sebagai patokan,
+huruf di rancangan perlu minimal 30px supaya tampil minimal 10px di
+ponsel, dan 10px adalah batas bawah yang masih nyaman dibaca.
+
+Tabel berikut menunjukkan ukuran yang dipakai sekarang:
+
+| Unsur | Di rancangan | Di ponsel |
+|---|---|---|
+| Judul slide | 46px | 15.3px |
+| Nama merek | 40px | 13.3px |
+| Keterangan slide | 32px | 10.7px |
+| Butir dan label | 30px | 10.0px |
+| Alamat situs | 68px | 22.7px |
+
+Untuk memeriksa apakah ada unsur yang bertabrakan atau keluar dari layar
+setelah ukuran huruf diubah:
+
+```
+python tools/periksa_luber_teks.py
+python tools/bandingkan_ukuran_font.py
+```
+
+Alat pertama memeriksa tabrakan antar unsur dan batas layar. Alat kedua
+membandingkan tata letak sebelum dan sesudah ukuran huruf diubah,
+sehingga terlihat unsur mana yang bergeser.
+
+Keduanya mengukur dengan Chrome, karena Chrome itulah yang dipakai
+menampilkan overlay. Hasilnya sama dengan yang benar-benar terlihat
+penonton.

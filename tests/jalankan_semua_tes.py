@@ -104,6 +104,8 @@ PEMERIKSAAN = [
     ("ukur_tombol_mengapung.py", "Jalur sempit tidak menimpa menu bar atau judul"),
     ("ukur_daftar_regulasi.py", "Judul peraturan tampil utuh, teks nyaman dibaca"),
     ("periksa_tutup_kamera.py", "Kotak kamera tidak menutupi isi slide overlay"),
+    ("periksa_luber_teks.py", "Unsur overlay tidak bertabrakan atau keluar layar"),
+    ("bandingkan_ukuran_font.py", "Perbesaran huruf tidak merusak tata letak"),
 ]
 
 

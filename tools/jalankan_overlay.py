@@ -2,10 +2,11 @@
 Buka overlay live di peramban, siap dipakai untuk siaran TikTok.
 
 Overlay dirancang pada ukuran 1080x1920 (9:16). Jendela peramban tidak
-dapat lebih tinggi daripada layar, jadi ukuran jendela dihitung dari
-tinggi layar yang tersedia sambil menjaga perbandingan 9:16. Dengan begitu
-isi jendela tepat 9:16 dan aplikasi siaran dapat memperbesarnya ke
-1080x1920 tanpa distorsi.
+dapat lebih tinggi daripada layar, jadi Windows akan memangkasnya bila
+ukurannya dipaksa. Peluncur ini menyetel isi jendela supaya tepat
+1080x1920 dengan penanda khusus Windows, sehingga aplikasi siaran
+menerima sumber berukuran penuh: tidak ada pita kosong di kanan kiri dan
+gambar tidak perlu diperbesar.
 
 Peramban dipilih karena aplikasi siaran dapat menangkap isi jendelanya
 lewat Window capture.
@@ -70,18 +71,22 @@ def ukuran_layar() -> tuple[int, int]:
 
 def ukuran_jendela() -> tuple[int, int, int]:
     """
-    Hitung ukuran jendela yang pas untuk layar ini.
+    Hitung ukuran jendela awal yang pas untuk layar ini.
 
     Mengembalikan (lebar, tinggi, tinggi_isi).
 
-    Tinggi isi dibatasi oleh tinggi layar yang tersedia sesudah dikurangi
-    taskbar dan bilah judul. Lebarnya lalu dihitung agar perbandingannya
-    tetap 9:16, sehingga isi jendela tepat 9:16 dan tampil utuh tanpa
-    terpotong.
+    Ukuran ini dipakai saat jendela peramban pertama dibuka. Tingginya
+    dibatasi oleh ruang layar yang tersedia sesudah dikurangi taskbar dan
+    bilah judul, supaya peramban mau membuka jendela pada ukuran itu.
+    Lebarnya lalu dihitung agar perbandingannya tetap 9:16.
 
-    Jendela yang lebih tinggi daripada layar akan dipangkas oleh Windows,
-    dan akibatnya overlay terpotong. Karena itu tingginya dihitung dari
-    ruang yang benar-benar tersedia, bukan dipaksa 1920.
+    Jendela yang lebih tinggi daripada layar akan dipangkas Windows, dan
+    akibatnya overlay terpotong. Karena itu tingginya dihitung dari ruang
+    yang benar-benar tersedia, bukan dipaksa 1920.
+
+    Sesudah jendela terbuka, setel_ukuran_penuh() memperbesar isinya
+    sampai tepat 1080x1920 dengan penanda SWP_NOSENDCHANGING, sehingga
+    batas layar tidak lagi berlaku.
     """
     lebar_layar, tinggi_layar = ukuran_layar()
 
@@ -113,31 +118,35 @@ def panduan():
   Berkas overlay:
     {OVERLAY}
 
-  Ukuran jendela yang akan dipakai: {lebar}x{tinggi}
-  (isi jendela {lebar}x{tinggi_isi}, tepat 9:16)
+  Ukuran jendela saat dibuka: {lebar}x{tinggi}
+  Isi jendela disetel otomatis ke {LEBAR_RANCANGAN}x{TINGGI_RANCANGAN}
 
   ----------------------------------------------------------------------
   LANGKAH 1 - Buka overlay
   ----------------------------------------------------------------------
   Jalankan:
+      MULAI-OVERLAY.bat
+
+  Atau lewat perintah:
       python tools/jalankan_overlay.py --chrome
 
-  Jendela terbuka dengan perbandingan 9:16 dan tanpa bilah alamat.
-  Jangan tutup jendela ini selama siaran berlangsung.
+  Jendela terbuka tanpa bilah alamat, dan isinya langsung disetel ke
+  1080x1920 penuh. Jangan tutup jendela ini selama siaran berlangsung.
 
   ----------------------------------------------------------------------
   LANGKAH 2 - Siapkan kamera
   ----------------------------------------------------------------------
-  Kotak face cam ada di kanan atas, berbentuk 4:3.
+  Kotak face cam ada di kanan atas, berbentuk 4:3 (400x300), sama seperti
+  bentuk gambar yang dikirim kamera USB.
 
-  Cara A (paling mudah):
-    Biarkan kotak itu sebagai penanda, lalu di TikTok LIVE Studio
-    letakkan sumber Camera tepat menutupi kotak tersebut. Atur sekali,
-    lalu simpan.
+  Cara A (paling pasti, latar langsung berganti):
+    Jalankan MULAI-KAMERA.bat. Jendela kamera terbuka dengan latar
+    AkunTuntas sudah terpasang. Di TikTok LIVE Studio, tambahkan Window
+    capture dan pilih jendela "AkunTuntas - Kamera".
 
-  Cara B:
-    Buka overlay di Chrome, izinkan akses kamera saat diminta. Kamera
-    tampil sendiri di dalam kotak.
+  Cara B (pakai fitur TikTok LIVE Studio):
+    Tambahkan sumber Camera, pilih USB Camera, lalu pasang efek
+    "Virtual Background (Static/Dynamic)" dan aktifkan Cutout.
 
   ----------------------------------------------------------------------
   LANGKAH 3 - Tangkap overlay di TikTok LIVE Studio
@@ -156,6 +165,13 @@ def panduan():
   ----------------------------------------------------------------------
     Spasi        mempercepat ke slide berikutnya
     F11          layar penuh di peramban
+
+  ----------------------------------------------------------------------
+  MEMERIKSA HASIL
+  ----------------------------------------------------------------------
+    python tools/setel_jendela_overlay.py --periksa
+    python tools/ukur_overlay.py
+    python tools/periksa_tutup_kamera.py
 
   ----------------------------------------------------------------------
   PENGATURAN
@@ -318,12 +334,18 @@ def utama() -> int:
         print("=" * 74)
         print("  UKURAN JENDELA OVERLAY")
         print("=" * 74)
-        print(f"\n  layar       : {lebar_layar}x{tinggi_layar}")
-        print(f"  jendela     : {lebar}x{tinggi}")
-        print(f"  isi jendela : {lebar}x{tinggi_isi}")
-        print(f"  rasio isi   : {lebar / tinggi_isi:.4f} "
+        print(f"\n  layar            : {lebar_layar}x{tinggi_layar}")
+        print(f"  jendela awal     : {lebar}x{tinggi}")
+        print(f"  isi jendela awal : {lebar}x{tinggi_isi}")
+        print(f"  rasio isi awal   : {lebar / tinggi_isi:.4f} "
               f"(9:16 = {9 / 16:.4f})")
-        print("\n  Di aplikasi siaran, perbesar sumber ini ke 1080x1920.")
+        print()
+        print("  Angka di atas adalah ukuran jendela saat baru dibuka.")
+        print("  Sesudah terbuka, isi jendela disetel otomatis ke "
+              f"{LEBAR_RANCANGAN}x{TINGGI_RANCANGAN}.")
+        print()
+        print("  Untuk memeriksa ukuran jendela yang sedang terbuka:")
+        print("    python tools/setel_jendela_overlay.py --periksa")
         return 0
 
     nama = ""
