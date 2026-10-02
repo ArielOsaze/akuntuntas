@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>AkunTuntas - Overlay Live</title>
+<style>
+/* ==========================================================================
+   OVERLAY LIVE TIKTOK 9:16 - AkunTuntas
+   --------------------------------------------------------------------------
+   Susunan layar, dari atas ke bawah:
+     1. Kepala    : logo, nama, dan lencana Microsoft Store
+     2. Panggung  : slide promosi bergantian, berisi tangkapan layar aplikasi
+                    dan halaman situs, dengan animasi masuk-keluar
+     3. Ajakan    : tautan situs, kotak pencarian, dan kode QR
+     4. Kaki      : tiga keunggulan yang berganti bergilir
+
+   Kotak face cam diletakkan di sudut kanan atas, di atas panggung, dengan
+   bingkai dan cincin yang bergerak halus supaya terlihat hidup.
+   ========================================================================== */
+
+:root {
+    --biru: #1B4F8A;
+    --biru-tua: #143C6B;
+    --navy: #0F2942;
+    --navy-muda: #17395C;
+    --teks: #1A2733;
+    --teks-abu: #556577;
+    --garis: #E3E8EF;
+    --latar-lembut: #F5F8FB;
+    --hijau: #047857;
+    --emas: #C9A227;
+    --putih: #FFFFFF;
+    --merah: #E01B24;
+
+    --lebar: 1080px;
+    --tinggi: 1920px;
+
+    /* Ukuran kotak face cam. Ubah di sini bila perlu lebih besar. */
+    --cam-lebar: 268px;
+    --cam-tinggi: 357px;
+    --cam-atas: 40px;
+    --cam-kanan: 34px;
+
+    /* Ruang yang dicadangkan untuk face cam. Isi slide tidak boleh masuk
+       ke area ini, supaya tidak ada teks yang tertutup wajah penyiar. */
+    --cam-cadangan: 300px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+    width: var(--lebar);
+    height: var(--tinggi);
+    overflow: hidden;
+    background: var(--navy);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--putih);
+}
+
+/* ==========================================================================
+   LATAR
+   ========================================================================== */
+.latar {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(1100px 780px at 12% 4%, #1E4E86 0%, transparent 62%),
+        radial-gradient(900px 700px at 88% 92%, #0B2340 0%, transparent 58%),
+        linear-gradient(168deg, #0F2942 0%, #0A1D2F 100%);
+}
+
+/* Kisi halus: memberi kesan teknikal tanpa mengganggu teks. */
+.latar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(circle at 50% 40%, #000 20%, transparent 78%);
+}
+
+/* Cahaya lembut yang bergerak: membuat layar tidak terlihat statis. */
+.cahaya {
+    position: absolute;
+    width: 900px;
+    height: 900px;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.30;
+    pointer-events: none;
+}
+.cahaya-a {
+    background: #2A6FC4;
+    top: -260px;
+    left: -240px;
+    animation: apung-cahaya 17s ease-in-out infinite;
+}
+.cahaya-b {
+    background: #0E7C6B;
+    bottom: -300px;
+    right: -260px;
+    animation: apung-cahaya 21s ease-in-out infinite reverse;
+}
+
+@keyframes apung-cahaya {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(70px, 50px) scale(1.12); }
+}
+
+/* ==========================================================================
+   BINGKAI LUAR
+   ========================================================================== */
+.panggung-utama {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 40px 34px 34px;
+    gap: 22px;
+}
+
+/* ==========================================================================
+   KEPALA
+   ========================================================================== */
+.kepala {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 22px;
+    padding: 18px 24px;
+    backdrop-filter: blur(12px);
+    flex: 0 0 auto;
+    animation: turun 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    /* Ruang di kanan dibiarkan kosong: di situlah face cam diletakkan. */
+    margin-right: calc(var(--cam-lebar) + 18px);
+}
+
+@keyframes turun {
+    from { opacity: 0; transform: translateY(-26px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.merek { display: flex; align-items: center; gap: 16px; }
+
+.merek img {
+    width: 62px;
+    height: 62px;
+    border-radius: 15px;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
+}
+
+.merek-teks { display: flex; flex-direction: column; gap: 3px; }
+
+.merek-nama {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.05;
+}
+
+.merek-slogan {
+    font-size: 20px;
+    color: #A9C2DC;
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   PANGGUNG SLIDE
+   ========================================================================== */
+.panggung {
+    position: relative;
+    flex: 1 1 auto;
+    border-radius: 26px;
+    overflow: hidden;
+    background: linear-gradient(150deg, #FFFFFF 0%, #F2F6FB 100%);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.46);
+}
+
+/* Bilah kemajuan di tepi atas panggung: menandai slide mana yang tampil. */
+.bilah-kemajuan {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 7px;
+    background: rgba(15, 41, 66, 0.12);
+    z-index: 6;
+    display: flex;
+    gap: 4px;
+    padding: 0 4px;
+}
+
+.bilah {
+    flex: 1;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    border-radius: 0 0 4px 4px;
+}
+
+.bilah-isi {
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #2A6FC4, #1B4F8A);
+    border-radius: 0 0 4px 4px;
+}
+
+.bilah.selesai .bilah-isi { width: 100%; }
+.bilah.jalan .bilah-isi { animation: isi-bilah var(--durasi) linear forwards; }
+
+@keyframes isi-bilah {
+    from { width: 0; }
+    to   { width: 100%; }
+}
+
+.slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 40px 38px 32px;
+    opacity: 0;
+    transform: translateX(46px) scale(0.985);
+    transition: opacity 0.62s ease, transform 0.62s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+}
+
+.slide.aktif {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+}
+
+.slide.keluar {
+    opacity: 0;
+    transform: translateX(-46px) scale(0.985);
+}
+
+/* --------------------------------------------------------- judul slide --- */
+.slide-kepala {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 22px;
+    flex: 0 0 auto;
+    /* Latar putih padat: judul tidak boleh menyatu dengan gambar di
+       bawahnya, karena akan sulit dibaca. */
+    position: relative;
+    z-index: 7;
+    /* Sisi kanan dikosongkan supaya judul dan keterangan tidak masuk ke
+       area face cam. Area ini hanya perlu dikosongkan pada bagian atas
+       slide, karena gambar di bawahnya sudah berada di bawah face cam. */
+    padding-right: var(--cam-cadangan);
+}
+
+.slide-label {
+    display: inline-block;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--biru);
+    background: #E4EDF8;
+    padding: 7px 15px;
+    border-radius: 9px;
+    margin-bottom: 13px;
+}
+
+.slide-judul {
+    font-size: 50px;
+    font-weight: 700;
+    line-height: 1.12;
+    color: var(--navy);
+    letter-spacing: -1.1px;
+}
+
+.slide-judul .aksen { color: var(--biru); }
+
+.slide-keterangan {
+    margin-top: 12px;
+    font-size: 24px;
+    line-height: 1.5;
+    color: var(--teks-abu);
+    max-width: 640px;
+}
+
+/* Angka besar sebagai pil mengapung di sudut gambar. Diletakkan di sini,
+   bukan di kepala slide, supaya tidak bertabrakan dengan face cam dan
+   sekaligus menambah gerak pada tampilan. */
+.slide-angka {
+    position: absolute;
+    right: 24px;
+    bottom: 24px;
+    background: linear-gradient(135deg, #1B4F8A 0%, #143C6B 100%);
+    border-radius: 16px;
+    padding: 15px 24px;
+    text-align: right;
+    box-shadow: 0 14px 34px rgba(15, 41, 66, 0.42);
+    z-index: 5;
+    animation: angka-masuk 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
+}
+
+@keyframes angka-masuk {
+    from { opacity: 0; transform: translateY(18px) scale(0.94); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.slide-angka-nilai {
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--putih);
+    line-height: 1;
+    letter-spacing: -1.5px;
+}
+
+.slide-angka-label {
+    font-size: 15px;
+    color: #A9C2DC;
+    margin-top: 5px;
+    font-weight: 500;
+}
+
+/* ------------------------------------------------------------- gambar --- */
+.slide-gambar {
+    position: relative;
+    flex: 1 1 auto;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--garis);
+    background: var(--putih);
+    box-shadow: 0 18px 44px rgba(15, 41, 66, 0.16);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.slide-gambar img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Jendela peramban palsu: dipakai untuk slide halaman situs. */
+.bilah-peramban {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 52px;
+    background: #EDF1F6;
+    border-bottom: 1px solid var(--garis);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 18px;
+    z-index: 8;
+}
+
+.titik { width: 13px; height: 13px; border-radius: 50%; }
+.titik-merah { background: #FF5F57; }
+.titik-kuning { background: #FEBC2E; }
+.titik-hijau { background: #28C840; }
+
+.alamat {
+    margin-left: 12px;
+    flex: 1;
+    background: var(--putih);
+    border: 1px solid var(--garis);
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 17px;
+    color: var(--teks-abu);
+    font-family: "Segoe UI", sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.alamat-gembok { color: var(--hijau); font-size: 15px; }
+
+.slide-gambar.berperamban img {
+    /* Halaman situs sangat panjang. Hanya bagian atasnya yang ditampilkan,
+       dipotong pada batas gambar supaya tidak berhenti di tengah kalimat.
+       Bagian yang tampil adalah kepala halaman yang memuat judul utama. */
+    margin-top: 52px;
+    object-fit: cover;
+    object-position: top;
+    height: calc(100% - 52px);
+    width: 100%;
+}
+
+/* Sorotan yang bergerak pelan di atas gambar: membuat mata mengikuti. */
+.sorot {
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 55%;
+    height: 100%;
+    background: linear-gradient(100deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.52) 50%,
+        transparent 100%);
+    transform: skewX(-18deg);
+    animation: sapu 5.5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 4;
+}
+
+@keyframes sapu {
+    0%   { left: -60%; }
+    55%  { left: 130%; }
+    100% { left: 130%; }
+}
+
+/* Titik yang menyala bergantian di sudut gambar. */
+.titik-nyala {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--merah);
+    box-shadow: 0 0 0 0 rgba(224, 27, 36, 0.65);
+    animation: denyut 1.7s ease-out infinite;
+    z-index: 5;
+}
+
+@keyframes denyut {
+    0%   { box-shadow: 0 0 0 0 rgba(224, 27, 36, 0.65); }
+    70%  { box-shadow: 0 0 0 20px rgba(224, 27, 36, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(224, 27, 36, 0); }
+}
+
+/* ------------------------------------------------------- daftar centang --- */
+.slide-daftar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 20px;
+    flex: 0 0 auto;
+}
+
+.butir {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--latar-lembut);
+    border: 1px solid var(--garis);
+    border-radius: 11px;
+    padding: 11px 17px;
+    font-size: 21px;
+    color: var(--teks);
+    font-weight: 500;
+}
+
+.butir-centang {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--hijau);
+    color: var(--putih);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    flex: 0 0 auto;
+}
+
+/* ==========================================================================
+   FACE CAM
+   ========================================================================== */
+.cam {
+    position: absolute;
+    top: var(--cam-atas);
+    right: var(--cam-kanan);
+    width: var(--cam-lebar);
+    height: var(--cam-tinggi);
+    border-radius: 24px;
+    overflow: hidden;
+    z-index: 30;
+    background: #0B1826;
+    box-shadow: 0 22px 54px rgba(0, 0, 0, 0.58);
+    animation: cam-masuk 1s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+}
+
+@keyframes cam-masuk {
+    from { opacity: 0; transform: translateX(40px) scale(0.92); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+/* Cincin berputar: menandai area yang sedang bersiaran. */
+.cam-cincin {
+    position: absolute;
+    inset: -3px;
+    border-radius: 26px;
+    padding: 3px;
+    background: conic-gradient(from 0deg,
+        #E01B24, #C9A227, #047857, #1B4F8A, #E01B24);
+    animation: putar 7s linear infinite;
+    z-index: 0;
+}
+
+@keyframes putar {
+    to { transform: rotate(360deg); }
+}
+
+.cam-dalam {
+    position: absolute;
+    inset: 4px;
+    border-radius: 21px;
+    overflow: hidden;
+    background: #0B1826;
+    z-index: 1;
+}
+
+/* Isi kotak ini digantikan oleh perekam layar. Bila tidak digantikan,
+   yang tampil adalah keterangan ini. */
+.cam-isi {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #7E96AE;
+    text-align: center;
+    padding: 20px;
+}
+
+.cam-isi svg { width: 62px; height: 62px; opacity: 0.55; }
+
+.cam-isi p {
+    font-size: 16px;
+    line-height: 1.45;
+    font-weight: 500;
+}
+
+/* Video kamera diletakkan di dalam kotak ini. */
+.cam video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    z-index: 2;
+}
+
+.cam-tanda {
+    position: absolute;
+    top: 13px;
+    left: 13px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(224, 27, 36, 0.94);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.7px;
+    z-index: 4;
+}
+
+.cam-tanda-titik {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--putih);
+    animation: kelip 1.5s ease-in-out infinite;
+}
+
+@keyframes kelip {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.25; }
+}
+
+.cam-nama {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 26px 14px 13px;
+    background: linear-gradient(to top, rgba(6, 16, 27, 0.94), transparent);
+    font-size: 19px;
+    font-weight: 700;
+    z-index: 4;
+    text-align: center;
+    letter-spacing: 0.2px;
+}
+
+.cam-nama span {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #A9C2DC;
+    margin-top: 2px;
+}
+
+/* ==========================================================================
+   AJAKAN
+   ==========================================================================
+   Tautan situs adalah satu-satunya ajakan di layar, jadi ditulis sebesar
+   mungkin dan diberi gerak supaya mata penonton tertuju ke sana. */
+.ajakan {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    background: linear-gradient(112deg, #1B4F8A 0%, #143C6B 58%, #0F2942 100%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 24px;
+    padding: 26px 30px;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.42);
+    animation: naik 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+    position: relative;
+    overflow: hidden;
+}
+
+@keyframes naik {
+    from { opacity: 0; transform: translateY(26px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Kilau yang menyapu dari kiri ke kanan: mengarahkan mata ke tautan. */
+.ajakan::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -40%;
+    width: 38%;
+    height: 100%;
+    background: linear-gradient(100deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.16) 50%,
+        transparent 100%);
+    transform: skewX(-18deg);
+    animation: sapu-ajakan 4.5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes sapu-ajakan {
+    0%   { left: -40%; }
+    60%  { left: 120%; }
+    100% { left: 120%; }
+}
+
+.ajakan-teks { flex: 1 1 auto; position: relative; z-index: 2; }
+
+.ajakan-label {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: #8FB4DE;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+/* Titik yang berdenyut di samping label: menandai ajakan yang aktif. */
+.ajakan-titik {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4ADE80;
+    animation: denyut-hijau 1.8s ease-out infinite;
+}
+
+@keyframes denyut-hijau {
+    0%   { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+    70%  { box-shadow: 0 0 0 16px rgba(74, 222, 128, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+}
+
+/* Tautan situs ditulis sangat besar: ini yang perlu dibaca penonton. */
+.ajakan-situs {
+    font-size: 68px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    line-height: 1.05;
+    color: var(--putih);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    text-shadow: 0 3px 18px rgba(0, 0, 0, 0.4);
+    white-space: nowrap;
+}
+
+.ajakan-situs .depan { color: #7FB2E8; }
+
+.kursor {
+    display: inline-block;
+    width: 5px;
+    height: 58px;
+    background: #6FA8E8;
+    animation: kelip 1s step-end infinite;
+    margin-left: 5px;
+    border-radius: 2px;
+}
+
+.ajakan-bawah {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.pil {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 11px;
+    padding: 11px 17px;
+    font-size: 21px;
+    font-weight: 600;
+}
+
+.pil-emas {
+    background: rgba(201, 162, 39, 0.22);
+    border-color: rgba(201, 162, 39, 0.5);
+    color: #F0D98A;
+}
+
+/* ------------------------------------------------------- penunjuk unduh --- */
+.penunjuk {
+    flex: 0 0 auto;
+    width: 232px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 18px;
+    padding: 20px 18px;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+    animation: ayun 3.4s ease-in-out infinite;
+}
+
+@keyframes ayun {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+}
+
+.penunjuk-ikon {
+    font-size: 46px;
+    line-height: 1;
+    margin-bottom: 11px;
+    display: block;
+}
+
+.penunjuk-judul {
+    font-size: 25px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 7px;
+}
+
+.penunjuk-kecil {
+    font-size: 16px;
+    color: #A9C2DC;
+    line-height: 1.4;
+}
+
+/* ==========================================================================
+   KAKI
+   ========================================================================== */
+.kaki {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    height: 74px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.kaki-butir {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 26px;
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.55s ease, transform 0.55s ease;
+}
+
+.kaki-butir.aktif { opacity: 1; transform: translateY(0); }
+
+.kaki-ikon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(111, 168, 232, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.kaki-pemisah { color: #4A6B8C; font-size: 24px; }
+</style>
+</head>
+<body>
+
+<div class="latar">
+    <div class="cahaya cahaya-a"></div>
+    <div class="cahaya cahaya-b"></div>
+</div>
+
+<div class="panggung-utama">
+
+    <!-- ==================================================== KEPALA -->
+    <div class="kepala">
+        <div class="merek">
+            <img src="gambar/logo.png" alt="AkunTuntas">
+            <div class="merek-teks">
+                <div class="merek-nama">AkunTuntas</div>
+                <div class="merek-slogan">Pembukuan &amp; Pajak Perusahaan Indonesia</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- =================================================== PANGGUNG -->
+    <div class="panggung">
+        <div class="bilah-kemajuan" id="bilah-kemajuan"></div>
+        <div id="wadah-slide"></div>
+    </div>
+
+    <!-- ==================================================== AJAKAN -->
+    <div class="ajakan">
+        <div class="ajakan-teks">
+            <div class="ajakan-label">
+                <div class="ajakan-titik"></div>
+                Kunjungi sekarang
+            </div>
+            <div class="ajakan-situs">
+                <span class="depan">akuntuntas</span>.xinet.id<span class="kursor"></span>
+            </div>
+            <div class="ajakan-bawah">
+                <div class="pil">Unduh gratis</div>
+                <div class="pil pil-emas">Standar Rp3.499.000</div>
+                <div class="pil">Enterprise Rp5.499.000</div>
+            </div>
+        </div>
+        <div class="penunjuk">
+            <span class="penunjuk-ikon">&#127760;</span>
+            <div class="penunjuk-judul">Buka di<br>peramban Anda</div>
+            <div class="penunjuk-kecil">Seluruh fitur dan harga lengkap</div>
+        </div>
+    </div>
+
+    <!-- ===================================================== KAKI -->
+    <div class="kaki" id="kaki"></div>
+
+</div>
+
+<!-- ==================================================== FACE CAM -->
+<div class="cam">
+    <div class="cam-cincin"></div>
+    <div class="cam-dalam">
+        <div class="cam-isi">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 10l4.55-2.28A1 1 0 0121 8.62v6.76a1 1 0 01-1.45.9L15 14"/>
+                <rect x="3" y="7" width="12" height="10" rx="2"/>
+            </svg>
+            <p>Letakkan kamera Anda di area ini</p>
+        </div>
+        <video id="kamera" autoplay muted playsinline></video>
+        <div class="cam-tanda">
+            <div class="cam-tanda-titik"></div>
+            LIVE
+        </div>
+        <div class="cam-nama">
+            AkunTuntas
+            <span>Software akuntansi &amp; pajak</span>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ==========================================================================
+   PENGATURAN
+   ========================================================================== */
+const DURASI = 7000;   // Lama tiap slide tampil, dalam milidetik
+
+/* Isi slide. Urutan di sini menentukan urutan tampil.
+   jenis: "aplikasi" memakai jendela biasa, "situs" memakai jendela peramban. */
+const SLIDE = [
+    {
+        label: "Pembukuan",
+        judul: 'Pembukuan rapi, <span class="aksen">pajak akurat</span>',
+        keterangan: "Satu aplikasi untuk mencatat transaksi sampai menyusun laporan keuangan.",
+        angka: "96", angkaLabel: "akun bagan standar",
+        gambar: "gambar/01-dashboard.png",
+        jenis: "aplikasi",
+        daftar: ["Jurnal umum &amp; buku besar", "Neraca saldo otomatis", "Cadangan otomatis"]
+    },
+    {
+        label: "Perpajakan",
+        judul: 'Hitung pajak <span class="aksen">sesuai UU</span>',
+        keterangan: "PPh 21 tarif efektif bulanan, PPh Badan termasuk Pasal 31E, PPN, dan PPh Final UMKM.",
+        angka: "50", angkaLabel: "jenis pajak",
+        gambar: "gambar/03-pajak.png",
+        jenis: "aplikasi",
+        daftar: ["PPh 21 &amp; bukti potong", "PPN keluaran &amp; masukan", "Checklist kepatuhan"]
+    },
+    {
+        label: "Penjualan",
+        judul: 'Invoice dan <span class="aksen">tagihan</span> dalam hitungan detik',
+        keterangan: "Nota kredit, purchase order, dan tagihan pemasok dengan perhitungan PPN otomatis.",
+        angka: "16", angkaLabel: "dasar hukum",
+        gambar: "gambar/02-penjualan.png",
+        jenis: "aplikasi",
+        daftar: ["Invoice &amp; nota kredit", "Pesanan pembelian", "Pantau piutang"]
+    },
+    {
+        label: "Laporan",
+        judul: 'Laporan keuangan <span class="aksen">siap pakai</span>',
+        keterangan: "Laba rugi, neraca, arus kas, dan perubahan modal menurut SAK EMKM, SAK EP, dan SAK Umum.",
+        angka: "SAK", angkaLabel: "EMKM, EP, Umum",
+        gambar: "gambar/04-laporan.png",
+        jenis: "aplikasi",
+        daftar: ["Ekspor ke Excel", "Cetak ukuran A4", "Analisis sembilan rasio"]
+    },
+    {
+        label: "Payroll",
+        judul: 'Gaji karyawan dan <span class="aksen">PPh 21</span> otomatis',
+        keterangan: "Hitung gaji, BPJS, dan potongan pajak. Slip gaji dan bukti potong dibuat sendiri.",
+        angka: "1x", angkaLabel: "bayar, tanpa bulanan",
+        gambar: "gambar/05-payroll.png",
+        jenis: "aplikasi",
+        daftar: ["Slip gaji otomatis", "BPJS &amp; potongan", "Bukti potong PPh 21"]
+    },
+    {
+        label: "Persediaan",
+        judul: 'Stok dan <span class="aksen">HPP</span> terhitung sendiri',
+        keterangan: "Metode FIFO, rata-rata bergerak, atau standar. Nilai persediaan dihitung otomatis.",
+        angka: "FIFO", angkaLabel: "dan rata-rata bergerak",
+        gambar: "gambar/06-produk.png",
+        jenis: "aplikasi",
+        daftar: ["Stok per gudang", "Nilai persediaan", "HPP otomatis"]
+    },
+    {
+        label: "Situs resmi",
+        judul: 'Kenali <span class="aksen">seluruh fitur</span> di situs kami',
+        keterangan: "Buka akuntuntas.xinet.id untuk melihat fitur lengkap, harga paket, dan cara memasang.",
+        angka: "2", angkaLabel: "pilihan paket lisensi",
+        gambar: "gambar/web-beranda.png",
+        jenis: "situs",
+        daftar: ["Perbandingan paket", "Panduan pemasangan", "Tanya jawab"]
+    },
+    {
+        label: "Harga",
+        judul: 'Sekali bayar, <span class="aksen">berlaku selamanya</span>',
+        keterangan: "Tidak ada biaya bulanan maupun biaya per transaksi. Lisensi untuk satu perangkat.",
+        angka: "Rp3,4jt", angkaLabel: "paket Standar",
+        gambar: "gambar/web-harga.png",
+        jenis: "situs",
+        daftar: ["Standar untuk UMKM", "Enterprise untuk 10 perangkat", "Bayar lewat QRIS"]
+    }
+];
+
+/* Keunggulan yang berganti bergilir di kaki layar. */
+const KAKI = [
+    ["\u2713", "Bekerja offline, data tersimpan di komputer Anda"],
+    ["\u2713", "Tersedia di Microsoft Store, coba 1 hari gratis"],
+    ["\u2713", "Tanpa langganan bulanan, tanpa biaya per transaksi"],
+    ["\u2713", "PPh 21, PPh Badan, PPN, dan PPh Final UMKM"],
+    ["\u2713", "Laporan sesuai SAK EMKM, SAK EP, dan SAK Umum"]
+];
+
+const wadah = document.getElementById("wadah-slide");
+const bilahKemajuan = document.getElementById("bilah-kemajuan");
+const kakiWadah = document.getElementById("kaki");
+
+/* ==========================================================================
+   BANGUN SLIDE
+   ========================================================================== */
+SLIDE.forEach((s, i) => {
+    const el = document.createElement("div");
+    el.className = "slide";
+    el.id = `slide-${i}`;
+
+    const berperamban = s.jenis === "situs" ? " berperamban" : "";
+    const peramban = s.jenis === "situs" ? `
+        <div class="bilah-peramban">
+            <div class="titik titik-merah"></div>
+            <div class="titik titik-kuning"></div>
+            <div class="titik titik-hijau"></div>
+            <div class="alamat">
+                <span class="alamat-gembok">&#128274;</span>
+                akuntuntas.xinet.id
+            </div>
+        </div>` : "";
+
+    const daftar = s.daftar.map(d =>
+        `<div class="butir"><div class="butir-centang">&#10003;</div>${d}</div>`
+    ).join("");
+
+    el.innerHTML = `
+        <div class="slide-kepala">
+            <div class="slide-label">${s.label}</div>
+            <div class="slide-judul">${s.judul}</div>
+            <div class="slide-keterangan">${s.keterangan}</div>
+        </div>
+        <div class="slide-gambar${berperamban}">
+            ${peramban}
+            <img src="${s.gambar}" alt="${s.label}">
+            <div class="sorot"></div>
+            <div class="titik-nyala" style="top: ${60 + (i % 3) * 90}px; left: ${34 + (i % 2) * 46}px;"></div>
+            <div class="slide-angka">
+                <div class="slide-angka-nilai">${s.angka}</div>
+                <div class="slide-angka-label">${s.angkaLabel}</div>
+            </div>
+        </div>
+        <div class="slide-daftar">${daftar}</div>`;
+
+    wadah.appendChild(el);
+
+    const bilah = document.createElement("div");
+    bilah.className = "bilah";
+    bilah.innerHTML = '<div class="bilah-isi"></div>';
+    bilahKemajuan.appendChild(bilah);
+});
+
+/* ==========================================================================
+   JALANKAN SLIDE
+   ========================================================================== */
+let indeks = 0;
+const semuaSlide = [...document.querySelectorAll(".slide")];
+const semuaBilah = [...document.querySelectorAll(".bilah")];
+
+function tampilkanSlide(baru) {
+    semuaSlide.forEach((el, i) => {
+        el.classList.remove("aktif", "keluar");
+        if (i === baru) {
+            el.classList.add("aktif");
+        } else if (i < baru) {
+            el.classList.add("keluar");
+        }
+    });
+
+    semuaBilah.forEach((b, i) => {
+        b.classList.remove("jalan", "selesai");
+        if (i < baru) b.classList.add("selesai");
+        if (i === baru) {
+            b.style.setProperty("--durasi", `${DURASI}ms`);
+            void b.offsetWidth;      // paksa hitung ulang agar animasi jalan
+            b.classList.add("jalan");
+        }
+    });
+}
+
+function lanjut() {
+    indeks = (indeks + 1) % SLIDE.length;
+    tampilkanSlide(indeks);
+}
+
+tampilkanSlide(0);
+
+/* ID interval disimpan supaya alat potret dapat menghentikannya lebih
+   dahulu. Tanpa itu, slide berganti sendiri saat dipotret sehingga yang
+   tertangkap bukan slide yang dimaksud. */
+window.jamSlide = setInterval(lanjut, DURASI);
+
+/* ==========================================================================
+   KAKI BERGILIR
+   ========================================================================== */
+KAKI.forEach(([ikon, teks], i) => {
+    const el = document.createElement("div");
+    el.className = "kaki-butir" + (i === 0 ? " aktif" : "");
+    el.id = `kaki-${i}`;
+    el.innerHTML = `<div class="kaki-ikon">${ikon}</div><span>${teks}</span>`;
+    kakiWadah.appendChild(el);
+});
+
+let indeksKaki = 0;
+window.jamKaki = setInterval(() => {
+    document.getElementById(`kaki-${indeksKaki}`).classList.remove("aktif");
+    indeksKaki = (indeksKaki + 1) % KAKI.length;
+    document.getElementById(`kaki-${indeksKaki}`).classList.add("aktif");
+}, 4000);
+
+/* ==========================================================================
+   KAMERA
+   ==========================================================================
+   Bila peramban mengizinkan, kamera dibuka sendiri sehingga kotak face cam
+   langsung menampilkan wajah. Bila tidak, keterangan di dalam kotak tetap
+   tampil dan pengguna dapat menaruh isi kamera lewat perekam layar. */
+async function bukaKamera() {
+    const video = document.getElementById("kamera");
+    try {
+        const aliran = await navigator.mediaDevices.getUserMedia({
+            video: { width: 720, height: 960, facingMode: "user" },
+            audio: false
+        });
+        video.srcObject = aliran;
+        video.style.display = "block";
+        document.querySelector(".cam-isi").style.display = "none";
+    } catch (e) {
+        console.log("Kamera tidak dapat dibuka:", e.message);
+    }
+}
+
+bukaKamera();
+
+/* Pintasan: tekan Spasi untuk mempercepat ke slide berikutnya. */
+document.addEventListener("keydown", (e) => {
+    if (e.code === "Space") {
+        e.preventDefault();
+        lanjut();
+    }
+});
+</script>
+
+</body>
+</html>

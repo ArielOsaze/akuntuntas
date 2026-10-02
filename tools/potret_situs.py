@@ -125,17 +125,44 @@ def potret(nama: str, berkas: str, lebar: int = 1280,
         jeda2.exec()
 
     # Ambil gambar halaman.
-    selesai_gambar = {"ya": False}
+    #
+    # Permukaan widget harus benar-benar selesai digambar lebih dahulu.
+    # Memanggil grab() sekali saja sering menghasilkan gambar putih kosong,
+    # terutama pada halaman panjang, karena penggambaran belum selesai.
+    for _ in range(8):
+        app.processEvents()
+        jeda_akhir = QEventLoop()
+        QTimer.singleShot(280, jeda_akhir.quit)
+        jeda_akhir.exec()
 
-    def simpan(gambar):
-        gambar.save(str(tujuan))
-        selesai_gambar["ya"] = True
+    gambar = tampilan.grab()
+    if gambar.isNull():
+        raise RuntimeError(f"potret {nama} menghasilkan gambar kosong")
 
-    tampilan.grab().save(str(tujuan))
+    gambar.save(str(tujuan))
     tampilan.hide()
 
     if not tujuan.exists():
         raise RuntimeError(f"potret {nama} gagal disimpan")
+
+    # Gambar yang hanya berisi satu warna berarti penggambaran gagal, walau
+    # berkasnya berhasil disimpan. Tanpa pemeriksaan ini, kegagalan seperti
+    # itu lolos dan baru ketahuan saat gambarnya dipakai.
+    warna = gambar.toImage().convertToFormat(
+        gambar.toImage().Format.Format_RGB32)
+    warna_unik = set()
+    for y in range(0, warna.height(), 40):
+        for x in range(0, warna.width(), 40):
+            warna_unik.add(warna.pixel(x, y))
+            if len(warna_unik) > 3:
+                break
+        if len(warna_unik) > 3:
+            break
+
+    if len(warna_unik) <= 1:
+        raise RuntimeError(
+            f"potret {nama} hanya berisi satu warna, penggambaran gagal")
+
     return tujuan
 
 
