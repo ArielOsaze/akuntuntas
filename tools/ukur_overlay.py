@@ -119,9 +119,12 @@ if data:
     print(f"      dari kanan : {data['kanan']} px")
 
     rasio = float(data["rasio"])
-    cek("kotak kamera berbentuk 16:9 mendatar",
-        abs(rasio - 16 / 9) < 0.02,
-        f"rasio {rasio}, seharusnya {16/9:.4f}")
+    # Kotak kamera berbentuk 4:3, sama seperti bentuk gambar yang dikirim
+    # kamera USB. Bentuk 16:9 akan memotong sisi atas dan bawah gambar
+    # kamera sehingga wajah terlihat diperbesar.
+    cek("kotak kamera berbentuk 4:3",
+        abs(rasio - 4 / 3) < 0.02,
+        f"rasio {rasio}, seharusnya {4/3:.4f}")
     cek("kotak kamera berada di dalam layar",
         data["lebar"] <= 1080 and data["atas"] >= 0 and data["kanan"] >= 0,
         f"lebar {data['lebar']}, atas {data['atas']}, kanan {data['kanan']}")

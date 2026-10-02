@@ -160,7 +160,7 @@ Simpan angka ini supaya tidak perlu mengukur lagi.
 
 ```
 Sources (dari atas ke bawah)
-├── Kamera              <- 650, 44, 392x217
+├── Kamera              <- 650, 44, 392x292
 ├── Overlay AkunTuntas  <- 0, 0, 1080x1920
 └── Audio Input         <- suara mikrofon
 ```
@@ -177,7 +177,7 @@ lebih dahulu, lalu buka Streamlabs lagi.
 Klik kanan sumber kamera, pilih **Transform**, lalu **Flip Horizontal**.
 
 **Wajah terpotong di kotak kamera**
-Pastikan lebar dan tinggi kamera 392x217, bukan angka lain. Bila kamera
+Pastikan lebar dan tinggi kamera 392x292, bukan angka lain. Bila kamera
 Anda merek 16:9, rasio ini sudah pas.
 
 **Overlay menutupi kamera**

@@ -103,7 +103,7 @@ def main() -> int:
     QTimer.singleShot(900, jeda2.quit)
     jeda2.exec()
     tampilan.grab().save(str(KELUARAN / "banding_live.png"))
-    print(f"\n  gambar: banding_live.png")
+    print("\n  gambar: banding_live.png")
     print("=" * 78)
     return 0
 

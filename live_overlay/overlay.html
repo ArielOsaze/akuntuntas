@@ -34,11 +34,13 @@
     --lebar: 1080px;
     --tinggi: 1920px;
 
-    /* Ukuran kotak face cam. Bentuknya 16:9 mendatar, sama seperti kamera
-       pada umumnya, sehingga wajah tidak terpotong saat ditampilkan.
-       400 dibagi 225 sama dengan 16 dibagi 9. */
+    /* Ukuran kotak face cam. Bentuknya 4:3, sama seperti bentuk gambar
+       yang dikirim kamera USB pada umumnya. Bila kotaknya dibuat 16:9
+       sementara kamera mengirim 4:3, sisi atas dan bawah gambar akan
+       terpotong sehingga wajah terlihat diperbesar.
+       400 dibagi 300 sama dengan 4 dibagi 3. */
     --cam-lebar: 400px;
-    --cam-tinggi: 225px;
+    --cam-tinggi: 300px;
     --cam-atas: 40px;
     --cam-kanan: 34px;
 
@@ -53,9 +55,39 @@ html, body {
     width: var(--lebar);
     height: var(--tinggi);
     overflow: hidden;
-    background: var(--navy);
+    background: #000000;
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     color: var(--putih);
+    /* Bilah gulir disembunyikan sepenuhnya. Bila muncul, ia memakan
+       sebagian lebar jendela dan menyisakan pita gelap di tepi kanan
+       yang terlihat di hasil siaran. */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+/* Wadah yang menyesuaikan diri dengan ukuran jendela.
+   ------------------------------------------------------------------------
+   Overlay dirancang pada ukuran 1080x1920. Bila jendela lebih kecil,
+   seluruh isi diperkecil secara proporsional sehingga tetap tampil utuh,
+   bukan terpotong. Skalanya dihitung oleh skrip di bawah.
+
+   Ini perlu karena jendela tidak dapat lebih tinggi daripada layar. Pada
+   layar 1920x1080, jendela hanya dapat setinggi 1080, sehingga overlay
+   1920 akan terpotong bila tidak diperkecil. */
+.wadah-skala {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--lebar);
+    height: var(--tinggi);
+    transform-origin: top left;
 }
 
 /* ==========================================================================
@@ -504,6 +536,18 @@ html, body {
     z-index: 1;
 }
 
+/* Latar kamera: tampil saat kamera belum tersambung. Sesudah kamera
+   menyala, gambar kamera menutupinya, sehingga yang tampak hanya orang
+   dengan latar bernuansa AkunTuntas. */
+.cam-latar {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 2;
+}
+
 /* Isi kotak ini digantikan oleh perekam layar. Bila tidak digantikan,
    yang tampil adalah keterangan ini. */
 .cam-isi {
@@ -535,7 +579,7 @@ html, body {
     height: 100%;
     object-fit: cover;
     transform: scaleX(-1);
-    z-index: 2;
+    z-index: 3;
 }
 
 .cam-nama {
@@ -775,6 +819,8 @@ html, body {
 </head>
 <body>
 
+<div class="wadah-skala" id="wadahSkala">
+
 <div class="latar">
     <div class="cahaya cahaya-a"></div>
     <div class="cahaya cahaya-b"></div>
@@ -832,23 +878,59 @@ html, body {
 <div class="cam">
     <div class="cam-cincin"></div>
     <div class="cam-dalam">
-        <div class="cam-isi">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M15 10l4.55-2.28A1 1 0 0121 8.62v6.76a1 1 0 01-1.45.9L15 14"/>
-                <rect x="3" y="7" width="12" height="10" rx="2"/>
-            </svg>
-            <p>Letakkan kamera Anda di area ini</p>
-        </div>
+        <img class="cam-latar" src="gambar/latar-akuntuntas.png"
+             alt="Latar kamera AkunTuntas">
         <video id="kamera" autoplay muted playsinline></video>
-        <div class="cam-nama">
-            AkunTuntas
-            <span>Software akuntansi &amp; pajak</span>
-        </div>
     </div>
 </div>
 
+</div><!-- /wadah-skala -->
+
 <script>
+/* ==========================================================================
+   PENSKALAAN OTOMATIS
+   ==========================================================================
+   Overlay dirancang 1080x1920. Bila jendela lebih kecil, seluruh isi
+   diperkecil secara proporsional supaya tetap tampil utuh, bukan
+   terpotong. Ini perlu karena jendela tidak dapat lebih tinggi daripada
+   layar: pada layar 1920x1080, jendela hanya setinggi 1080.
+
+   Penskalaan dipakai hanya bila jendela lebih kecil. Bila jendela cukup
+   besar, skalanya tetap 1 dan tampilannya sama sekali tidak berubah. */
+(function () {
+    const LEBAR_RANCANGAN = 1080;
+    const TINGGI_RANCANGAN = 1920;
+
+    function sesuaikan() {
+        const lebar = window.innerWidth;
+        const tinggi = window.innerHeight;
+
+        // Pakai skala terkecil dari kedua sisi supaya seluruh isi muat.
+        const skala = Math.min(lebar / LEBAR_RANCANGAN,
+                               tinggi / TINGGI_RANCANGAN);
+
+        const wadah = document.getElementById("wadahSkala");
+        if (!wadah) return;
+
+        if (skala >= 0.999) {
+            // Jendela cukup besar: tidak perlu diperkecil.
+            wadah.style.transform = "";
+            document.body.style.background = "#000000";
+        } else {
+            wadah.style.transform = `scale(${skala})`;
+            // Sisa ruang di kanan dan bawah diisi hitam supaya tidak ada
+            // bagian layar yang menampilkan warna lain.
+            document.body.style.background = "#000000";
+        }
+
+        // Beri tahu keadaan skala, berguna saat memeriksa.
+        window.skalaOverlay = skala;
+    }
+
+    sesuaikan();
+    window.addEventListener("resize", sesuaikan);
+})();
+
 /* ==========================================================================
    PENGATURAN
    ========================================================================== */

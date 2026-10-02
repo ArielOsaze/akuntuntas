@@ -1,29 +1,40 @@
 """
 Buka overlay live di peramban, siap dipakai untuk siaran TikTok.
 
-Overlay dibuka di peramban dengan ukuran jendela 9:16. Peramban dipilih
-karena dapat langsung ditangkap oleh aplikasi siaran (TikTok LIVE Studio,
-OBS) lewat jendela atau tangkapan layar.
+Overlay dirancang pada ukuran 1080x1920 (9:16). Jendela peramban tidak
+dapat lebih tinggi daripada layar, jadi ukuran jendela dihitung dari
+tinggi layar yang tersedia sambil menjaga perbandingan 9:16. Dengan begitu
+isi jendela tepat 9:16 dan aplikasi siaran dapat memperbesarnya ke
+1080x1920 tanpa distorsi.
+
+Peramban dipilih karena aplikasi siaran dapat menangkap isi jendelanya
+lewat Window capture.
 
 Cara pakai:
     python tools/jalankan_overlay.py            (peramban bawaan)
     python tools/jalankan_overlay.py --chrome   (Chrome, tanpa bilah)
-    python tools/jalankan_overlay.py --info     (hanya tampilkan panduan)
+    python tools/jalankan_overlay.py --brave
+    python tools/jalankan_overlay.py --info     (panduan siaran)
+    python tools/jalankan_overlay.py --ukur     (hanya tampilkan ukuran)
 """
 from __future__ import annotations
 
+import ctypes
 import shutil
 import subprocess
 import sys
 import webbrowser
+from ctypes import wintypes
 from pathlib import Path
 
 AKAR = Path(__file__).resolve().parent.parent
 OVERLAY = AKAR / "live_overlay" / "overlay.html"
 
-# Peramban yang didukung, beserta cara membuka jendela tanpa bilah alamat.
-# Jendela tanpa bilah diperlukan supaya yang tertangkap siaran hanya
-# overlaynya, bukan perkakas peramban.
+# Perbandingan rancangan overlay.
+LEBAR_RANCANGAN = 1080
+TINGGI_RANCANGAN = 1920
+
+# Peramban yang didukung, beserta lokasi pemasangan yang umum.
 PERAMBAN = {
     "chrome": [
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
@@ -44,15 +55,57 @@ def cari_peramban(nama: str) -> str | None:
     for jalur in PERAMBAN.get(nama, []):
         if Path(jalur).exists():
             return jalur
-    # Coba lewat PATH sistem.
-    for nama_exe in (f"{nama}.exe",):
-        ada = shutil.which(nama_exe)
-        if ada:
-            return ada
-    return None
+    ada = shutil.which(f"{nama}.exe")
+    return ada or None
+
+
+def ukuran_layar() -> tuple[int, int]:
+    """Ukuran layar utama dalam piksel."""
+    try:
+        user32 = ctypes.windll.user32
+        return user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
+    except Exception:
+        return 1920, 1080
+
+
+def ukuran_jendela() -> tuple[int, int, int]:
+    """
+    Hitung ukuran jendela yang pas untuk layar ini.
+
+    Mengembalikan (lebar, tinggi, tinggi_isi).
+
+    Tinggi isi dibatasi oleh tinggi layar yang tersedia sesudah dikurangi
+    taskbar dan bilah judul. Lebarnya lalu dihitung agar perbandingannya
+    tetap 9:16, sehingga isi jendela tepat 9:16 dan tampil utuh tanpa
+    terpotong.
+
+    Jendela yang lebih tinggi daripada layar akan dipangkas oleh Windows,
+    dan akibatnya overlay terpotong. Karena itu tingginya dihitung dari
+    ruang yang benar-benar tersedia, bukan dipaksa 1920.
+    """
+    lebar_layar, tinggi_layar = ukuran_layar()
+
+    # Ruang yang dipakai taskbar dan bilah judul jendela.
+    RENTANG_TASKBAR = 56
+    RENTANG_JUDUL = 44
+
+    tinggi_isi = tinggi_layar - RENTANG_TASKBAR - RENTANG_JUDUL
+    if tinggi_isi < 320:
+        tinggi_isi = 320
+
+    lebar_isi = round(tinggi_isi * LEBAR_RANCANGAN / TINGGI_RANCANGAN)
+
+    # Bila layar lebih sempit daripada hasil hitungan, batasi oleh lebar.
+    if lebar_isi > lebar_layar - 40:
+        lebar_isi = lebar_layar - 40
+        tinggi_isi = round(lebar_isi * TINGGI_RANCANGAN / LEBAR_RANCANGAN)
+
+    tinggi_jendela = tinggi_isi + RENTANG_JUDUL
+    return lebar_isi, tinggi_jendela, tinggi_isi
 
 
 def panduan():
+    lebar, tinggi, tinggi_isi = ukuran_jendela()
     print("=" * 74)
     print("  PANDUAN SIARAN LIVE TIKTOK - AkunTuntas")
     print("=" * 74)
@@ -60,48 +113,43 @@ def panduan():
   Berkas overlay:
     {OVERLAY}
 
+  Ukuran jendela yang akan dipakai: {lebar}x{tinggi}
+  (isi jendela {lebar}x{tinggi_isi}, tepat 9:16)
+
   ----------------------------------------------------------------------
   LANGKAH 1 - Buka overlay
   ----------------------------------------------------------------------
   Jalankan:
       python tools/jalankan_overlay.py --chrome
 
-  Jendela akan terbuka dengan ukuran 9:16 (1080x1920) tanpa bilah alamat.
-  Bila layar Anda lebih pendek dari 1920, jendela akan menyesuaikan diri.
+  Jendela terbuka dengan perbandingan 9:16 dan tanpa bilah alamat.
+  Jangan tutup jendela ini selama siaran berlangsung.
 
   ----------------------------------------------------------------------
   LANGKAH 2 - Siapkan kamera
   ----------------------------------------------------------------------
-  Kotak face cam ada di kanan atas. Isinya dapat diisi dua cara:
+  Kotak face cam ada di kanan atas, berbentuk 4:3.
 
   Cara A (paling mudah):
-    Biarkan kotak itu sebagai penanda, lalu di aplikasi siaran
-    (TikTok LIVE Studio / OBS), letakkan sumber kamera Anda tepat
-    menutupi kotak tersebut. Atur posisi dan ukurannya sekali, lalu simpan.
+    Biarkan kotak itu sebagai penanda, lalu di TikTok LIVE Studio
+    letakkan sumber Camera tepat menutupi kotak tersebut. Atur sekali,
+    lalu simpan.
 
   Cara B:
-    Buka overlay di peramban Chrome atau Edge, lalu izinkan akses kamera
-    saat diminta. Kamera akan tampil sendiri di dalam kotak.
+    Buka overlay di Chrome, izinkan akses kamera saat diminta. Kamera
+    tampil sendiri di dalam kotak.
 
   ----------------------------------------------------------------------
-  LANGKAH 3 - Tangkap overlay di aplikasi siaran
+  LANGKAH 3 - Tangkap overlay di TikTok LIVE Studio
   ----------------------------------------------------------------------
-  Di TikTok LIVE Studio, OBS, atau Streamlabs, tambahkan sumber:
+  1. Buka TikTok LIVE Studio
+  2. Pilih scene Portrait (tegak)
+  3. Klik Add source, pilih Window capture
+  4. Pilih jendela "AkunTuntas - Overlay Live"
+  5. Pilih Fit to screen supaya mengisi seluruh kanvas
 
-    - "Window Capture" lalu pilih jendela peramban overlay, atau
-    - "Display Capture" bila ingin menangkap seluruh layar.
-
-  Lalu tambahkan sumber kamera dan letakkan menutupi kotak face cam.
-
-  PANDUAN STREAMLABS LENGKAP:
-    live_overlay/PANDUAN-STREAMLABS.md
-
-  KOORDINAT KAMERA (bila diminta angka posisi dan ukuran):
-    python tools/koordinat_kamera.py
-
-    Bawaannya:
-      Overlay penuh : X=0   Y=0   Lebar=1080  Tinggi=1920
-      Kamera        : X=650 Y=44  Lebar=392   Tinggi=217
+  PANDUAN TIKTOK LIVE STUDIO LENGKAP:
+    live_overlay/PANDUAN-TIKTOK-STUDIO.md
 
   ----------------------------------------------------------------------
   PINTASAN
@@ -121,19 +169,169 @@ def panduan():
 """)
 
 
+
+
+def tutup_overlay_lama() -> int:
+    """
+    Tutup jendela overlay yang sudah terbuka.
+
+    Menjalankan peluncur berulang kali akan menumpuk banyak jendela
+    overlay. Aplikasi siaran lalu bisa salah memilih jendela yang lama,
+    yang ukurannya belum disetel. Karena itu jendela lama ditutup lebih
+    dahulu.
+    """
+    import time
+
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT,
+                                    wintypes.WPARAM, wintypes.LPARAM]
+    WM_CLOSE = 0x0010
+    JUDUL = "AkunTuntas - Overlay Live"
+
+    ditemukan = []
+
+    @ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+    def kunjungi(handle, _):
+        if not user32.IsWindowVisible(handle):
+            return True
+        panjang = user32.GetWindowTextLengthW(handle)
+        if panjang == 0:
+            return True
+        buf = ctypes.create_unicode_buffer(panjang + 1)
+        user32.GetWindowTextW(handle, buf, panjang + 1)
+        if buf.value.strip() == JUDUL:
+            ditemukan.append(handle)
+        return True
+
+    user32.EnumWindows(kunjungi, 0)
+
+    if not ditemukan:
+        return 0
+
+    print(f"  menutup {len(ditemukan)} jendela overlay yang sudah terbuka")
+    for handle in ditemukan:
+        user32.PostMessageW(handle, WM_CLOSE, 0, 0)
+
+    time.sleep(2.5)
+    return len(ditemukan)
+
+
+def setel_ukuran_penuh(jeda: float = 4.0) -> bool:
+    """
+    Setel jendela overlay supaya isinya tepat 1080x1920.
+
+    Windows membatasi ukuran jendela ke ukuran layar, sehingga jendela
+    setinggi 1920 dipangkas bila layarnya 1080. Akibatnya isi jendela
+    tidak 9:16, dan aplikasi siaran menyisakan pita kosong di kanan kiri
+    sambil memperbesar gambar sehingga tampak pecah.
+
+    Batas itu bisa dilewati dengan penanda SWP_NOSENDCHANGING. Sesudah
+    disetel, isi jendela tepat 1080x1920 sehingga tidak ada pita kosong
+    dan gambar tidak perlu diperbesar.
+    """
+    import time as _waktu
+
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    user32.GetWindowRect.argtypes = [wintypes.HWND,
+                                     ctypes.POINTER(wintypes.RECT)]
+    user32.GetClientRect.argtypes = [wintypes.HWND,
+                                     ctypes.POINTER(wintypes.RECT)]
+    user32.SetWindowPos.argtypes = [wintypes.HWND,
+                                    wintypes.HWND,
+                                    ctypes.c_int, ctypes.c_int,
+                                    ctypes.c_int, ctypes.c_int,
+                                    wintypes.UINT]
+
+    SWP_NOZORDER = 0x0004
+    SWP_NOACTIVATE = 0x0010
+    SWP_NOSENDCHANGING = 0x0400
+    JUDUL = "AkunTuntas - Overlay Live"
+
+    def cari() -> int:
+        hasil = []
+
+        @ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND,
+                            wintypes.LPARAM)
+        def kunjungi(handle, _):
+            if not user32.IsWindowVisible(handle):
+                return True
+            panjang = user32.GetWindowTextLengthW(handle)
+            if panjang == 0:
+                return True
+            buf = ctypes.create_unicode_buffer(panjang + 1)
+            user32.GetWindowTextW(handle, buf, panjang + 1)
+            if JUDUL.lower() in buf.value.lower():
+                hasil.append(handle)
+            return True
+
+        user32.EnumWindows(kunjungi, 0)
+        return hasil[0] if hasil else 0
+
+    # Tunggu jendela muncul.
+    handle = 0
+    for _ in range(int(jeda * 4)):
+        _waktu.sleep(0.25)
+        handle = cari()
+        if handle:
+            break
+
+    if not handle:
+        print("  catatan: jendela overlay belum terdeteksi")
+        return False
+
+    luar = wintypes.RECT()
+    isi = wintypes.RECT()
+    user32.GetWindowRect(handle, ctypes.byref(luar))
+    user32.GetClientRect(handle, ctypes.byref(isi))
+
+    bingkai_x = (luar.right - luar.left) - isi.right
+    bingkai_y = (luar.bottom - luar.top) - isi.bottom
+
+    user32.SetWindowPos(handle, 0, 0, 0,
+                        LEBAR_RANCANGAN + bingkai_x,
+                        TINGGI_RANCANGAN + bingkai_y,
+                        SWP_NOZORDER | SWP_NOACTIVATE
+                        | SWP_NOSENDCHANGING)
+    _waktu.sleep(1.0)
+
+    user32.GetWindowRect(handle, ctypes.byref(luar))
+    user32.GetClientRect(handle, ctypes.byref(isi))
+    print(f"  isi jendela: {isi.right}x{isi.bottom}  "
+          f"(rasio {isi.right / isi.bottom:.4f}, 9:16 = {9 / 16:.4f})")
+
+    return abs(isi.right / isi.bottom - 9 / 16) < 0.004
+
+
 def utama() -> int:
     if not OVERLAY.exists():
         print(f"  GAGAL overlay tidak ada: {OVERLAY}")
         return 1
 
+    lebar, tinggi, tinggi_isi = ukuran_jendela()
+
     if "--info" in sys.argv:
         panduan()
         return 0
 
-    nama = "chrome" if "--chrome" in sys.argv else ""
-    if "--edge" in sys.argv:
+    if "--ukur" in sys.argv:
+        lebar_layar, tinggi_layar = ukuran_layar()
+        print("=" * 74)
+        print("  UKURAN JENDELA OVERLAY")
+        print("=" * 74)
+        print(f"\n  layar       : {lebar_layar}x{tinggi_layar}")
+        print(f"  jendela     : {lebar}x{tinggi}")
+        print(f"  isi jendela : {lebar}x{tinggi_isi}")
+        print(f"  rasio isi   : {lebar / tinggi_isi:.4f} "
+              f"(9:16 = {9 / 16:.4f})")
+        print("\n  Di aplikasi siaran, perbesar sumber ini ke 1080x1920.")
+        return 0
+
+    nama = ""
+    if "--chrome" in sys.argv:
+        nama = "chrome"
+    elif "--edge" in sys.argv:
         nama = "edge"
-    if "--brave" in sys.argv:
+    elif "--brave" in sys.argv:
         nama = "brave"
 
     url = OVERLAY.as_uri()
@@ -143,16 +341,29 @@ def utama() -> int:
         if exe:
             # Jendela aplikasi: tanpa bilah alamat dan tanpa bilah perkakas,
             # supaya yang tertangkap siaran hanya isi overlaynya.
-            print(f"  Membuka {nama}: {exe}")
+            print("=" * 74)
+            print("  OVERLAY LIVE AKUNTUNTAS")
+            print("=" * 74)
+            print(f"\n  peramban  : {nama}")
+            print(f"  jendela   : {lebar}x{tinggi}")
+            print("  isi jendela akan disetel ke 1080x1920,")
+            print("  sehingga di siaran sumber ini pas tanpa diperbesar.")
+            print()
+            tutup_overlay_lama()
             subprocess.Popen([
                 exe,
                 "--app=" + url,
-                "--window-size=1080,1900",
+                f"--window-size={lebar},{tinggi}",
                 "--window-position=0,0",
                 "--autoplay-policy=no-user-gesture-required",
             ])
             print("  Jendela overlay dibuka.")
-            print("  Tekan F11 bila ingin layar penuh.")
+            print("  Menyetel ukuran penuh 1080x1920...")
+            if setel_ukuran_penuh():
+                print("  Ukuran penuh tercapai: tidak ada pita kosong.")
+            print("  Jangan tutup jendela ini selama siaran.")
+            print()
+            print("  Panduan: python tools/jalankan_overlay.py --info")
             return 0
         print(f"  {nama} tidak ditemukan, memakai peramban bawaan.")
 

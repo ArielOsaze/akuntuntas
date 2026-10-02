@@ -65,7 +65,18 @@ sertifikat.json
 _*.json
 _*.txt
 _*.log
+_*.png
+_*.jpg
 _backup_user/
 supabase/.temp/
 _cek.exe
 _deploy/
+
+# Hasil potret alat pemeriksa. Dibuat ulang tiap kali diperiksa, jadi
+# tidak perlu ikut tersimpan.
+_potret_*/
+_msix_uji/
+
+# Model pemisah orang dari latar. Berkas ini diunduh dari sumber resmi
+# mediapipe, dan jendela kamera mengambilnya dari folder ini.
+model/*.tflite

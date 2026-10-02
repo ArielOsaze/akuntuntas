@@ -6,6 +6,31 @@ bergilir di bawah, dan ada kilau yang menyapu di bagian ajakan.
 
 ---
 
+## Mulai cepat
+
+Dua berkas ini menjalankan semuanya. Klik dua kali, tidak perlu perintah.
+
+| Berkas | Kegunaan |
+|---|---|
+| `MULAI-OVERLAY.bat` | Membuka overlay layar promosi |
+| `MULAI-KAMERA.bat` | Membuka kamera dengan latar AkunTuntas |
+
+Langkahnya:
+
+1. Klik dua kali `MULAI-OVERLAY.bat`
+2. Klik dua kali `MULAI-KAMERA.bat`
+3. Di TikTok LIVE Studio, tambahkan dua sumber:
+   - Window capture, pilih "AkunTuntas - Overlay Live"
+   - Window capture, pilih "AkunTuntas - Kamera"
+4. Letakkan overlay menutupi seluruh kanvas, kamera di kanan atas
+
+Panduan langkah demi langkah untuk TikTok LIVE Studio ada di
+`PANDUAN-TIKTOK-STUDIO.md`.
+
+Catatan penting tentang kamera ada di `CATATAN-KAMERA.md`.
+
+---
+
 ## Tampilan
 
 ```
@@ -37,8 +62,8 @@ bergilir di bawah, dan ada kilau yang menyapu di bagian ajakan.
 └──────────────────────────────────────────┘
 ```
 
-Kotak face cam berada di kanan atas dengan bentuk **16:9 mendatar**
-(400x225 piksel), sama seperti kamera pada umumnya, sehingga wajah tidak
+Kotak face cam berada di kanan atas dengan bentuk **4:3**
+(400x300 piksel), sama seperti kamera pada umumnya, sehingga wajah tidak
 terpotong saat ditampilkan. Isi slide sengaja diberi ruang kosong di kanan
 atas supaya tidak ada teks yang tertutup wajah penyiar.
 
@@ -87,9 +112,27 @@ Lalu tambahkan sumber kamera dan letakkan menutupi kotak face cam.
 
 | Aplikasi | Panduan |
 |---|---|
+| **TikTok LIVE Studio** | `live_overlay/PANDUAN-TIKTOK-STUDIO.md` |
 | **Streamlabs Desktop** | `live_overlay/PANDUAN-STREAMLABS.md` |
 | OBS Studio | Sama seperti Streamlabs, nama menunya hampir sama |
-| TikTok LIVE Studio | Window Capture lalu pilih jendela overlay |
+
+### Mengganti latar kamera
+
+TikTok LIVE Studio sudah punya fitur pengganti latar bawaan, jadi latar
+kamera bisa langsung diganti tanpa aplikasi tambahan. Buat gambar
+latarnya lebih dahulu:
+
+```
+python tools/buat_latar_kamera.py
+```
+
+Lalu pasang "Virtual Background (Static/Dynamic)" pada sumber kamera.
+Langkah lengkapnya ada di `PANDUAN-TIKTOK-STUDIO.md` bagian 6.
+
+### Catatan penting tentang kamera
+
+Masalah bentuk gambar, kamera yang dipakai aplikasi lain, dan
+pengganti latar dibahas di `live_overlay/CATATAN-KAMERA.md`.
 
 ### Koordinat kamera
 

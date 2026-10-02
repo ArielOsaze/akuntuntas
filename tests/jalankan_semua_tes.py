@@ -103,6 +103,7 @@ PEMERIKSAAN = [
     ("periksa_catatan_rilis.py", "Catatan rilis publik bebas info sensitif"),
     ("ukur_tombol_mengapung.py", "Jalur sempit tidak menimpa menu bar atau judul"),
     ("ukur_daftar_regulasi.py", "Judul peraturan tampil utuh, teks nyaman dibaca"),
+    ("periksa_tutup_kamera.py", "Kotak kamera tidak menutupi isi slide overlay"),
 ]
 
 
