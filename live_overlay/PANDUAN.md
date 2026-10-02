@@ -37,9 +37,13 @@ bergilir di bawah, dan ada kilau yang menyapu di bagian ajakan.
 └──────────────────────────────────────────┘
 ```
 
-Kotak face cam berada di kanan atas, menumpuk di atas kepala dan bagian
-atas slide. Isi slide sengaja diberi ruang kosong di kanan atas supaya
-tidak ada teks yang tertutup wajah penyiar.
+Kotak face cam berada di kanan atas dengan bentuk **16:9 mendatar**
+(400x225 piksel), sama seperti kamera pada umumnya, sehingga wajah tidak
+terpotong saat ditampilkan. Isi slide sengaja diberi ruang kosong di kanan
+atas supaya tidak ada teks yang tertutup wajah penyiar.
+
+Tidak ada lencana merah bertulisan LIVE di kotak ini, supaya tidak ada
+elemen merah yang menutupi tampilan.
 
 ---
 
@@ -96,6 +100,10 @@ Ukuran dan letak kotak face cam diatur di blok `:root` pada bagian atas
 berkas: `--cam-lebar`, `--cam-tinggi`, `--cam-atas`, `--cam-kanan`, dan
 `--cam-cadangan`.
 
+Bawaannya `--cam-lebar: 400px` dan `--cam-tinggi: 225px`, yaitu 16:9.
+Bila diubah, jaga perbandingannya tetap 16:9 dengan mengalikan lebar
+dengan 0,5625. Contoh: lebar 512 berarti tinggi 288.
+
 ---
 
 ## Isi slide
@@ -126,10 +134,16 @@ berkas: `--cam-lebar`, `--cam-tinggi`, `--cam-atas`, `--cam-kanan`, dan
 
 ```
 python tools/potret_overlay.py
+python tools/ukur_overlay.py
 ```
 
-Menghasilkan potret 1080x1920 untuk tiap jenis slide di `_potret_overlay/`,
-supaya tampilannya dapat diperiksa tanpa harus membuka peramban.
+Yang pertama menghasilkan potret 1080x1920 untuk tiap jenis slide di
+`_potret_overlay/`. Yang kedua mengukur tata letak langsung dari mesin
+peramban: ukuran kotak kamera, apakah isinya muat, dan apakah gambar situs
+mengisi penuh wadahnya.
+
+Ukuran diukur langsung, bukan dinilai dari potret, karena proporsi pada
+potret dapat terlihat berbeda dari ukuran sebenarnya.
 
 ---
 

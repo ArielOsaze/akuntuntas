@@ -30,20 +30,21 @@
     --hijau: #047857;
     --emas: #C9A227;
     --putih: #FFFFFF;
-    --merah: #E01B24;
 
     --lebar: 1080px;
     --tinggi: 1920px;
 
-    /* Ukuran kotak face cam. Ubah di sini bila perlu lebih besar. */
-    --cam-lebar: 268px;
-    --cam-tinggi: 357px;
+    /* Ukuran kotak face cam. Bentuknya 16:9 mendatar, sama seperti kamera
+       pada umumnya, sehingga wajah tidak terpotong saat ditampilkan.
+       400 dibagi 225 sama dengan 16 dibagi 9. */
+    --cam-lebar: 400px;
+    --cam-tinggi: 225px;
     --cam-atas: 40px;
     --cam-kanan: 34px;
 
     /* Ruang yang dicadangkan untuk face cam. Isi slide tidak boleh masuk
        ke area ini, supaya tidak ada teks yang tertutup wajah penyiar. */
-    --cam-cadangan: 300px;
+    --cam-cadangan: 430px;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -268,7 +269,7 @@ html, body {
 }
 
 .slide-judul {
-    font-size: 50px;
+    font-size: 46px;
     font-weight: 700;
     line-height: 1.12;
     color: var(--navy);
@@ -279,7 +280,7 @@ html, body {
 
 .slide-keterangan {
     margin-top: 12px;
-    font-size: 24px;
+    font-size: 22px;
     line-height: 1.5;
     color: var(--teks-abu);
     max-width: 640px;
@@ -379,15 +380,21 @@ html, body {
 
 .alamat-gembok { color: var(--hijau); font-size: 15px; }
 
+.slide-gambar.berperamban {
+    /* Latar putih: mengisi ruang sisa di sekitar gambar halaman situs. */
+    background: var(--putih);
+}
+
 .slide-gambar.berperamban img {
-    /* Halaman situs sangat panjang. Hanya bagian atasnya yang ditampilkan,
-       dipotong pada batas gambar supaya tidak berhenti di tengah kalimat.
-       Bagian yang tampil adalah kepala halaman yang memuat judul utama. */
+    /* Tangkapan situs diambil tepat seukuran wadah ini (936x1006), jadi
+       gambarnya mengisi penuh tanpa dipotong dan tanpa sisa ruang kosong.
+       Dipotongnya hanya bagian halaman yang memang di luar layar, sama
+       seperti yang dilihat pengunjung saat membuka situs. */
     margin-top: 52px;
-    object-fit: cover;
-    object-position: top;
-    height: calc(100% - 52px);
     width: 100%;
+    height: calc(100% - 52px);
+    object-fit: cover;
+    object-position: top left;
 }
 
 /* Sorotan yang bergerak pelan di atas gambar: membuat mata mengikuti. */
@@ -413,23 +420,6 @@ html, body {
     100% { left: 130%; }
 }
 
-/* Titik yang menyala bergantian di sudut gambar. */
-.titik-nyala {
-    position: absolute;
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    background: var(--merah);
-    box-shadow: 0 0 0 0 rgba(224, 27, 36, 0.65);
-    animation: denyut 1.7s ease-out infinite;
-    z-index: 5;
-}
-
-@keyframes denyut {
-    0%   { box-shadow: 0 0 0 0 rgba(224, 27, 36, 0.65); }
-    70%  { box-shadow: 0 0 0 20px rgba(224, 27, 36, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(224, 27, 36, 0); }
-}
 
 /* ------------------------------------------------------- daftar centang --- */
 .slide-daftar {
@@ -476,7 +466,7 @@ html, body {
     right: var(--cam-kanan);
     width: var(--cam-lebar);
     height: var(--cam-tinggi);
-    border-radius: 24px;
+    border-radius: 18px;
     overflow: hidden;
     z-index: 30;
     background: #0B1826;
@@ -493,10 +483,10 @@ html, body {
 .cam-cincin {
     position: absolute;
     inset: -3px;
-    border-radius: 26px;
+    border-radius: 20px;
     padding: 3px;
     background: conic-gradient(from 0deg,
-        #E01B24, #C9A227, #047857, #1B4F8A, #E01B24);
+        #1B4F8A, #2A6FC4, #047857, #2A6FC4, #1B4F8A);
     animation: putar 7s linear infinite;
     z-index: 0;
 }
@@ -508,7 +498,7 @@ html, body {
 .cam-dalam {
     position: absolute;
     inset: 4px;
-    border-radius: 21px;
+    border-radius: 15px;
     overflow: hidden;
     background: #0B1826;
     z-index: 1;
@@ -529,11 +519,11 @@ html, body {
     padding: 20px;
 }
 
-.cam-isi svg { width: 62px; height: 62px; opacity: 0.55; }
+.cam-isi svg { width: 44px; height: 44px; opacity: 0.55; }
 
 .cam-isi p {
-    font-size: 16px;
-    line-height: 1.45;
+    font-size: 15px;
+    line-height: 1.4;
     font-weight: 500;
 }
 
@@ -548,43 +538,14 @@ html, body {
     z-index: 2;
 }
 
-.cam-tanda {
-    position: absolute;
-    top: 13px;
-    left: 13px;
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    background: rgba(224, 27, 36, 0.94);
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.7px;
-    z-index: 4;
-}
-
-.cam-tanda-titik {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--putih);
-    animation: kelip 1.5s ease-in-out infinite;
-}
-
-@keyframes kelip {
-    0%, 100% { opacity: 1; }
-    50%      { opacity: 0.25; }
-}
-
 .cam-nama {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 26px 14px 13px;
+    padding: 20px 14px 14px;
     background: linear-gradient(to top, rgba(6, 16, 27, 0.94), transparent);
-    font-size: 19px;
+    font-size: 17px;
     font-weight: 700;
     z-index: 4;
     text-align: center;
@@ -593,7 +554,7 @@ html, body {
 
 .cam-nama span {
     display: block;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: #A9C2DC;
     margin-top: 2px;
@@ -880,10 +841,6 @@ html, body {
             <p>Letakkan kamera Anda di area ini</p>
         </div>
         <video id="kamera" autoplay muted playsinline></video>
-        <div class="cam-tanda">
-            <div class="cam-tanda-titik"></div>
-            LIVE
-        </div>
         <div class="cam-nama">
             AkunTuntas
             <span>Software akuntansi &amp; pajak</span>
@@ -1021,7 +978,6 @@ SLIDE.forEach((s, i) => {
             ${peramban}
             <img src="${s.gambar}" alt="${s.label}">
             <div class="sorot"></div>
-            <div class="titik-nyala" style="top: ${60 + (i % 3) * 90}px; left: ${34 + (i % 2) * 46}px;"></div>
             <div class="slide-angka">
                 <div class="slide-angka-nilai">${s.angka}</div>
                 <div class="slide-angka-label">${s.angkaLabel}</div>

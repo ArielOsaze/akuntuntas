@@ -173,6 +173,12 @@ def main() -> int:
     print()
 
     daftar = [
+        # Potret khusus overlay live. Ukurannya dibuat sama dengan wadah
+        # gambar di overlay (936x1006), supaya gambar mengisi wadah dengan
+        # pas tanpa dipotong dan tanpa menyisakan ruang kosong.
+        ("live_beranda", "index.html", 936, 1006, ""),
+        ("live_harga", "index.html", 936, 1006, "#harga"),
+        ("live_banding", "index.html", 936, 1006, ".banding-kepala"),
         ("beranda", "index.html", 1280, 900, ""),
         ("beranda_hero", "index.html", 1280, 900, ""),
         ("harga", "index.html", 1280, 1100, "#harga"),
