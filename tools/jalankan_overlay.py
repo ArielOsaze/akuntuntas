@@ -187,6 +187,53 @@ def panduan():
 
 
 
+
+def jalankan_pemantau() -> bool:
+    """
+    Jalankan pemantau ukuran di latar belakang.
+
+    Windows mengembalikan ukuran jendela ke ukuran layar setiap kali
+    jendela dipulihkan dari keadaan diminimalkan. Akibatnya isi jendela
+    tidak lagi 9:16, dan aplikasi siaran menyisakan pita kosong di kanan
+    kiri sambil memperbesar gambar sehingga tampak pecah.
+
+    Pemantau ini memeriksa ukuran tiap dua detik dan menyetelnya kembali
+    bila menyimpang, sehingga masalah itu tidak muncul lagi meski jendela
+    di-minimize berkali-kali.
+    """
+    import subprocess as _sub
+
+    pemantau = AKAR / "tools" / "pantau_overlay.py"
+    if not pemantau.exists():
+        return False
+
+    # Hentikan SEMUA pemantau lama lebih dahulu. Pencarian dilakukan lewat
+    # daftar proses, karena proses pemantau tidak punya jendela sehingga
+    # tidak bisa dicari dari judulnya.
+    perintah = (
+        "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | "
+        "Where-Object { $_.CommandLine -like '*pantau_overlay*' } | "
+        "ForEach-Object { Stop-Process -Id $_.ProcessId -Force "
+        "-ErrorAction SilentlyContinue }"
+    )
+    _sub.run(["powershell", "-NoProfile", "-Command", perintah],
+             capture_output=True, timeout=60)
+
+    # Beri waktu proses lama benar-benar berhenti dan melepas mutex
+    # sebelum yang baru mencoba memegangnya.
+    import time as _waktu
+    _waktu.sleep(1.5)
+
+    _sub.Popen(
+        [sys.executable, str(pemantau), "--jeda", "2"],
+        cwd=str(AKAR),
+        stdout=_sub.DEVNULL,
+        stderr=_sub.DEVNULL,
+        creationflags=0x00000008,  # DETACHED_PROCESS
+    )
+    return True
+
+
 def tutup_overlay_lama() -> int:
     """
     Tutup jendela overlay yang sudah terbuka.
@@ -383,6 +430,9 @@ def utama() -> int:
             print("  Menyetel ukuran penuh 1080x1920...")
             if setel_ukuran_penuh():
                 print("  Ukuran penuh tercapai: tidak ada pita kosong.")
+            if jalankan_pemantau():
+                print("  Pemantau ukuran aktif: ukuran dijaga otomatis,")
+                print("  termasuk bila jendela di-minimize lalu dibuka lagi.")
             print("  Jangan tutup jendela ini selama siaran.")
             print()
             print("  Panduan: python tools/jalankan_overlay.py --info")

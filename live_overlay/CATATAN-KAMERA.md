@@ -211,3 +211,31 @@ sehingga terlihat unsur mana yang bergeser.
 Keduanya mengukur dengan Chrome, karena Chrome itulah yang dipakai
 menampilkan overlay. Hasilnya sama dengan yang benar-benar terlihat
 penonton.
+
+## Ukuran jendela overlay dijaga otomatis
+
+Windows mengembalikan ukuran jendela ke ukuran yang muat layar setiap
+kali jendela dipulihkan dari keadaan diminimalkan. Pada layar 1080p,
+jendela overlay yang tadinya 1080x1920 akan kembali menjadi 1080x1092.
+
+Akibatnya isi jendela tidak lagi 9:16, dan aplikasi siaran menyisakan
+pita kosong di kanan kiri sambil memperbesar gambar sehingga tampak
+pecah. Masalah ini muncul setiap kali jendela di-minimize lalu dibuka
+lagi.
+
+Karena itu peluncur overlay menjalankan pemantau ukuran di latar
+belakang. Pemantau memeriksa ukuran tiap dua detik dan menyetelnya
+kembali bila menyimpang. Dengan begitu masalah itu tidak muncul lagi.
+
+Pemantau hanya berjalan satu, dijaga oleh sistem Windows sendiri
+(named mutex), jadi menjalankan peluncur berulang kali tidak menumpuk
+pemantau.
+
+Untuk memeriksa ukuran tanpa menunggu:
+
+```
+python tools/pantau_overlay.py --sekali
+python tools/setel_jendela_overlay.py --periksa
+```
+
+Rasio isi jendela harus 0.5625, sama dengan 9 dibagi 16.
