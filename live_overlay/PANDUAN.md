@@ -76,12 +76,37 @@ saat diminta. Kamera tampil sendiri di dalam kotak.
 
 ## Menangkap overlay di aplikasi siaran
 
-Di TikTok LIVE Studio atau OBS, tambahkan sumber:
+Di TikTok LIVE Studio, OBS, atau Streamlabs, tambahkan sumber:
 
 - **Window Capture**, lalu pilih jendela peramban overlay, atau
 - **Display Capture** bila ingin menangkap seluruh layar.
 
 Lalu tambahkan sumber kamera dan letakkan menutupi kotak face cam.
+
+### Panduan per aplikasi
+
+| Aplikasi | Panduan |
+|---|---|
+| **Streamlabs Desktop** | `live_overlay/PANDUAN-STREAMLABS.md` |
+| OBS Studio | Sama seperti Streamlabs, nama menunya hampir sama |
+| TikTok LIVE Studio | Window Capture lalu pilih jendela overlay |
+
+### Koordinat kamera
+
+Bila aplikasi siaran meminta angka posisi dan ukuran, jalankan:
+
+```
+python tools/koordinat_kamera.py
+```
+
+Alat itu mengukur posisi kotak kamera langsung dari overlay dan
+menampilkan angka yang siap disalin. Bawaannya:
+
+| Bagian | X | Y | Lebar | Tinggi |
+|---|---|---|---|---|
+| Overlay penuh | 0 | 0 | 1080 | 1920 |
+| Kamera (dalam bingkai) | 650 | 44 | 392 | 217 |
+| Kamera (seluruh kotak) | 646 | 40 | 400 | 225 |
 
 ---
 

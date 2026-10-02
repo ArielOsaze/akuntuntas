@@ -86,12 +86,22 @@ def panduan():
   ----------------------------------------------------------------------
   LANGKAH 3 - Tangkap overlay di aplikasi siaran
   ----------------------------------------------------------------------
-  Di TikTok LIVE Studio atau OBS, tambahkan sumber:
+  Di TikTok LIVE Studio, OBS, atau Streamlabs, tambahkan sumber:
 
     - "Window Capture" lalu pilih jendela peramban overlay, atau
     - "Display Capture" bila ingin menangkap seluruh layar.
 
   Lalu tambahkan sumber kamera dan letakkan menutupi kotak face cam.
+
+  PANDUAN STREAMLABS LENGKAP:
+    live_overlay/PANDUAN-STREAMLABS.md
+
+  KOORDINAT KAMERA (bila diminta angka posisi dan ukuran):
+    python tools/koordinat_kamera.py
+
+    Bawaannya:
+      Overlay penuh : X=0   Y=0   Lebar=1080  Tinggi=1920
+      Kamera        : X=650 Y=44  Lebar=392   Tinggi=217
 
   ----------------------------------------------------------------------
   PINTASAN
