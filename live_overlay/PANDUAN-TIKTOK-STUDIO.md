@@ -10,7 +10,7 @@ Isinya:
 3. Menyiapkan kamera
 4. Memasang sumber di TikTok LIVE Studio
 5. Mengatur posisi dan ukuran
-6. Mengganti latar kamera (greenscreen)
+6. Mengganti latar kamera (tiga jalan)
 7. Memeriksa hasil sebelum siaran
 8. Mengatasi masalah
 9. Padanan pengaturan dengan OBS dan Streamlabs
@@ -175,7 +175,7 @@ overlay, jadi seharusnya pas. Bila gambarnya terpotong atau gepeng:
 - Jangan pilih "Stretch", karena membuat gambar gepeng
 
 
-## 6. Mengganti latar kamera (greenscreen)
+## 6. Mengganti latar kamera (tiga jalan)
 
 Ada dua jalan. Pilih yang paling nyaman.
 
@@ -287,6 +287,74 @@ python tools/cari_pemakai_kamera.py
 
 Bila semuanya sudah dicoba dan tetap tidak berhasil, pakai Jalan A.
 Jalan A tidak bergantung pada fitur aplikasi.
+
+
+### Jalan C: kamera virtual (kamera asli dari TikTok)
+
+Jalan ini membuat TikTok memakai sumber **Camera** seperti biasa, tetapi
+kamera yang dipilih bukan kamera USB langsung, melainkan kamera virtual
+yang sudah berisi latar AkunTuntas. Hasilnya: sumber kamera asli dari
+sisi TikTok, latar Xinet, dan **tidak perlu Window capture**.
+
+Cara kerjanya: kamera USB dibaca oleh program, orangnya dipisahkan dari
+latar, latar AkunTuntas ditempelkan di belakangnya, lalu hasilnya
+dikirim ke kamera virtual. TikTok melihatnya sebagai kamera biasa.
+
+**Langkah 1.** Jalankan:
+
+```
+MULAI-KAMERA-VIRTUAL.bat
+```
+
+Atau lewat perintah:
+
+```
+python tools/jendela_kamera.py --virtual --index 0
+```
+
+**Langkah 2.** Di TikTok LIVE Studio:
+
+1. Add source, pilih **Camera**
+2. Pada daftar perangkat, pilih **OBS Virtual Camera**
+3. Letakkan tepat menutupi kotak face cam:
+
+| Bagian | X | Y | Lebar | Tinggi |
+|---|---|---|---|---|
+| Seluruh kotak kamera | 646 | 40 | 400 | 300 |
+| Bagian dalam (tanpa bingkai) | 650 | 44 | 392 | 292 |
+
+Penting: pilih kameranya **berdasarkan nama** ("OBS Virtual Camera"),
+bukan berdasarkan nomor, karena kamera virtual tidak punya nomor tetap.
+
+**Perbandingan tiga jalan:**
+
+| | Jalan A | Jalan B | Jalan C |
+|---|---|---|---|
+| Sumber di TikTok | Window capture | Camera | **Camera** |
+| Latar diganti oleh | Jendela kamera | Fitur TikTok | Kamera virtual |
+| Bentuk gambar | 4:3 pasti | ikut kamera | **4:3 pasti** |
+| Bergantung pada | tidak ada | pencahayaan | tidak ada |
+| Perlu alat tambahan | tidak | tidak | kamera virtual |
+
+**Memeriksa kamera yang tersedia:**
+
+```
+python tools/cek_semua_kamera.py
+python tools/cari_index_kamera.py
+```
+
+Alat pertama menampilkan kamera mana yang bisa dibuka. Alat kedua
+mencocokkan nomor index dengan namanya.
+
+**Bila kamera virtual belum ada:**
+
+```
+python tools/daftar_kamera_virtual.py --cek
+python tools/daftar_kamera_virtual.py --pasang
+```
+
+Pendaftaran memerlukan izin Administrator, jadi Windows akan meminta
+persetujuan satu kali.
 
 ## 7. Memeriksa hasil sebelum siaran
 

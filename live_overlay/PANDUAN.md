@@ -13,7 +13,8 @@ Dua berkas ini menjalankan semuanya. Klik dua kali, tidak perlu perintah.
 | Berkas | Kegunaan |
 |---|---|
 | `MULAI-OVERLAY.bat` | Membuka overlay layar promosi |
-| `MULAI-KAMERA.bat` | Membuka kamera dengan latar AkunTuntas |
+| `MULAI-KAMERA.bat` | Kamera dengan latar AkunTuntas (Window capture) |
+| `MULAI-KAMERA-VIRTUAL.bat` | Kamera virtual, dipakai lewat sumber Camera |
 
 Langkahnya:
 

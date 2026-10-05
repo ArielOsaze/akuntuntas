@@ -18,11 +18,20 @@ diletakkan tepat di kotak face cam overlay.
 
 Cara pakai:
     python tools/jendela_kamera.py
+    python tools/jendela_kamera.py --virtual   (kirim ke kamera virtual)
+    python tools/jendela_kamera.py --virtual --index 0  (pilih kamera sumber)
     python tools/jendela_kamera.py --latar live_overlay/gambar/latar-akuntuntas.png
     python tools/jendela_kamera.py --ukuran 640x360
     python tools/jendela_kamera.py --tanpa-latar
     python tools/jendela_kamera.py --cek
-    python tools/jendela_kamera.py --potret   (simpan 3 gambar lalu berhenti)
+    python tools/jendela_kamera.py --potret    (simpan 3 gambar lalu berhenti)
+
+Mode --virtual:
+    Gambar tidak ditampilkan di jendela, melainkan dikirim ke kamera
+    virtual. Aplikasi siaran lalu memakai sumber Camera seperti biasa dan
+    memilih kamera virtual itu. Hasilnya: sumber kamera asli dari aplikasi
+    siaran, tetapi gambarnya sudah berlatar AkunTuntas, tanpa perlu
+    Window capture.
 """
 from __future__ import annotations
 
@@ -238,9 +247,130 @@ def cek() -> int:
     return 0
 
 
+
+def jalankan_virtual(lebar: int, tinggi: int, latar, pemisah,
+                     nama_kamera: int = 0) -> int:
+    """
+    Kirim gambar ke kamera virtual.
+
+    Aplikasi siaran memakai sumber Camera seperti biasa dan memilih
+    kamera virtual ini. Dengan begitu tidak perlu Window capture, dan
+    sumbernya tetap kamera asli dari sisi aplikasi siaran.
+    """
+    try:
+        import pyvirtualcam
+    except ImportError:
+        print("  GAGAL pyvirtualcam belum terpasang")
+        print("  Pasang dengan:")
+        print("    python -m pip install pyvirtualcam")
+        return 1
+
+    # ---- Buka kamera asli ----
+    kamera = cv2.VideoCapture(nama_kamera, cv2.CAP_DSHOW)
+    if not kamera.isOpened():
+        kamera = cv2.VideoCapture(nama_kamera)
+    if not kamera.isOpened():
+        print(f"  GAGAL kamera {nama_kamera} tidak bisa dibuka")
+        return 1
+
+    kamera.set(cv2.CAP_PROP_FRAME_WIDTH, 1024)
+    kamera.set(cv2.CAP_PROP_FRAME_HEIGHT, 768)
+    kamera.set(cv2.CAP_PROP_FPS, FPS)
+
+    lebar_kamera = int(kamera.get(cv2.CAP_PROP_FRAME_WIDTH))
+    tinggi_kamera = int(kamera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    print(f"  kamera asli   : index {nama_kamera}  "
+          f"{lebar_kamera}x{tinggi_kamera}")
+
+    print(f"  latar         : {'dipakai' if latar is not None else 'tidak'}")
+
+    # ---- Buka kamera virtual ----
+    print("  membuka kamera virtual...")
+    try:
+        kamera_virtual = pyvirtualcam.Camera(
+            width=lebar, height=tinggi, fps=FPS, print_fps=False)
+    except Exception as e:
+        print(f"  GAGAL membuka kamera virtual: {e}")
+        print()
+        print("  Pastikan kamera virtual sudah terdaftar:")
+        print("    python tools/cek_semua_kamera.py")
+        kamera.release()
+        return 1
+
+    print(f"  kamera virtual: {kamera_virtual.device}")
+    print(f"  ukuran kirim  : {lebar}x{tinggi}")
+
+    print()
+    print("=" * 68)
+    print("  KAMERA VIRTUAL AKTIF")
+    print("=" * 68)
+    print()
+    print("  DI TIKTOK LIVE STUDIO:")
+    print("    1. Add source, pilih Camera")
+    print("    2. Pada daftar perangkat, pilih:")
+    print(f"         {kamera_virtual.device}")
+    print("    3. Letakkan tepat menutupi kotak face cam:")
+    print("       X=646  Y=40  lebar=400  tinggi=300")
+    print()
+    print("  Tidak perlu Window capture. Sumbernya kamera asli.")
+    print()
+    print("  Catatan: pilih kameranya BERDASARKAN NAMA, bukan nomor.")
+    print("  Kamera virtual ini terdaftar di Windows dengan nama itu.")
+    print()
+    print("  Tekan Ctrl+C untuk berhenti.")
+    print("=" * 68)
+    print()
+
+    jumlah = 0
+    mulai = time.time()
+
+    try:
+        while True:
+            berhasil, gambar = kamera.read()
+            if not berhasil:
+                print("  gambar tidak terbaca, berhenti")
+                break
+
+            gambar = cv2.flip(gambar, 1)
+            gambar = potong_ke_bentuk(gambar, lebar, tinggi)
+
+            if pemisah is not None:
+                topeng = pisahkan_orang(pemisah, gambar)
+                topeng = cv2.GaussianBlur(topeng, (9, 9), 0)
+                topeng = np.clip((topeng - 0.35) / 0.3, 0, 1)
+                topeng = cv2.merge([topeng, topeng, topeng])
+                tampil = (gambar * topeng
+                          + latar * (1 - topeng)).astype(np.uint8)
+            else:
+                tampil = gambar
+
+            # Kirim ke kamera virtual. pyvirtualcam memakai RGB.
+            kamera_virtual.send(cv2.cvtColor(tampil, cv2.COLOR_BGR2RGB))
+            kamera_virtual.sleep_until_next_frame()
+
+            jumlah += 1
+            if jumlah % 150 == 0:
+                detik = time.time() - mulai
+                print(f"  {jumlah} gambar terkirim "
+                      f"({jumlah / detik:.1f} per detik)")
+
+    except KeyboardInterrupt:
+        print()
+        print("  dihentikan")
+    finally:
+        kamera.release()
+        kamera_virtual.close()
+        if pemisah is not None:
+            pemisah.close()
+
+    return 0
+
+
 def utama() -> int:
     if "--cek" in sys.argv:
         return cek()
+
+    mode_virtual = "--virtual" in sys.argv
 
     # ---- Ukuran jendela ----
     lebar, tinggi = LEBAR_BAWAAN, TINGGI_BAWAAN
@@ -295,6 +425,29 @@ def utama() -> int:
     pemisah = None
     if pakai_latar:
         pemisah = siapkan_pemisah()
+
+    # ---- Nomor kamera sumber ----
+    index_kamera = 0
+    if "--index" in sys.argv:
+        try:
+            index_kamera = int(sys.argv[sys.argv.index("--index") + 1])
+        except (ValueError, IndexError):
+            print("  nomor index tidak sah, memakai 0")
+
+    # ---- Mode kamera virtual ----
+    if mode_virtual:
+        # Ukuran kirim dibuat 4:3 supaya cocok dengan kotak face cam.
+        lebar_kirim, tinggi_kirim = lebar, tinggi
+        if (lebar, tinggi) == (LEBAR_BAWAAN, TINGGI_BAWAAN):
+            lebar_kirim, tinggi_kirim = 1024, 768
+
+        if pakai_latar:
+            latar = cv2.resize(latar, (lebar_kirim, tinggi_kirim))
+        else:
+            latar = None
+
+        return jalankan_virtual(lebar_kirim, tinggi_kirim, latar,
+                                pemisah, index_kamera)
 
     # ---- Jendela ----
     cv2.namedWindow(JUDUL, cv2.WINDOW_NORMAL)
