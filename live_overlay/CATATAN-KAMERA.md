@@ -239,3 +239,34 @@ python tools/setel_jendela_overlay.py --periksa
 ```
 
 Rasio isi jendela harus 0.5625, sama dengan 9 dibagi 16.
+
+## Kecepatan kamera USB
+
+Kamera USB umumnya hanya lancar pada resolusi 640x480. Pada resolusi
+lebih tinggi, kecepatannya turun drastis. Ini hasil pengukuran pada
+kamera USB yang dipakai:
+
+| Resolusi | Kecepatan baca |
+|---|---|
+| **640x480** | **31 gambar per detik** |
+| 800x600 | 10 gambar per detik |
+| 1024x768 | 10 gambar per detik |
+| 1280x720 | 10 gambar per detik |
+| 1920x1080 | 1 gambar per detik |
+
+Format gambar (MJPG atau YUY2) tidak mengubah hasilnya. Batasnya ada
+pada kamera, bukan pada format.
+
+Untuk siaran, 10 gambar per detik terlihat tersendat, sedangkan 30
+gambar per detik terlihat lancar. Karena itu kamera diminta pada
+640x480.
+
+Kotak face cam di overlay hanya 400x300 piksel, jadi 640x480 sudah
+lebih dari cukup. Mengirim resolusi lebih besar hanya memperlambat
+tanpa menambah ketajaman yang terlihat.
+
+Untuk memeriksa kecepatan kamera Anda:
+
+```
+python tools/cek_bentuk_kamera.py
+```

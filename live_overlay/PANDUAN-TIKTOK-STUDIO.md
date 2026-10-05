@@ -336,6 +336,14 @@ bukan berdasarkan nomor, karena kamera virtual tidak punya nomor tetap.
 | Bergantung pada | tidak ada | pencahayaan | tidak ada |
 | Perlu alat tambahan | tidak | tidak | kamera virtual |
 
+**Kecepatan kamera:**
+
+Kamera USB umumnya hanya lancar pada 640x480 (sekitar 30 gambar per
+detik). Pada resolusi lebih tinggi, kecepatannya turun menjadi sekitar
+10 gambar per detik sehingga gambar terlihat tersendat. Kotak face cam
+hanya 400x300 piksel, jadi 640x480 sudah cukup. Perkakas ini sudah
+memakai 640x480 secara bawaan.
+
 **Memeriksa kamera yang tersedia:**
 
 ```

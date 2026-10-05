@@ -20,6 +20,13 @@ Cara pakai:
     python tools/jendela_kamera.py
     python tools/jendela_kamera.py --virtual   (kirim ke kamera virtual)
     python tools/jendela_kamera.py --virtual --index 0  (pilih kamera sumber)
+
+Catatan kecepatan:
+    Kamera USB umumnya hanya lancar pada 640x480 (sekitar 30 gambar
+    per detik). Pada resolusi lebih tinggi, kecepatannya turun menjadi
+    sekitar 10 gambar per detik sehingga gambar terlihat tersendat.
+    Kotak face cam di overlay hanya 400x300 piksel, jadi 640x480
+    sudah lebih dari cukup.
     python tools/jendela_kamera.py --latar live_overlay/gambar/latar-akuntuntas.png
     python tools/jendela_kamera.py --ukuran 640x360
     python tools/jendela_kamera.py --tanpa-latar
@@ -273,8 +280,10 @@ def jalankan_virtual(lebar: int, tinggi: int, latar, pemisah,
         print(f"  GAGAL kamera {nama_kamera} tidak bisa dibuka")
         return 1
 
-    kamera.set(cv2.CAP_PROP_FRAME_WIDTH, 1024)
-    kamera.set(cv2.CAP_PROP_FRAME_HEIGHT, 768)
+    # 640x480: satu-satunya resolusi yang lancar pada kamera USB ini.
+    # Kotak face cam di overlay hanya 400x300 piksel, jadi sudah cukup.
+    kamera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    kamera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     kamera.set(cv2.CAP_PROP_FPS, FPS)
 
     lebar_kamera = int(kamera.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -411,10 +420,13 @@ def utama() -> int:
         print("  GAGAL kamera tidak bisa dibuka")
         return 1
 
-    # Minta resolusi 4:3 yang paling besar supaya gambar tajam dan
-    # bentuknya sama dengan kotak face cam.
-    kamera.set(cv2.CAP_PROP_FRAME_WIDTH, 1024)
-    kamera.set(cv2.CAP_PROP_FRAME_HEIGHT, 768)
+    # Minta 640x480. Kamera USB umumnya hanya lancar pada resolusi itu
+    # (sekitar 30 gambar per detik); pada resolusi lebih tinggi
+    # kecepatannya turun menjadi sekitar 10 gambar per detik sehingga
+    # gambar terlihat tersendat. Kotak face cam di overlay hanya 400x300
+    # piksel, jadi 640x480 sudah lebih dari cukup.
+    kamera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    kamera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     kamera.set(cv2.CAP_PROP_FPS, FPS)
 
     lebar_kamera = int(kamera.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -436,10 +448,10 @@ def utama() -> int:
 
     # ---- Mode kamera virtual ----
     if mode_virtual:
-        # Ukuran kirim dibuat 4:3 supaya cocok dengan kotak face cam.
+        # Ukuran kirim mengikuti ukuran jendela. Bawaannya 480x360, dan
+        # dapat diubah dengan --ukuran. Ukurannya 4:3 supaya cocok dengan
+        # kotak face cam.
         lebar_kirim, tinggi_kirim = lebar, tinggi
-        if (lebar, tinggi) == (LEBAR_BAWAAN, TINGGI_BAWAAN):
-            lebar_kirim, tinggi_kirim = 1024, 768
 
         if pakai_latar:
             latar = cv2.resize(latar, (lebar_kirim, tinggi_kirim))
