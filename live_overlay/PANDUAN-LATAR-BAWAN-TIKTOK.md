@@ -124,6 +124,53 @@ TikTok memproses gambarnya sendiri, jadi Anda tidak perlu menjalankan
 alat apa pun saat siaran. Cukup pilih latarnya sekali, lalu tekan Save.
 Setelah itu tinggal siaran seperti biasa.
 
+## Bukti bahwa ini bekerja
+
+Sudah diperiksa sampai ke berkas catatan TikTok. Saat TikTok dibuka,
+layanannya memuat gambar kita ke daftar gambarnya:
+
+```
+[ImageManagerService] _getImages: localImages: [
+  {"id":"akuntuntas-48f9d8dd-0ed0-4649-b8c0-b838c7f46eed",
+   "path":"...\origin.jpg",
+   "deletable":true,
+   "cropped":[{"ratio":0.562,"width":1215,"height":2160}],
+   "isAiImage":false}
+]
+```
+
+Tiga hal yang sudah dipastikan:
+
+1. TikTok membaca daftar yang kita tulis
+2. TikTok menyimpan ulang daftarnya dengan bentuknya sendiri, dan
+   entri kita tetap dipertahankan
+3. Layanan gambar TikTok memuat gambar kita saat aplikasi dibuka
+
+## Mengatur supaya orang terlihat di depan latar
+
+Bagian ini yang membuat latar berguna. Tanpa ini, gambar hanya akan
+menutupi seluruh kamera.
+
+| Pilihan | Gunanya | Kapan dipakai |
+|---|---|---|
+| **Cutout** | Memisahkan orang dari latar asli | Paling sering, tanpa alat tambahan |
+| **Green screen** | Menghapus warna tertentu | Kalau ada kain hijau di belakang |
+| **Chroma key** | Sama seperti green screen, lebih halus | Kalau warna latar tidak rata |
+| **Background opacity** | Mengatur kepekatan gambar | Kalau gambar terlalu mencolok |
+
+Nyalakan **Cutout** lebih dahulu. Kalau hasilnya bergerigi di tepi,
+baru coba green screen dengan kain hijau di belakang Anda.
+
+## Kalau gambar tidak muncul di TikTok
+
+1. Pastikan TikTok ditutup saat memasang, lalu buka lagi
+2. Periksa daftarnya: `python tools/latar_ke_tiktok.py --daftar`
+3. Kalau tertulis "berkasnya hilang", pasang ulang:
+   `python tools/latar_ke_tiktok.py --pasang`
+4. Kalau masih tidak muncul, pasang manual:
+   `python tools/siapkan_latar_tiktok.py`, lalu tambahkan sendiri dari
+   dalam TikTok memakai tombol tambah gambar
+
 ## Kalau gambar tersendat
 
 TikTok sendiri yang memberi peringatan ini di layarnya:
