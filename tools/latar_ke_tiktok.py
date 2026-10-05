@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import shutil
 import sys
 import time
@@ -110,13 +109,45 @@ def tunggu_tutup(menit: int = 10) -> bool:
     return False
 
 
-def baca_daftar() -> tuple[dict, str, int, int]:
-    """Baca services.json dan temukan letak daftar gambar sendiri."""
-    teks = BERKAS_DAFTAR.read_text(encoding="utf-8", errors="ignore")
-    pola = re.search(r'"userImageInfos"\s*:\s*\[\s*', teks)
-    if not pola:
-        raise RuntimeError("daftar userImageInfos tidak ditemukan")
-    return json.loads(teks), teks, pola.start(), pola.end()
+def baca_daftar() -> dict:
+    """Baca services.json."""
+    return json.loads(BERKAS_DAFTAR.read_text(encoding="utf-8", errors="ignore"))
+
+
+def tulis_daftar(data: dict) -> None:
+    """Tulis services.json dengan bentuk yang selalu sah."""
+    cadangan = BERKAS_DAFTAR.with_suffix(".json.cadangan")
+    shutil.copy2(BERKAS_DAFTAR, cadangan)
+    try:
+        BERKAS_DAFTAR.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        json.loads(BERKAS_DAFTAR.read_text(encoding="utf-8"))
+    except Exception:
+        shutil.copy2(cadangan, BERKAS_DAFTAR)
+        raise
+    finally:
+        cadangan.unlink(missing_ok=True)
+
+
+def bersihkan_lama(data: dict) -> int:
+    """Buang entri AkunTuntas yang lama, termasuk yang berkasnya hilang."""
+    daftar = ambil_daftar(data)
+    sisa = []
+    dibuang = 0
+    for e in daftar:
+        jalur = str(e.get("basePath", ""))
+        if PENANDA in jalur:
+            # Buang berkasnya juga
+            folder = Path(jalur)
+            if folder.exists() and PENANDA in folder.name:
+                shutil.rmtree(folder, ignore_errors=True)
+            dibuang += 1
+        else:
+            sisa.append(e)
+    if dibuang:
+        data["ImageManagerService"]["state"]["userImageInfos"] = sisa
+    return dibuang
 
 
 def ambil_daftar(data: dict) -> list[dict]:
@@ -198,14 +229,12 @@ def pasang() -> int:
     print(f"  Gambar disimpan di {folder.name}")
 
     # Daftarkan
-    data, teks, _, akhir = baca_daftar()
+    data = baca_daftar()
 
-    # Lepas dulu entri lama supaya tidak menumpuk
-    lama = entri_kita(data)
+    # Buang entri lama supaya tidak menumpuk
+    lama = bersihkan_lama(data)
     if lama:
-        print(f"  Menghapus {len(lama)} entri lama...")
-        lepas(sunyi=True)
-        data, teks, _, akhir = baca_daftar()
+        print(f"  {lama} entri lama dibuang")
 
     entri = {
         "id": id_baru,
@@ -234,10 +263,13 @@ def pasang() -> int:
         "aigeCreateTime": 0,
     }
 
-    teks_baru = teks[:akhir] + json.dumps(entri, ensure_ascii=False) + ", " + teks[akhir:]
-
-    # Tulis hanya kalau bentuknya tetap sah
-    simpan_aman(teks_baru, folder)
+    data["ImageManagerService"]["state"]["userImageInfos"].insert(0, entri)
+    try:
+        tulis_daftar(data)
+    except Exception:
+        shutil.rmtree(folder, ignore_errors=True)
+        print("  GAGAL: bentuk daftar jadi rusak, keadaan semula dikembalikan")
+        return 1
 
     print()
     print("  Selesai. Langkah di TikTok:")
@@ -248,27 +280,12 @@ def pasang() -> int:
     return 0
 
 
-def simpan_aman(teks_baru: str, folder: Path) -> None:
-    """Tulis daftar, dan kembalikan keadaan semula kalau bentuknya rusak."""
-    cadangan = BERKAS_DAFTAR.with_suffix(".json.cadangan")
-    shutil.copy2(BERKAS_DAFTAR, cadangan)
-    try:
-        BERKAS_DAFTAR.write_text(teks_baru, encoding="utf-8")
-        json.loads(BERKAS_DAFTAR.read_text(encoding="utf-8"))
-    except Exception:
-        shutil.copy2(cadangan, BERKAS_DAFTAR)
-        shutil.rmtree(folder, ignore_errors=True)
-        raise
-    finally:
-        cadangan.unlink(missing_ok=True)
-
-
 def daftar() -> int:
     if not BERKAS_DAFTAR.exists():
         print("  TikTok LIVE Studio tidak ditemukan")
         return 1
 
-    data, _, _, _ = baca_daftar()
+    data = baca_daftar()
     semua = ambil_daftar(data)
     kita = entri_kita(data)
 
@@ -305,48 +322,21 @@ def lepas(sunyi: bool = False) -> int:
         if not tunggu_tutup():
             return 1
 
-    data, teks, _, _ = baca_daftar()
-    kita = entri_kita(data)
-    if not kita:
+    data = baca_daftar()
+    jumlah = bersihkan_lama(data)
+    if not jumlah:
         if not sunyi:
             print("  Tidak ada latar AkunTuntas yang terdaftar")
         return 0
 
-    # Hapus entri dari teks mentah, satu per satu
-    for e in kita:
-        id_entri = str(e.get("id", ""))
-        if not id_entri:
-            continue
-        pola = re.compile(
-            r"\{\s*\"id\"\s*:\s*\"" + re.escape(id_entri) + r"\".*?\}\s*,?\s*",
-            re.DOTALL,
-        )
-        teks = pola.sub("", teks, count=1)
-
-        # Hapus berkasnya juga
-        folder = Path(e.get("basePath", ""))
-        if folder.exists() and PENANDA in folder.name:
-            shutil.rmtree(folder, ignore_errors=True)
-
-    # Rapikan koma yang tertinggal
-    teks = re.sub(r",\s*\]", "]", teks)
-    teks = re.sub(r"\[\s*,", "[", teks)
-
-    cadangan = BERKAS_DAFTAR.with_suffix(".json.cadangan")
-    shutil.copy2(BERKAS_DAFTAR, cadangan)
     try:
-        BERKAS_DAFTAR.write_text(teks, encoding="utf-8")
-        json.loads(BERKAS_DAFTAR.read_text(encoding="utf-8"))
+        tulis_daftar(data)
     except Exception:
-        shutil.copy2(cadangan, BERKAS_DAFTAR)
         print("  GAGAL: bentuk daftar jadi rusak, keadaan semula dikembalikan")
         return 1
-    finally:
-        cadangan.unlink(missing_ok=True)
 
     if not sunyi:
-        print(f"  {len(kita)} latar AkunTuntas dilepas")
-        print("  Tutup dan buka ulang TikTok supaya perubahannya terbaca")
+        print(f"  {jumlah} latar AkunTuntas dilepas")
     return 0
 
 
