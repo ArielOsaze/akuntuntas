@@ -15,6 +15,8 @@ Dua berkas ini menjalankan semuanya. Klik dua kali, tidak perlu perintah.
 | `MULAI-OVERLAY.bat` | Membuka overlay layar promosi |
 | `MULAI-KAMERA.bat` | Kamera dengan latar AkunTuntas (Window capture) |
 | `MULAI-KAMERA-VIRTUAL.bat` | Kamera virtual, dipakai lewat sumber Camera |
+| `tools/siapkan_latar_tiktok.py` | Menyiapkan gambar latar untuk fitur bawaan TikTok |
+| `tools/latar_ke_tiktok.py` | Mendaftarkan latar AkunTuntas ke daftar TikTok |
 
 Langkahnya:
 

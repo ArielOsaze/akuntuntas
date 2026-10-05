@@ -364,6 +364,36 @@ python tools/daftar_kamera_virtual.py --pasang
 Pendaftaran memerlukan izin Administrator, jadi Windows akan meminta
 persetujuan satu kali.
 
+
+### Jalan D: fitur latar bawaan TikTok (paling sederhana)
+
+TikTok LIVE Studio sudah punya fitur latar kamera sendiri yang bisa
+memakai gambar Anda. Sumbernya tetap Camera biasa, dan tidak perlu alat
+tambahan apa pun.
+
+Panduan lengkapnya ada di berkas terpisah: `PANDUAN-LATAR-BAWAN-TIKTOK.md`
+
+Ringkasnya:
+
+1. Daftarkan latar: `python tools/latar_ke_tiktok.py --pasang --tunggu`
+   (menunggu TikTok ditutup, lalu memasangnya sendiri)
+2. Buka TikTok, klik sumber **Camera**, buka tab **Background**
+3. Gambar AkunTuntas muncul di bagian **Custom**
+4. Nyalakan **Cutout**, lalu **Save**
+
+Batas TikTok: 20 latar sendiri, paling kecil 500x500 piksel, paling
+besar 30 MB. Gambar kita 1600x1200 dan 77 KB, jadi jauh di dalam batas.
+
+**Perbandingan empat jalan:**
+
+| | Jalan A | Jalan B | Jalan C | Jalan D |
+|---|---|---|---|---|
+| Sumber di TikTok | Window capture | Camera | Camera | **Camera** |
+| Latar dari | Jendela kamera | Fitur TikTok | Kamera virtual | **Fitur TikTok** |
+| Alat tambahan | Jendela kamera | tidak ada | kamera virtual | **tidak ada** |
+| Bentuk gambar | 4:3 pasti | ikut kamera | 4:3 pasti | ikut kamera |
+| Paling sederhana | | | | **ya** |
+
 ## 7. Memeriksa hasil sebelum siaran
 
 Sebelum menekan Go LIVE, periksa lima hal ini pada pratinjau kanvas:
