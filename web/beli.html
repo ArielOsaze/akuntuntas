@@ -6,7 +6,7 @@
 <title>Pembelian Lisensi AkunTuntas - Bayar dengan QRIS</title>
 <meta name="description" content="Beli lisensi AkunTuntas sekali bayar. Pilih paket, pindai QRIS dengan nominal yang sudah terisi, lalu kirim bukti pembayaran. Lisensi dikirim setelah pembayaran diverifikasi.">
 <meta name="theme-color" content="#FFFFFF">
-<link rel="stylesheet" href="checkout.css?v=4">
+<link rel="stylesheet" href="checkout.css?v=5">
 
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" href="logo-32.png" type="image/png" sizes="32x32">
@@ -60,6 +60,14 @@
       "priceCurrency": "IDR",
       "availability": "https://schema.org/InStock",
       "url": "https://akuntuntas.xinet.id/beli?paket=enterprise"
+    },
+    {
+      "@type": "Offer",
+      "name": "Paket Custom",
+      "price": "9499000",
+      "priceCurrency": "IDR",
+      "availability": "https://schema.org/InStock",
+      "url": "https://akuntuntas.xinet.id/beli?paket=custom"
     }
   ]
 }
@@ -158,6 +166,12 @@
                             <span class="harga">Rp5.499.000</span>
                             <span class="ket">10 perangkat. Untuk PT, grup usaha, dan kantor akuntan.</span>
                         </button>
+                        <button class="paket-opsi paket-opsi-custom" id="pilih-custom" type="button"
+                                data-paket="custom" aria-pressed="false">
+                            <span class="nama">Custom <span class="titik" aria-hidden="true"></span></span>
+                            <span class="harga">Rp9.499.000</span>
+                            <span class="ket">25 perangkat. Seluruh fitur Enterprise, penyiapan pembukuan, dan pendampingan implementasi.</span>
+                        </button>
                     </div>
 
                     <div class="alert" id="pesan" role="alert"></div>
@@ -214,7 +228,7 @@
                         <b id="sum-harga">Rp3.499.000</b>
                     </div>
                     <div class="sum-line">
-                        <span>Pembaruan versi 1 tahun</span>
+                        <span id="sum-pembaruan">Pembaruan versi 1 tahun</span>
                         <b>Termasuk</b>
                     </div>
                     <div class="sum-line">
@@ -422,6 +436,7 @@
         standar: {
             nama: "Standar",
             perangkat: "1 perangkat",
+            pembaruan: "1 tahun",
             harga: 3499000,
             qr: "qris/standar.png",
             berkas: "QRIS-AkunTuntas-Standar.png"
@@ -429,9 +444,18 @@
         enterprise: {
             nama: "Enterprise",
             perangkat: "10 perangkat",
+            pembaruan: "2 tahun",
             harga: 5499000,
             qr: "qris/enterprise.png",
             berkas: "QRIS-AkunTuntas-Enterprise.png"
+        },
+        custom: {
+            nama: "Custom",
+            perangkat: "25 perangkat",
+            pembaruan: "3 tahun",
+            harga: 9499000,
+            qr: "qris/custom.png",
+            berkas: "QRIS-AkunTuntas-Custom.png"
         }
     };
 
@@ -445,6 +469,7 @@
     var pesanan = null;
 
     var el = function (id) { return document.getElementById(id); };
+    var semuaPaket = document.querySelectorAll("[data-paket]");
 
     function rupiah(angka) {
         return "Rp" + Number(angka).toLocaleString("id-ID");
@@ -455,23 +480,28 @@
         paketAktif = kode;
         var data = PAKET[kode];
 
-        el("pilih-standar").classList.toggle("pilih", kode === "standar");
-        el("pilih-enterprise").classList.toggle("pilih", kode === "enterprise");
-        el("pilih-standar").setAttribute("aria-pressed", kode === "standar" ? "true" : "false");
-        el("pilih-enterprise").setAttribute("aria-pressed", kode === "enterprise" ? "true" : "false");
+        Array.prototype.forEach.call(semuaPaket, function (tombol) {
+            var aktif = tombol.getAttribute("data-paket") === kode;
+            tombol.classList.toggle("pilih", aktif);
+            tombol.setAttribute("aria-pressed", aktif ? "true" : "false");
+        });
 
         el("sum-paket").textContent = data.nama;
         el("sum-perangkat").textContent = data.perangkat;
         el("sum-harga").textContent = rupiah(data.harga);
+        el("sum-pembaruan").textContent = "Pembaruan versi " + data.pembaruan;
         el("sum-total").textContent = rupiah(data.harga);
         el("total-form").textContent = rupiah(data.harga);
     }
 
-    el("pilih-standar").addEventListener("click", function () { pilihPaket("standar"); });
-    el("pilih-enterprise").addEventListener("click", function () { pilihPaket("enterprise"); });
+    Array.prototype.forEach.call(semuaPaket, function (tombol) {
+        tombol.addEventListener("click", function () {
+            pilihPaket(tombol.getAttribute("data-paket"));
+        });
+    });
 
-    // Tautan "Beli Paket Enterprise" membawa ?paket=enterprise; tanpa ini
-    // halaman selalu menampilkan Standar dan pembeli bisa salah bayar.
+    // Tautan paket membawa ?paket=...; tanpa ini halaman selalu
+    // menampilkan Standar dan pembeli bisa salah bayar.
     var paketTautan = new URLSearchParams(window.location.search).get("paket");
     if (paketTautan && PAKET[paketTautan]) pilihPaket(paketTautan);
 

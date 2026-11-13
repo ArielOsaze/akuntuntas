@@ -12,7 +12,7 @@
 <title>Software Akuntansi &amp; Pajak Indonesia - AkunTuntas</title>
 <meta name="description" content="Aplikasi pembukuan dan pajak untuk UMKM, PT Perorangan, dan PT. Hitung PPh 21, PPh Badan, dan PPN otomatis, susun laporan sesuai SAK, dan bekerja offline. Bayar sekali, pakai selamanya.">
 <meta name="theme-color" content="#FFFFFF">
-<link rel="stylesheet" href="styles.css?v=16">
+<link rel="stylesheet" href="styles.css?v=17">
 
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" href="logo-32.png" type="image/png" sizes="32x32">
@@ -78,6 +78,14 @@
       "priceCurrency": "IDR",
       "availability": "https://schema.org/InStock",
       "url": "https://akuntuntas.xinet.id/beli?paket=enterprise"
+    },
+    {
+      "@type": "Offer",
+      "name": "Paket Custom",
+      "price": "9499000",
+      "priceCurrency": "IDR",
+      "availability": "https://schema.org/InStock",
+      "url": "https://akuntuntas.xinet.id/beli?paket=custom"
     }
   ],
   "featureList": [
@@ -161,10 +169,18 @@
     },
     {
       "@type": "Question",
+      "name": "Apa yang membuat paket Custom berbeda?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Custom memakai seluruh fitur Enterprise untuk 25 perangkat, ditambah penyiapan bagan akun, dimensi, dan format laporan sesuai struktur perusahaan, impor data awal, serta pendampingan implementasi dua sesi."
+      }
+    },
+    {
+      "@type": "Question",
       "name": "Berapa komputer yang bisa memakai satu lisensi?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Paket Standar berlaku untuk 1 perangkat dan paket Enterprise untuk 10 perangkat. Perangkat dapat diganti dengan melepas perangkat lama dari dalam aplikasi."
+        "text": "Paket Standar berlaku untuk 1 perangkat, Enterprise untuk 10 perangkat, dan Custom untuk 25 perangkat. Perangkat dapat diganti dengan melepas perangkat lama dari dalam aplikasi."
       }
     },
     {
@@ -838,6 +854,25 @@
                 </ul>
                 <a class="tombol" href="beli.html?paket=enterprise">Beli Paket Enterprise</a>
             </div>
+
+            <div class="kartu-harga custom">
+                <span class="label-unggulan label-custom">Disesuaikan</span>
+                <div class="custom-kiri">
+                    <h3>Custom</h3>
+                    <p class="sasaran">Untuk perusahaan multi-entitas dengan alur pembukuan khusus</p>
+                    <div class="harga">Rp9.499.000</div>
+                    <p class="harga-ket">Sekali bayar, termasuk penyiapan awal</p>
+                    <a class="tombol" href="beli.html?paket=custom">Beli Paket Custom</a>
+                    <p class="custom-catatan">Lingkup penyiapan disepakati sebelum implementasi.</p>
+                </div>
+                <ul class="inti-harga custom-inti">
+                    <li><strong>25 perangkat</strong> dalam satu lisensi</li>
+                    <li>Seluruh fitur Enterprise: multi-entitas, cabang, dimensi, konsolidasi, dan pajak lanjutan</li>
+                    <li>Penyiapan bagan akun, dimensi, dan format laporan sesuai struktur perusahaan</li>
+                    <li>Impor data awal dan pendampingan implementasi dua sesi</li>
+                    <li>Pembaruan versi <strong>3 tahun</strong> dan dukungan prioritas</li>
+                </ul>
+            </div>
         </div>
 
         <p class="harga-catatan">
@@ -853,7 +888,8 @@
                 </div>
                 <p class="banding-ket">
                     Tabel ini hanya memuat hal yang berbeda. Fitur harian
-                    lainnya tersedia penuh di kedua paket.
+                    lainnya tersedia penuh di semua paket, dan Custom memakai
+                    seluruh fitur Enterprise.
                 </p>
             </div>
 
@@ -1003,7 +1039,7 @@
 
             <div class="banding-sama">
                 <div class="banding-sama-kepala">
-                    <h4>Termasuk di kedua paket</h4>
+                    <h4>Termasuk di semua paket</h4>
                     <p>Fitur harian berikut sudah tersedia penuh sejak paket Standar, tanpa biaya tambahan.</p>
                 </div>
                 <div class="banding-sama-kisi">
@@ -1059,9 +1095,26 @@
                 </div>
             </div>
 
+            <div class="banding-custom">
+                <div class="banding-custom-kepala">
+                    <span class="banding-custom-label">Custom</span>
+                    <h4>Seluruh fitur Enterprise, ditambah penyiapan pembukuan.</h4>
+                </div>
+                <div class="banding-custom-isi">
+                    <p>
+                        Untuk perusahaan dengan beberapa entitas, cabang, atau
+                        format laporan khusus. Paket Custom memakai seluruh fitur
+                        Enterprise untuk 25 perangkat, disertai penyiapan bagan
+                        akun, dimensi, dan format laporan, impor data awal, serta
+                        pendampingan implementasi dua sesi.
+                    </p>
+                    <a href="beli.html?paket=custom">Lihat Paket Custom</a>
+                </div>
+            </div>
+
             <p class="banding-catatan">
-                Peningkatan dari Standar ke Enterprise dapat dilakukan
-                kapan saja melalui halaman <a href="beli.html">pembelian</a>
+                Peningkatan dari Standar ke Enterprise atau Custom dapat
+                dilakukan kapan saja melalui halaman <a href="beli.html">pembelian</a>
                 atau dengan menghubungi kami melalui WhatsApp pada bagian
                 <a href="kontak.html">Hubungi Kami</a>. Data dan pembukuan
                 tetap utuh setelah paket ditingkatkan.
@@ -1087,8 +1140,9 @@
                 <div class="langkah-nomor">1</div>
                 <h4>Beli lisensi</h4>
                 <p>
-                    Pilih paket Standar atau Enterprise di halaman pembelian,
-                    lalu bayar melalui QRIS dan kirim bukti pembayaran.
+                    Pilih paket Standar, Enterprise, atau Custom di halaman
+                    pembelian, lalu bayar melalui QRIS dan kirim bukti
+                    pembayaran.
                 </p>
             </div>
             <div class="langkah">
@@ -1167,9 +1221,10 @@
                 <div>
                     <h4>Batas jumlah perangkat</h4>
                     <p>
-                        Lisensi Standar berlaku untuk 1 perangkat. Lisensi
-                        Enterprise berlaku untuk 10 perangkat. Perangkat dapat
-                        dipindahkan dengan melepas perangkat lama.
+                        Lisensi Standar berlaku untuk 1 perangkat, Enterprise
+                        untuk 10 perangkat, dan Custom untuk 25 perangkat.
+                        Perangkat dapat dipindahkan dengan melepas perangkat
+                        lama.
                     </p>
                 </div>
             </div>
@@ -1285,11 +1340,22 @@
             </details>
 
             <details>
+                <summary>Apa yang membuat paket Custom berbeda?</summary>
+                <div class="jawab">
+                    Custom memakai seluruh fitur Enterprise untuk 25 perangkat,
+                    ditambah penyiapan bagan akun, dimensi, dan format laporan
+                    sesuai struktur perusahaan, impor data awal, serta
+                    pendampingan implementasi dua sesi. Lingkup penyiapan
+                    disepakati sebelum implementasi.
+                </div>
+            </details>
+
+            <details>
                 <summary>Berapa komputer yang bisa memakai satu lisensi?</summary>
                 <div class="jawab">
-                    Paket Standar berlaku untuk 1 perangkat dan paket Enterprise
-                    untuk 10 perangkat. Perangkat dapat diganti dengan melepas
-                    perangkat lama dari dalam aplikasi.
+                    Paket Standar berlaku untuk 1 perangkat, Enterprise untuk 10
+                    perangkat, dan Custom untuk 25 perangkat. Perangkat dapat
+                    diganti dengan melepas perangkat lama dari dalam aplikasi.
                 </div>
             </details>
 

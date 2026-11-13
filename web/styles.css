@@ -959,6 +959,35 @@ a { color: var(--aksen-tua); }
 
 .kartu-harga .tombol { width: 100%; margin-top: auto; }
 
+.kartu-harga.custom {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: var(--r6) var(--r7);
+    align-items: start;
+    border-color: rgba(160, 98, 45, 0.45);
+    background: #FCFAF7;
+}
+
+.label-custom { background: var(--aksen); }
+
+.custom-kiri {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.custom-kiri .tombol { margin-top: var(--r4); }
+
+.custom-catatan {
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--teks-abu);
+}
+
+.custom-inti { margin-bottom: 0; }
+
 .harga-catatan {
     display: flex;
     align-items: center;
@@ -1313,6 +1342,50 @@ a { color: var(--aksen-tua); }
     font-weight: 700;
 }
 
+.banding-custom {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: var(--r4) var(--r7);
+    margin: var(--r5) var(--r6) 0;
+    padding: var(--r5);
+    border: 1px solid rgba(160, 98, 45, 0.35);
+    border-radius: 6px;
+    background: #FCFAF7;
+}
+
+.banding-custom-label {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--aksen);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.banding-custom-kepala h4 {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--tinta);
+}
+
+.banding-custom-isi {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    color: var(--teks-abu);
+    font-size: 13.5px;
+    line-height: 1.65;
+}
+
+.banding-custom-isi a {
+    color: var(--aksen-tua);
+    font-weight: 600;
+}
+
 .banding-catatan {
     font-size: 13px;
     line-height: 1.7;
@@ -1623,6 +1696,10 @@ a { color: var(--aksen-tua); }
     .kisi-fitur .fitur:last-child p { max-width: none; }
     .mode-kisi { grid-template-columns: 1fr; }
     .kisi-harga { grid-template-columns: 1fr; max-width: 560px; }
+    .kartu-harga.custom {
+        grid-template-columns: 1fr;
+        gap: var(--r5);
+    }
     .syarat-kisi { grid-template-columns: 1fr; }
     .kaki-isi { grid-template-columns: 1fr 1fr; }
     .kaki-isi > div:first-child { grid-column: 1 / -1; }
@@ -1708,6 +1785,12 @@ a { color: var(--aksen-tua); }
     .banding-legenda {
         justify-content: flex-start;
         padding: 0 var(--r5) var(--r4);
+    }
+
+    .banding-custom {
+        grid-template-columns: 1fr;
+        margin: var(--r4) 0 0;
+        padding: var(--r5);
     }
 
     .banding-kepala { display: none; }
