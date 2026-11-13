@@ -630,6 +630,10 @@ a { color: var(--aksen-tua); }
 .tur-baris.terbalik .tur-teks { order: 2; }
 .tur-baris.terbalik .tur-gambar { order: 1; }
 
+/* Saat kolom ditukar, lebar kolom juga ditukar agar tangkapan layar
+   tetap sama besar di seluruh baris, bukan mengecil di baris genap. */
+.tur-baris.terbalik { grid-template-columns: 1.14fr 0.86fr; }
+
 .tur-label {
     display: block;
     font-size: 11.5px;
@@ -1598,7 +1602,7 @@ a { color: var(--aksen-tua); }
     .pita-angka .wadah > div:nth-child(4) { padding-left: var(--r5); }
     .bagian-kepala { grid-template-columns: 1fr; gap: var(--r3); margin-bottom: var(--r6); }
     .bagian-kepala p { padding-bottom: 0; }
-    .tur-baris { grid-template-columns: 1fr; gap: var(--r5); }
+    .tur-baris, .tur-baris.terbalik { grid-template-columns: 1fr; gap: var(--r5); }
     .tur-baris.terbalik .tur-teks { order: 1; }
     .tur-baris.terbalik .tur-gambar { order: 2; }
     .tur { gap: var(--r7); }
