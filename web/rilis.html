@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Catatan Rilis AkunTuntas - Riwayat Pembaruan</title>
 <meta name="description" content="Riwayat pembaruan aplikasi AkunTuntas: fitur baru, penyempurnaan, dan perbaikan setiap versi. Aplikasi pembukuan dan pajak untuk perusahaan Indonesia.">
-<link rel="stylesheet" href="styles.css?v=10">
+<link rel="stylesheet" href="styles.css?v=13">
 <style>
     .rilis-wadah {
         max-width: 820px;
@@ -260,19 +260,476 @@
 
             <div class="rilis-sorot">
                 <p>
-                    <strong>Versi 1.2.9 sudah tersedia.</strong> Tombol
-                    pengembali menu kini punya jalurnya sendiri sehingga tidak
-                    lagi menutupi menu Berkas, popup pesan memakai huruf yang
-                    lebih besar, dan judul peraturan pada Salinan Regulasi
-                    Resmi kini tampil utuh.
+                    <strong>Versi 1.4.5 sudah tersedia.</strong> Bekerja dengan
+                    dua halaman berdampingan, kotak pesan seragam bergaya
+                    aplikasi, dan pratinjau cetak yang lebih jelas.
                 </p>
+            </div>
+
+            <!-- ================================================= 1.4.5 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.4.5</h2>
+                    <span class="rilis-terbaru">Terbaru</span>
+                </div>
+                <div class="rilis-tanggal">27 Oktober 2026</div>
+
+                <div class="rilis-grup grup-baru">Fitur baru</div>
+                <ul>
+                    <li>
+                        <strong>Bekerja dengan dua halaman sekaligus.</strong>
+                        Halaman kedua dapat dibuka di samping halaman yang
+                        sedang dikerjakan, misalnya Penjualan di kiri dan Biaya
+                        di kanan. Setiap sisi memiliki pemilih halaman, tombol
+                        muat ulang, dan tombol tutup sendiri. Panel dibuka lewat
+                        tombol <em>Dua halaman</em> di baris status, menu
+                        <em>Tampilan</em>, atau pintasan <em>Ctrl+Shift+D</em>.
+                        Setelah data disimpan, kedua sisi ikut diperbarui agar
+                        angkanya tidak saling bertentangan.
+                    </li>
+                </ul>
+
+                <div class="rilis-grup grup-bagus">Penyempurnaan</div>
+                <ul>
+                    <li>
+                        <strong>Seluruh kotak pesan seragam.</strong>
+                        Pemberitahuan, pertanyaan, peringatan, dan pesan
+                        kesalahan kini memakai satu gaya jendela yang sama
+                        dengan aplikasi: judul yang jelas, teks yang terbaca,
+                        dan tombol yang rapi. Kotak pesan bawaan yang tampil
+                        berbeda gaya tidak dipakai lagi.
+                    </li>
+                    <li>
+                        <strong>Pratinjau cetak lebih jelas.</strong> Jendela
+                        pratinjau A4 memakai tampilan aplikasi dengan tombol
+                        ikon untuk memperbesar, memperkecil, dan berpindah
+                        halaman. Bidang kertas tampil di atas latar hangat, dan
+                        kolom zoom tidak lagi terpotong. Menekan
+                        <em>Cetak</em> langsung memberi tanggapan.
+                    </li>
+                </ul>
+
+                <div class="rilis-grup grup-perbaikan">Perbaikan</div>
+                <ul>
+                    <li>
+                        <strong>Garis tab aktif kembali sejajar.</strong> Garis
+                        bawah tab yang dipilih menempel tepat pada baris tab,
+                        tidak lagi menggantung di bawahnya.
+                    </li>
+                    <li>
+                        <strong>Nilai zoom tampil utuh.</strong> Angka
+                        perbesaran pada pratinjau cetak tidak terpotong lagi.
+                    </li>
+                </ul>
+
+                <a class="rilis-unduh" href="unduh.html">Unduh versi 1.4.5 &rarr;</a>
+            </div>
+
+            <!-- ================================================= 1.4.4 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.4.4</h2>
+                </div>
+                <div class="rilis-tanggal">27 Oktober 2026</div>
+
+                <div class="rilis-grup grup-perbaikan">Perbaikan</div>
+                <ul>
+                    <li>
+                        <strong>Keluar akun berjalan normal.</strong> Tombol
+                        Keluar Akun sebelumnya dapat membuat aplikasi berhenti
+                        merespons, sehingga halaman tidak termuat lagi dan
+                        pembukuan tampak kosong. Jendela utama sekarang dilepas
+                        dan dibongkar dengan urutan yang benar, lalu halaman
+                        masuk dibuat ulang dari awal.
+                    </li>
+                    <li>
+                        <strong>Pembukuan tetap utuh.</strong> Setelah laporan
+                        data tampak hilang, seluruh catatan diperiksa dan
+                        ternyata tetap tersimpan lengkap. Yang gagal adalah
+                        pemuatan halaman setelah keluar akun, bukan datanya.
+                        Pemeriksaan otomatis baru memastikan perusahaan aktif
+                        dan bagan akun tetap termuat walau pengguna keluar dan
+                        masuk akun berkali-kali dalam satu sesi.
+                    </li>
+                </ul>
+
+                <div class="rilis-grup grup-bagus">Penyempurnaan</div>
+                <ul>
+                    <li>
+                        <strong>Halaman masuk yang formal.</strong> Halaman
+                        masuk ditata seperti formulir resmi: keterangan di atas
+                        kertas hangat, kolom isian di atas permukaan terang,
+                        dan satu garis pemisah tipis. Strip warna, nomor hias,
+                        dan label kapital bersusun dihilangkan.
+                    </li>
+                    <li>
+                        <strong>Dokumen cetak lebih resmi.</strong> Kop surat
+                        memakai satu garis tipis sepanjang lebar kertas, judul
+                        bagian ditulis dengan huruf biasa, dan seluruh teks
+                        memakai tinta hitam hangat atau abu redup. Warna hanya
+                        dipakai pada segel verifikasi. Invoice PDF mengikuti
+                        aturan yang sama.
+                    </li>
+                    <li>
+                        <strong>Panel keterangan tanpa strip warna.</strong>
+                        Kotak informasi, peringatan, dan kesalahan memakai
+                        bingkai tipis dengan latar yang sesuai maknanya,
+                        sehingga pesannya tetap jelas tanpa hiasan.
+                    </li>
+                </ul>
+
+                <a class="rilis-unduh" href="unduh.html">Unduh versi 1.4.4 &rarr;</a>
+            </div>
+
+            <!-- ================================================= 1.4.3 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.4.3</h2>
+                </div>
+                <div class="rilis-tanggal">27 Oktober 2026</div>
+
+                <div class="rilis-grup grup-bagus">Penyempurnaan</div>
+                <ul>
+                    <li>
+                        <strong>Tampilan baru yang tenang dan mudah
+                        dibaca.</strong> Seluruh halaman memakai tata letak
+                        editorial: palet kertas hangat, garis tipis, sudut
+                        halus, dan jarak yang lega. Huruf Source Sans 3
+                        dipakai untuk isi, sedangkan Source Serif 4 untuk
+                        judul dan angka penting. Keduanya dipilih karena
+                        bentuk hurufnya tetap jelas pada ukuran kecil maupun
+                        besar.
+                    </li>
+                    <li>
+                        <strong>Dasbor lebih jernih.</strong> Ringkasan
+                        keuangan, grafik kinerja, dan panel kesehatan usaha
+                        ditata ulang agar angka utama langsung terlihat,
+                        grafik menyatu dengan kartunya, dan warna tetap
+                        nyaman dipandang.
+                    </li>
+                    <li>
+                        <strong>Cetak A4 dan PDF dengan pengaman
+                        dokumen.</strong> Setiap dokumen cetak dapat diberi
+                        tanda air yang Anda atur sendiri (5%, 8%, atau 12%),
+                        blok tanda tangan elektronik dengan nama, jabatan,
+                        dan gambar tanda tangan, segel verifikasi, serta kode
+                        dokumen di kaki halaman. Kop perusahaan, nomor
+                        halaman, dan baris judul berulang tetap ada, dan
+                        tabel lebar otomatis dicetak mendatar.
+                    </li>
+                    <li>
+                        <strong>Invoice seragam dengan dokumen resmi.</strong>
+                        Invoice kini memakai desain, tanda air, tanda tangan,
+                        segel, dan kode verifikasi yang sama. Halaman
+                        lanjutan memuat kepala invoice dan nomor halaman,
+                        sedangkan blok pengesahan hanya muncul sekali di
+                        akhir dokumen.
+                    </li>
+                    <li>
+                        <strong>Halaman masuk dan formulir lebih rapi.</strong>
+                        Kartu masuk menyesuaikan ukuran jendela, langkah lupa
+                        kata sandi ditulis jelas, tinggi seluruh kotak isian
+                        seragam, tanggal tampil lengkap, dan tabel tetap
+                        terbaca pada jendela sempit.
+                    </li>
+                    <li>
+                        <strong>Daftar pilihan lebih bersih dan
+                        nyaman.</strong> Saat dibuka, daftar tidak lagi
+                        menampilkan bingkai abu-abu; baris terpilih disorot
+                        beige lembut dengan teks gelap dan tinggi baris yang
+                        lega. Daftar yang panjang dibatasi sepuluh baris dan
+                        dapat digulir, sehingga tidak memenuhi layar.
+                    </li>
+                </ul>
+
+                <div class="rilis-grup grup-perbaikan">Perbaikan</div>
+                <ul>
+                    <li>
+                        <strong>Dialog kontrak lebih mudah diisi.</strong>
+                        Tanggal memakai format dd/mm/yyyy dan pilihan
+                        "Tanpa batas waktu" berupa kotak centang yang jelas.
+                        Label yang memuat tanda &amp; tampil benar.
+                    </li>
+                    <li>
+                        <strong>Dialog lapor bug tidak terpotong.</strong>
+                        Kotak langkah dan catatan kini berukuran tetap,
+                        sehingga seluruh isi dialog muat di layar.
+                    </li>
+                    <li>
+                        <strong>Panduan lupa kata sandi tampil sebagai
+                        kalimat biasa.</strong> Karakter panah yang sempat
+                        terbaca sebagai teks aneh sudah diganti.
+                    </li>
+                    <li>
+                        <strong>Pesan tabel kosong sesuai konteks.</strong>
+                        Setiap tab pada Pembelian, Biaya &amp; Bank, Produk
+                        &amp; Stok, Penjualan, dan Payroll kini menampilkan
+                        langkah berikutnya yang tepat, sehingga tidak lagi
+                        muncul panduan dari halaman lain.
+                    </li>
+                    <li>
+                        <strong>Teks sekunder lebih nyaman dibaca.</strong>
+                        Warna teks samar diperkuat agar kontrasnya memenuhi
+                        standar aksesibilitas AA, baik di halaman maupun
+                        dialog.
+                    </li>
+                </ul>
+
+                <a class="rilis-unduh" href="unduh.html">Unduh versi 1.4.3 &rarr;</a>
+            </div>
+
+            <!-- ================================================= 1.4.2 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.4.2</h2>
+                </div>
+                <div class="rilis-tanggal">26 Oktober 2026</div>
+
+                <div class="rilis-grup grup-bagus">Penyempurnaan</div>
+                <ul>
+                    <li>
+                        <strong>Cetak A4 dan simpan PDF dari halaman data.</strong>
+                        Tombol Ekspor dan Cetak tersedia pada halaman data
+                        utama: produk, mitra, pembelian, jurnal, biaya, aset
+                        tetap, bagan akun, laporan, analisis, dan dasbor.
+                        Hasil cetak memakai kertas A4, kop perusahaan, baris
+                        judul yang diulang di setiap halaman, dan nomor
+                        halaman. Tabel lebar otomatis dicetak mendatar, dan
+                        pratinjau tampil sebelum kertas terpakai.
+                    </li>
+                    <li>
+                        <strong>Berkas Excel siap dibagikan.</strong> Angka
+                        tetap tersimpan sebagai angka sehingga dapat
+                        dijumlahkan, lebar kolom mengikuti isi, baris judul
+                        dibekukan, saringan otomatis terpasang, dan halaman
+                        disiapkan untuk A4 dengan judul kolom berulang.
+                    </li>
+                    <li>
+                        <strong>Invoice rapi pada semua keadaan.</strong>
+                        Deskripsi panjang terbungkus tanpa menimpa kolom lain,
+                        kolom Diskon hanya muncul bila ada diskon, nomor
+                        halaman tampil pada invoice lebih dari satu halaman,
+                        dan karakter khusus seperti &amp; atau &lt; tampil
+                        benar.
+                    </li>
+                    <li>
+                        <strong>Huruf dan ikon konsisten.</strong> Dokumen
+                        cetak dan invoice memakai huruf Inter yang sama dengan
+                        aplikasi, sedangkan ikon tampil seragam di semua
+                        halaman.
+                    </li>
+                </ul>
+
+                <div class="rilis-grup grup-perbaikan">Perbaikan</div>
+                <ul>
+                    <li>
+                        <strong>Kartu dasbor tampil bersih.</strong> Latar
+                        kartu, kotak ringkasan, dan panel grafik kini putih
+                        penuh. Grafik batang menyatu dengan kartunya, tidak
+                        lagi tampak sebagai kotak putih terpisah di atas latar
+                        halaman.
+                    </li>
+                    <li>
+                        <strong>Grafik kinerja lebih tenang.</strong> Batang
+                        pendapatan dan beban memakai warna merek, garis laba
+                        mudah diikuti, dan label sumbu tetap terbaca pada
+                        jendela lebar maupun sempit.
+                    </li>
+                    <li>
+                        <strong>Halaman masuk rapi di semua ukuran.</strong>
+                        Kartu formulir menyesuaikan ruang yang tersedia,
+                        sehingga kolom isian dan tombol Masuk utuh bahkan pada
+                        jendela kecil. Panel merek tampil polos tanpa garis
+                        pengganggu, dengan jarak teks yang seimbang.
+                    </li>
+                    <li>
+                        <strong>Isian tanggal dan angka lebih nyaman.</strong>
+                        Tinggi seluruh kotak isian seragam, tanggal tampil
+                        lengkap, dan sorotan pilihan mengikuti warna aplikasi,
+                        bukan warna bawaan Windows.
+                    </li>
+                </ul>
+
+                <a class="rilis-unduh" href="unduh.html">Unduh versi 1.4.2 &rarr;</a>
+            </div>
+
+            <!-- ================================================= 1.4.1 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.4.1</h2>
+                </div>
+                <div class="rilis-tanggal">25 Oktober 2026</div>
+
+                <div class="rilis-grup grup-perbaikan">Perbaikan</div>
+                <ul>
+                    <li>
+                        <strong>Jurnal otomatis memakai akun yang tepat pada
+                        setiap bentuk usaha.</strong> Sebelumnya sebagian
+                        jurnal dapat menunjuk akun yang tidak ada atau akun
+                        dengan arti berbeda. Kini PPN penjualan, pajak daerah,
+                        pembelian, persediaan, aset tetap, penyusutan, sewa,
+                        biaya bank, dan pemotongan pajak mengikuti bagan akun
+                        perusahaan.
+                    </li>
+                    <li>
+                        <strong>Formulir langsung memilih akun yang
+                        tersedia.</strong> Dialog aset tetap, pembelian,
+                        produk, biaya, dan template berulang tidak lagi
+                        memilih akun bawaan dari bentuk usaha lain.
+                    </li>
+                    <li>
+                        <strong>Rincian beban pada Laba Rugi
+                        konsisten.</strong> Nilai beban operasional kini
+                        bertanda negatif seperti baris totalnya, sehingga
+                        laporan lebih mudah dibaca dan dijumlahkan.
+                    </li>
+                    <li>
+                        <strong>Dasbor menyesuaikan ukuran jendela.</strong>
+                        Pada jendela sempit, panel kesehatan keuangan dan
+                        grafik kinerja ditumpuk agar teksnya tidak
+                        berdesakan.
+                    </li>
+                    <li>
+                        <strong>Nominal pada tabel tetap terbaca
+                        utuh.</strong> Kolom saldo yang dicetak tebal kini
+                        diukur dengan huruf tebal, sehingga angka besar tidak
+                        terpotong.
+                    </li>
+                </ul>
+
+                <a class="rilis-unduh" href="unduh.html">Unduh versi 1.4.1 &rarr;</a>
+            </div>
+
+            <!-- ================================================= 1.4.0 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.4.0</h2>
+                </div>
+                <div class="rilis-tanggal">25 Oktober 2026</div>
+
+                <div class="rilis-grup grup-bagus">Penyempurnaan</div>
+                <ul>
+                    <li>
+                        <strong>Tampilan baru selaras logo.</strong> Warna
+                        arang dan tembaga dipadukan dengan latar kertas
+                        hangat. Tombol, judul, dan sorotan menu aktif kini
+                        memakai satu bahasa warna yang tenang dan konsisten.
+                    </li>
+                    <li>
+                        <strong>Halaman masuk ditata ulang.</strong> Panel
+                        merek menampilkan contoh jurnal yang seimbang,
+                        sedangkan formulir dibuat lebih lapang dengan kolom
+                        isian yang jelas, pilihan mengingat nama pengguna,
+                        dan tombol lihat kata sandi.
+                    </li>
+                    <li>
+                        <strong>Tabel dan laporan lebih mudah dibaca.</strong>
+                        Angka rata kanan, baris berselang warna, status
+                        berwarna, dan baris total ditebalkan. Laporan panjang
+                        dapat digulir sampai totalnya terlihat tanpa
+                        terpotong.
+                    </li>
+                    <li>
+                        <strong>Menu samping lebih mudah ditelusuri.</strong>
+                        Kelompok menu dapat dilipat, tersedia pencarian menu,
+                        dan menu yang sedang dibuka otomatis terlihat.
+                    </li>
+                    <li>
+                        <strong>Ikon baru yang konsisten.</strong> Seluruh
+                        ikon garis digambar ulang agar ukuran dan ketebalannya
+                        seragam di semua halaman.
+                    </li>
+                </ul>
+
+                <div class="rilis-grup grup-perbaikan">Perbaikan</div>
+                <ul>
+                    <li>
+                        <strong>Kontras teks memenuhi WCAG AA.</strong>
+                        Teks bantuan dan keterangan kecil dipergelap secukupnya
+                        agar tetap terbaca di latar kertas hangat.
+                    </li>
+                    <li>
+                        <strong>Kolom tabel tidak lagi menyisakan ruang
+                        kosong.</strong> Kolom yang tidak terpakai
+                        disembunyikan, sehingga kolom lain mendapat ruang
+                        lebih lega.
+                    </li>
+                    <li>
+                        <strong>Bagian laporan yang kosong tidak lagi
+                        mengganggu.</strong> Neraca hanya menampilkan
+                        kelompok yang berisi angka, dengan judul bagian yang
+                        lebih ringkas.
+                    </li>
+                </ul>
+
+                <a class="rilis-unduh" href="unduh.html">Unduh versi 1.4.0 &rarr;</a>
+            </div>
+
+            <!-- ================================================= 1.3.1 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.3.1</h2>
+                </div>
+                <div class="rilis-tanggal">25 Oktober 2026</div>
+
+                <div class="rilis-grup grup-perbaikan">Perbaikan</div>
+                <ul>
+                    <li>
+                        <strong>Aktivasi lisensi kembali normal.</strong>
+                        Pustaka pemeriksa jawaban server kini ikut
+                        terbundel. Sebelumnya aktivasi berhenti dengan pesan
+                        jawaban server tidak dapat diperiksa, dan lisensi
+                        yang sudah aktif di komputer ini tidak dikenali.
+                    </li>
+                    <li>
+                        <strong>Lisensi aktif tidak perlu diaktifkan
+                        ulang.</strong> Aplikasi kembali mengenali lisensi
+                        yang tersimpan di komputer, termasuk lisensi yang
+                        diterbitkan untuk versi sebelumnya.
+                    </li>
+                    <li>
+                        <strong>Versi berkas terlihat di Windows.</strong>
+                        Properti AkunTuntas.exe kini menampilkan nomor versi,
+                        deskripsi, dan penerbit.
+                    </li>
+                </ul>
+
+                <a class="rilis-unduh" href="unduh.html">Unduh versi 1.3.1 &rarr;</a>
+            </div>
+
+            <!-- ================================================= 1.3.0 -->
+            <div class="rilis-versi">
+                <div class="rilis-nomor">
+                    <h2>Versi 1.3.0</h2>
+                </div>
+                <div class="rilis-tanggal">25 Oktober 2026</div>
+
+                <div class="rilis-grup grup-perbaikan">Perbaikan</div>
+                <ul>
+                    <li>
+                        <strong>Nominal besar tidak lagi menghentikan
+                        aplikasi.</strong> Angka di atas Rp2,1 miliar kini
+                        diterima; bila melewati batas yang wajar, aplikasi
+                        menjelaskan penyebabnya, bukan menutup diri.
+                    </li>
+                </ul>
+
+                <div class="rilis-grup grup-bagus">Penyempurnaan</div>
+                <ul>
+                    <li>
+                        <strong>Tampilan lebih ringkas dan konsisten.</strong>
+                        Halaman, dialog, tabel, kotak isian, dan tombol
+                        dipoles agar lebih mudah dipindai dan dipakai.
+                    </li>
+                </ul>
+
+                <a class="rilis-unduh" href="unduh.html">Unduh versi 1.3.0 &rarr;</a>
             </div>
 
             <!-- ================================================= 1.2.9 -->
             <div class="rilis-versi">
                 <div class="rilis-nomor">
                     <h2>Versi 1.2.9</h2>
-                    <span class="rilis-terbaru">Terbaru</span>
                 </div>
                 <div class="rilis-tanggal">29 September 2026</div>
 

@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hubungi Kami - AkunTuntas</title>
 <meta name="description" content="Hubungi tim AkunTuntas lewat WhatsApp atau surel untuk pembelian lisensi, pertanyaan teknis, atau penawaran khusus kantor akuntan dan konsultan pajak.">
-<link rel="stylesheet" href="styles.css?v=10">
+<link rel="stylesheet" href="styles.css?v=13">
 <style>
-    /* Kepala halaman diberi sapuan warna lembut supaya bagian ini punya
-       kedalaman, bukan sekadar latar putih rata. */
+    /* Kepala halaman dibiarkan putih rata agar sejalan dengan halaman
+       utama; pemisahnya cukup garis tipis, bukan sapuan warna. */
     .kontak-hero {
-        background: linear-gradient(180deg, #F2F7FC 0%, #FAFCFE 62%, #FFFFFF 100%);
+        background: var(--kertas);
         border-bottom: 1px solid var(--garis);
         padding: 62px 0 54px;
         text-align: center;
@@ -23,7 +23,7 @@
         letter-spacing: 0.09em;
         text-transform: uppercase;
         color: var(--biru);
-        background: rgba(27, 79, 138, 0.09);
+        background: rgba(160, 98, 45, 0.10);
         border-radius: 999px;
         padding: 6px 15px;
         margin-bottom: 18px;
@@ -38,7 +38,7 @@
     }
 
     .kontak-hero p {
-        color: #46586C;
+        color: var(--teks-abu);
         font-size: 17px;
         line-height: 1.65;
         max-width: 560px;
@@ -84,9 +84,9 @@
     }
 
     .kontak-jalan:hover {
-        border-color: #A9C4DE;
-        box-shadow: 0 4px 12px rgba(15, 41, 66, 0.07),
-                    0 14px 32px rgba(15, 41, 66, 0.09);
+        border-color: var(--garis-kuat);
+        box-shadow: 0 4px 12px rgba(27, 36, 38, 0.05),
+                    0 14px 32px rgba(27, 36, 38, 0.07);
         transform: translateY(-2px);
     }
 
@@ -94,7 +94,7 @@
         width: 44px;
         height: 44px;
         border-radius: 12px;
-        background: #E8F0F9;
+        background: var(--krem);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -155,7 +155,7 @@
     /* Tautan salin surel: dapat ditekan untuk menyalin alamat. */
     .kontak-salin {
         cursor: pointer;
-        border-bottom: 1px dashed rgba(27, 79, 138, 0.35);
+        border-bottom: 1px dashed rgba(160, 98, 45, 0.35);
         padding-bottom: 1px;
         transition: border-color 0.15s;
     }
@@ -206,8 +206,8 @@
         background: var(--putih);
         border: 1px solid var(--garis);
         border-radius: 16px;
-        box-shadow: 0 2px 6px rgba(15, 41, 66, 0.04),
-                    0 18px 44px rgba(15, 41, 66, 0.07);
+        box-shadow: 0 2px 6px rgba(27, 36, 38, 0.03),
+                    0 18px 44px rgba(27, 36, 38, 0.06);
         padding: 34px 36px 30px;
     }
 
@@ -220,7 +220,7 @@
 
     .kontak-kotak .kontak-penjelas {
         font-size: 14.5px;
-        color: #46586C;
+        color: var(--teks-abu);
         line-height: 1.6;
         margin-bottom: 26px;
     }
@@ -248,9 +248,9 @@
     .kontak-form textarea {
         width: 100%;
         padding: 13px 15px;
-        border: 1.5px solid #BFCEDC;
+        border: 1.5px solid var(--garis-kuat);
         border-radius: 10px;
-        background: #FCFDFE;
+        background: var(--putih);
         color: var(--teks);
         font-family: inherit;
         font-size: 15px;
@@ -259,17 +259,17 @@
     }
 
     .kontak-form input::placeholder,
-    .kontak-form textarea::placeholder { color: #63768B; }
+    .kontak-form textarea::placeholder { color: #7C8583; }
 
     .kontak-form input:hover,
-    .kontak-form textarea:hover { border-color: #B7C8D8; }
+    .kontak-form textarea:hover { border-color: var(--garis-kuat); }
 
     .kontak-form input:focus,
     .kontak-form textarea:focus {
         outline: none;
         border-color: var(--biru);
         background: var(--putih);
-        box-shadow: 0 0 0 3.5px rgba(27, 79, 138, 0.13);
+        box-shadow: 0 0 0 3.5px rgba(160, 98, 45, 0.16);
     }
 
     .kontak-form textarea {
@@ -547,9 +547,9 @@
     <div class="wadah">
         <div class="kaki-bawah">
             <span>&copy; 2026 Xinet Group. Seluruh hak cipta dilindungi.</span>
-            <span><a href="index.html" style="color: #8FA7BE;">Kembali ke beranda</a></span>
-            <span><a href="privasi.html" style="color: #8FA7BE;">Kebijakan Privasi</a></span>
-            <span><a href="rilis.html" style="color: #8FA7BE;">Catatan Rilis</a></span>
+            <span><a href="index.html" style="color: #B8AE9E;">Kembali ke beranda</a></span>
+            <span><a href="privasi.html" style="color: #B8AE9E;">Kebijakan Privasi</a></span>
+            <span><a href="rilis.html" style="color: #B8AE9E;">Catatan Rilis</a></span>
             <span class="kaki-store">
                 <a href="https://apps.microsoft.com/detail/9nl8sbc4c5n4?hl=id-ID&amp;gl=ID"
                    target="_blank" rel="noopener"

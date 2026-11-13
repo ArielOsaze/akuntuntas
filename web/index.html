@@ -9,10 +9,10 @@
          dibiarkan. -->
     <meta name="google-site-verification" content="NILAI_KODE_VERIFIKASI">
 
-<title>Software Akuntansi & Pajak Indonesia - AkunTuntas</title>
-<meta name="description" content="Aplikasi pembukuan dan pajak untuk UMKM, PT Perorangan, dan PT. Hitung PPh 21, PPh Badan, dan PPN otomatis. Bayar sekali, pakai selamanya.">
-<meta name="theme-color" content="#1B4F8A">
-<link rel="stylesheet" href="styles.css?v=10">
+<title>Software Akuntansi &amp; Pajak Indonesia - AkunTuntas</title>
+<meta name="description" content="Aplikasi pembukuan dan pajak untuk UMKM, PT Perorangan, dan PT. Hitung PPh 21, PPh Badan, dan PPN otomatis, susun laporan sesuai SAK, dan bekerja offline. Bayar sekali, pakai selamanya.">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="stylesheet" href="styles.css?v=13">
 
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" href="logo-32.png" type="image/png" sizes="32x32">
@@ -21,8 +21,8 @@
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="AkunTuntas">
-<meta property="og:title" content="Software Akuntansi & Pajak Indonesia - AkunTuntas">
-<meta property="og:description" content="Aplikasi pembukuan dan pajak untuk UMKM, PT Perorangan, dan PT. Hitung PPh 21, PPh Badan, dan PPN otomatis. Bayar sekali, pakai selamanya.">
+<meta property="og:title" content="Software Akuntansi &amp; Pajak Indonesia - AkunTuntas">
+<meta property="og:description" content="Pembukuan, laporan sesuai SAK, dan pajak dalam satu aplikasi Windows. Data tersimpan lokal, bekerja offline, sekali bayar.">
 <meta property="og:image" content="https://akuntuntas.xinet.id/pratinjau.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -31,8 +31,8 @@
 <meta property="og:locale" content="id_ID">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Software Akuntansi & Pajak Indonesia - AkunTuntas">
-<meta name="twitter:description" content="Aplikasi pembukuan dan pajak untuk UMKM, PT Perorangan, dan PT. Hitung PPh 21, PPh Badan, dan PPN otomatis. Bayar sekali, pakai selamanya.">
+<meta name="twitter:title" content="Software Akuntansi &amp; Pajak Indonesia - AkunTuntas">
+<meta name="twitter:description" content="Pembukuan, laporan sesuai SAK, dan pajak dalam satu aplikasi Windows. Data tersimpan lokal, bekerja offline, sekali bayar.">
 <meta name="twitter:image" content="https://akuntuntas.xinet.id/pratinjau.png">
 
 <link rel="canonical" href="https://akuntuntas.xinet.id/">
@@ -45,7 +45,7 @@
   "applicationCategory": "BusinessApplication",
   "applicationSubCategory": "Accounting",
   "operatingSystem": "Windows 10, Windows 11",
-  "softwareVersion": "1.2.9",
+  "softwareVersion": "1.4.5",
   "description": "Aplikasi pembukuan dan perpajakan untuk UMKM, PT Perorangan, dan PT di Indonesia. Bekerja sepenuhnya offline.",
   "url": "https://akuntuntas.xinet.id/",
   "image": "https://akuntuntas.xinet.id/pratinjau.png",
@@ -60,14 +60,16 @@
       "name": "Paket Standar",
       "price": "3499000",
       "priceCurrency": "IDR",
-      "availability": "https://schema.org/InStock"
+      "availability": "https://schema.org/InStock",
+      "url": "https://akuntuntas.xinet.id/beli.html?paket=standar"
     },
     {
       "@type": "Offer",
       "name": "Paket Enterprise",
       "price": "5499000",
       "priceCurrency": "IDR",
-      "availability": "https://schema.org/InStock"
+      "availability": "https://schema.org/InStock",
+      "url": "https://akuntuntas.xinet.id/beli.html?paket=enterprise"
     }
   ],
   "featureList": [
@@ -119,6 +121,14 @@
     },
     {
       "@type": "Question",
+      "name": "Bagaimana cara membayar dan menerima lisensi?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Pembayaran dilakukan melalui QRIS pada halaman pembelian. Setelah bukti pembayaran dikirim lewat WhatsApp, kunci lisensi dikirim kembali melalui WhatsApp atau email yang Anda cantumkan."
+      }
+    },
+    {
+      "@type": "Question",
       "name": "Apakah pajaknya sesuai peraturan yang berlaku?",
       "acceptedAnswer": {
         "@type": "Answer",
@@ -131,6 +141,22 @@
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "UMKM, PT Perorangan, dan PT. Tampilan aplikasi menyesuaikan bentuk badan usaha yang dipilih, sehingga menu yang tampil hanya yang relevan."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Apakah bisa memasukkan data awal dari Excel?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Aplikasi menyediakan impor data massal untuk memasukkan data awal tanpa mengetik satu per satu. Untuk bantuan penyiapan data awal, hubungi kami melalui WhatsApp."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Berapa komputer yang bisa memakai satu lisensi?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Paket Standar berlaku untuk 1 perangkat dan paket Enterprise untuk 10 perangkat. Perangkat dapat diganti dengan melepas perangkat lama dari dalam aplikasi."
       }
     },
     {
@@ -175,100 +201,306 @@
 </head>
 <body>
 
+<a class="lompat" href="#utama">Langsung ke isi</a>
+
+<!-- ==================================================== strip atas -->
+<div class="atas">
+    <div class="wadah">
+        <span><b>Edisi Regulasi 2026</b> &nbsp;·&nbsp; PPh 21 tarif efektif, PPh Badan, dan PPN terbaru</span>
+        <span><a href="rilis.html">Catatan rilis 1.4.5</a></span>
+    </div>
+</div>
+
 <!-- ==================================================== kepala -->
 <header class="kepala">
     <div class="wadah kepala-isi">
-        <a class="merek" href="#">
+        <a class="merek" href="index.html">
             <img src="logo.png" alt="">
-            AkunTuntas
+            <span>AkunTuntas<small class="merek-ket">Pembukuan &amp; pajak Indonesia</small></span>
         </a>
-        <nav class="nav">
+        <nav class="nav" aria-label="Navigasi utama">
             <a href="#fitur">Fitur</a>
-            <a href="#cara">Cara Kerja</a>
+            <a href="#produk">Tampilan</a>
             <a href="#harga">Harga</a>
-            <a href="#ketentuan">Ketentuan</a>
+            <a href="#ketentuan">Lisensi</a>
             <a href="#tanya">Pertanyaan</a>
-            <a href="kontak.html">Hubungi Kami</a>
+            <a href="kontak.html">Kontak</a>
         </nav>
         <div class="kepala-tombol">
             <a class="tombol tombol-garis" href="unduh.html">Unduh</a>
-            <a class="tombol" href="beli.html">Beli Lisensi</a>
+            <a class="tombol" href="beli.html">Beli lisensi</a>
         </div>
+        <details class="menu-ringkas">
+            <summary>Menu</summary>
+            <div class="menu-isi">
+                <a href="#fitur">Fitur</a>
+                <a href="#produk">Tampilan aplikasi</a>
+                <a href="#harga">Harga &amp; paket</a>
+                <a href="#ketentuan">Ketentuan lisensi</a>
+                <a href="#tanya">Pertanyaan</a>
+                <a href="unduh.html">Unduh aplikasi</a>
+                <a href="kontak.html">Hubungi kami</a>
+            </div>
+        </details>
     </div>
 </header>
+
+<main id="utama">
 
 <!-- ==================================================== hero -->
 <section class="hero">
     <div class="wadah hero-isi">
         <div>
-            <span class="hero-label">Edisi Regulasi 2026</span>
-            <h1>Pembukuan rapi, <span>pajak akurat</span>, tanpa langganan bulanan.</h1>
+            <span class="hero-label">Software akuntansi Windows · Edisi 2026</span>
+            <h1>Pembukuan rapi, <span>pajak akurat</span>, tanpa langganan.</h1>
             <p>
-                Aplikasi pembukuan dan perpajakan untuk UMKM, PT Perorangan, dan PT
-                di Indonesia. Software akuntansi ini menghitung PPh 21, PPh Badan,
-                dan PPN sesuai peraturan yang berlaku, dan bekerja offline karena
-                seluruh data tersimpan di komputer Anda sendiri.
+                Catat transaksi, susun laporan sesuai SAK, dan hitung PPh 21,
+                PPh Badan, serta PPN mengikuti peraturan Indonesia. Seluruh
+                data tersimpan di komputer Anda, dan lisensi dibeli sekali.
             </p>
             <div class="hero-tombol">
-                <a class="tombol tombol-besar" href="#harga">Lihat Pilihan Lisensi</a>
-                <a class="tombol tombol-garis tombol-besar" href="#fitur">Pelajari Fiturnya</a>
+                <a class="tombol tombol-besar" href="#harga">Lihat pilihan lisensi</a>
+                <a class="tombol tombol-garis tombol-besar" href="#produk">Lihat tampilan aplikasi</a>
             </div>
-            <div class="hero-angka">
-                <div>
-                    <strong>96</strong>
-                    <span>Akun bagan standar</span>
-                </div>
-                <div>
-                    <strong>50</strong>
-                    <span>Jenis pajak</span>
-                </div>
-                <div>
-                    <strong>16</strong>
-                    <span>Dasar hukum</span>
-                </div>
+            <div class="hero-catatan">
+                <span>Sekali bayar</span>
+                <span>Bekerja offline</span>
+                <span>Windows 10/11 64-bit</span>
             </div>
         </div>
 
-        <div class="contoh">
-            <div class="contoh-bar">
-                <i></i><i></i><i></i>
-                <b>AkunTuntas</b>
-            </div>
-            <div class="contoh-isi">
-                <div class="contoh-menu">
-                    <span class="aktif">Dashboard</span>
-                    <span>Analisis</span>
-                    <span>Penjualan</span>
-                    <span>Pembelian</span>
-                    <span>Jurnal Umum</span>
-                    <span>Kas &amp; Bank</span>
-                    <span>Pajak &amp; SPT</span>
-                    <span>Laporan</span>
+        <div class="hero-gambar">
+            <div class="jendela">
+                <div class="jendela-kepala">
+                    <span class="jendela-titik"><i></i><i></i><i></i></span>
+                    <b>AkunTuntas 1.4.5 · Dashboard</b>
                 </div>
-                <div class="contoh-utama">
-                    <div class="contoh-judul">Ringkasan Bulan Ini</div>
-                    <div class="contoh-kpi">
-                        <div>
-                            <small>Pendapatan</small>
-                            <strong>Rp482.500.000</strong>
+                <div class="jendela-isi">
+                    <img src="tangkapan/dashboard-1440.webp"
+                         srcset="tangkapan/dashboard-720.webp 720w,
+                                 tangkapan/dashboard-1440.webp 1440w"
+                         sizes="(max-width: 900px) 92vw, 600px"
+                         width="1440" height="900"
+                         alt="Dashboard AkunTuntas menampilkan omzet, laba bersih, kesehatan keuangan, dan kinerja bulanan"
+                         fetchpriority="high">
+                </div>
+                <div class="jendela-kaki">
+                    <span><strong>Tampilan asli</strong> aplikasi versi 1.4.5</span>
+                    <span>Data contoh</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="pita-angka">
+    <div class="wadah">
+        <div><strong>96</strong><span>akun bagan standar</span></div>
+        <div><strong>50</strong><span>jenis pajak</span></div>
+        <div><strong>16</strong><span>dasar hukum</span></div>
+        <div><strong>3</strong><span>bentuk badan usaha</span></div>
+    </div>
+</div>
+
+<!-- ==================================================== alur -->
+<section class="bagian" id="alur">
+    <div class="wadah">
+        <div class="bagian-kepala">
+            <div>
+                <span class="label-bagian">Alur kerja</span>
+                <h2>Satu alur, dari transaksi sampai laporan pajak.</h2>
+            </div>
+            <p>
+                Tidak ada pekerjaan menyalin angka antar aplikasi. Setiap
+                langkah terhubung, dan setiap angka dapat ditelusuri kembali
+                ke transaksi asalnya.
+            </p>
+        </div>
+
+        <div class="alur">
+            <div class="alur-langkah">
+                <span class="alur-nomor">01</span>
+                <h3>Catat transaksi</h3>
+                <p>Invoice, tagihan pemasok, kas, bank, biaya, dan payroll masuk ke satu buku.</p>
+            </div>
+            <div class="alur-langkah">
+                <span class="alur-nomor">02</span>
+                <h3>Jurnal berpasangan</h3>
+                <p>Setiap transaksi otomatis membentuk jurnal debit dan kredit yang seimbang.</p>
+            </div>
+            <div class="alur-langkah">
+                <span class="alur-nomor">03</span>
+                <h3>Buku besar</h3>
+                <p>Buku besar, neraca saldo, serta buku pelanggan dan pemasok selalu mengikuti.</p>
+            </div>
+            <div class="alur-langkah">
+                <span class="alur-nomor">04</span>
+                <h3>Laporan keuangan</h3>
+                <p>Laba rugi, neraca, arus kas, perubahan ekuitas, dan catatan sesuai SAK.</p>
+            </div>
+            <div class="alur-langkah">
+                <span class="alur-nomor">05</span>
+                <h3>Pajak &amp; SPT</h3>
+                <p>PPh 21, PPh Badan, PPN, dan PPh Final UMKM lengkap dengan dasar hukumnya.</p>
+            </div>
+        </div>
+
+        <p class="alur-catatan">Pembukuan berpasangan dijaga di setiap langkah, bukan dihitung ulang di akhir.</p>
+    </div>
+</section>
+
+<!-- ==================================================== produk -->
+<section class="bagian bagian-krem" id="produk">
+    <div class="wadah">
+        <div class="bagian-kepala">
+            <div>
+                <span class="label-bagian">Di dalam aplikasi</span>
+                <h2>Bukan sekadar tampilan. Ini pekerjaan harian Anda.</h2>
+            </div>
+            <p>
+                Tangkapan layar diambil langsung dari aplikasi versi 1.4.5
+                dengan data contoh, bukan gambar rekaan.
+            </p>
+        </div>
+
+        <div class="tur">
+            <div class="tur-baris">
+                <div class="tur-teks">
+                    <span class="tur-label">01 — Penjualan &amp; pembelian</span>
+                    <h3>Tagihan rapi, piutang terkendali.</h3>
+                    <p>
+                        Buat invoice, sales order, penerimaan pembayaran, nota
+                        kredit, dan tagihan pemasok. PPN keluaran dan masukan
+                        dihitung otomatis, dan umur piutang terlihat per
+                        tanggal jatuh tempo.
+                    </p>
+                    <ul class="tur-daftar">
+                        <li>Invoice dan nota kredit siap cetak PDF</li>
+                        <li>Sales order dan penerimaan pembayaran</li>
+                        <li>Aging piutang per pelanggan dan jatuh tempo</li>
+                        <li><strong>PPN keluaran dan masukan</strong> langsung ke jurnal</li>
+                    </ul>
+                </div>
+                <div class="tur-gambar">
+                    <div class="jendela">
+                        <div class="jendela-kepala">
+                            <span class="jendela-titik"><i></i><i></i><i></i></span>
+                            <b>Penjualan · Daftar invoice</b>
                         </div>
-                        <div>
-                            <small>Laba Bersih</small>
-                            <strong>Rp96.300.000</strong>
+                        <div class="jendela-isi">
+                            <img src="tangkapan/penjualan-1440.webp"
+                                 srcset="tangkapan/penjualan-720.webp 720w,
+                                         tangkapan/penjualan-1440.webp 1440w"
+                                 sizes="(max-width: 900px) 92vw, 660px"
+                                 width="1440" height="900" loading="lazy"
+                                 alt="Halaman Penjualan AkunTuntas dengan daftar invoice, status, dan sisa piutang">
                         </div>
-                        <div>
-                            <small>Pajak Terutang</small>
-                            <strong>Rp21.186.000</strong>
-                        </div>
+                        <div class="jendela-kaki"><span>Invoice, sales order, dan aging piutang</span><span>Data contoh</span></div>
                     </div>
-                    <div class="contoh-grafik">
-                        <i style="height:44%"></i>
-                        <i style="height:62%"></i>
-                        <i style="height:51%"></i>
-                        <i style="height:78%"></i>
-                        <i style="height:66%"></i>
-                        <i style="height:91%"></i>
-                        <i style="height:73%"></i>
+                </div>
+            </div>
+
+            <div class="tur-baris terbalik">
+                <div class="tur-teks">
+                    <span class="tur-label">02 — Laporan keuangan</span>
+                    <h3>Laporan siap dibaca pemilik, bank, dan konsultan.</h3>
+                    <p>
+                        Lima laporan inti disusun dari jurnal yang sama. Anda
+                        memilih standar akuntansi sesuai bentuk badan usaha,
+                        lalu mencetak atau mengekspornya tanpa menyusun ulang.
+                    </p>
+                    <ul class="tur-daftar">
+                        <li>Laba rugi, neraca, arus kas, dan perubahan ekuitas</li>
+                        <li>SAK EMKM, SAK EP, dan SAK Umum</li>
+                        <li>Perbandingan periode dan analisis rasio</li>
+                        <li>Cetak A4 dengan tanda tangan dan segel verifikasi</li>
+                    </ul>
+                </div>
+                <div class="tur-gambar">
+                    <div class="jendela">
+                        <div class="jendela-kepala">
+                            <span class="jendela-titik"><i></i><i></i><i></i></span>
+                            <b>Laporan keuangan</b>
+                        </div>
+                        <div class="jendela-isi">
+                            <img src="tangkapan/laporan-1440.webp"
+                                 srcset="tangkapan/laporan-720.webp 720w,
+                                         tangkapan/laporan-1440.webp 1440w"
+                                 sizes="(max-width: 900px) 92vw, 660px"
+                                 width="1440" height="900" loading="lazy"
+                                 alt="Halaman Laporan Keuangan AkunTuntas dengan laba rugi dan neraca">
+                        </div>
+                        <div class="jendela-kaki"><span>Lima laporan inti dalam satu halaman</span><span>Data contoh</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tur-baris">
+                <div class="tur-teks">
+                    <span class="tur-label">03 — Perpajakan</span>
+                    <h3>Hitung pajak dengan dasar hukum yang jelas.</h3>
+                    <p>
+                        Setiap perhitungan menyertakan dasar hukumnya, sehingga
+                        angka dapat diperiksa ulang saat menyiapkan pelaporan.
+                        Tarif mengikuti ketentuan yang berlaku pada edisi ini.
+                    </p>
+                    <ul class="tur-daftar">
+                        <li>PPh 21 tarif efektif bulanan sesuai PMK 168/2023</li>
+                        <li>PPh Badan termasuk Pasal 31E</li>
+                        <li>PPN, PPh 23, dan PPh Final UMKM</li>
+                        <li>Payroll, slip gaji, dan bukti potong</li>
+                    </ul>
+                </div>
+                <div class="tur-gambar">
+                    <div class="jendela">
+                        <div class="jendela-kepala">
+                            <span class="jendela-titik"><i></i><i></i><i></i></span>
+                            <b>Perpajakan</b>
+                        </div>
+                        <div class="jendela-isi">
+                            <img src="tangkapan/pajak-1440.webp"
+                                 srcset="tangkapan/pajak-720.webp 720w,
+                                         tangkapan/pajak-1440.webp 1440w"
+                                 sizes="(max-width: 900px) 92vw, 660px"
+                                 width="1440" height="900" loading="lazy"
+                                 alt="Halaman Perpajakan AkunTuntas dengan perhitungan PPh dan PPN">
+                        </div>
+                        <div class="jendela-kaki"><span>Perhitungan disertai dasar hukum</span><span>Data contoh</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tur-baris terbalik">
+                <div class="tur-teks">
+                    <span class="tur-label">04 — Kas, biaya, dan aset</span>
+                    <h3>Setiap rupiah punya catatan.</h3>
+                    <p>
+                        Pantau kas dan bank, catat biaya per kategori, lalu
+                        susutkan aset tetap menurut ketentuan akuntansi dan
+                        fiskal. Saldo selalu mengikuti jurnal yang sama.
+                    </p>
+                    <ul class="tur-daftar">
+                        <li>Kas dan bank yang terhubung ke jurnal</li>
+                        <li>Biaya per kategori dan pusat biaya</li>
+                        <li>Aset tetap dengan penyusutan fiskal</li>
+                        <li>Persediaan FIFO, rata-rata bergerak, atau standar</li>
+                    </ul>
+                </div>
+                <div class="tur-gambar">
+                    <div class="jendela">
+                        <div class="jendela-kepala">
+                            <span class="jendela-titik"><i></i><i></i><i></i></span>
+                            <b>Biaya &amp; pengeluaran</b>
+                        </div>
+                        <div class="jendela-isi">
+                            <img src="tangkapan/biaya-1440.webp"
+                                 srcset="tangkapan/biaya-720.webp 720w,
+                                         tangkapan/biaya-1440.webp 1440w"
+                                 sizes="(max-width: 900px) 92vw, 660px"
+                                 width="1440" height="900" loading="lazy"
+                                 alt="Halaman Biaya dan Pengeluaran AkunTuntas dengan rincian kategori biaya">
+                        </div>
+                        <div class="jendela-kaki"><span>Kas, biaya, aset, dan persediaan</span><span>Data contoh</span></div>
                     </div>
                 </div>
             </div>
@@ -279,58 +511,60 @@
 <!-- ==================================================== fitur -->
 <section class="bagian" id="fitur">
     <div class="wadah">
-        <div class="judul-bagian">
-            <h2>Satu software akuntansi untuk seluruh pekerjaan pembukuan</h2>
+        <div class="bagian-kepala">
+            <div>
+                <span class="label-bagian">Kelengkapan</span>
+                <h2>Sepuluh pekerjaan pembukuan, satu aplikasi.</h2>
+            </div>
             <p>
-                Dari mencatat transaksi sampai menyusun laporan keuangan dan
-                menghitung pajak. Tidak perlu berpindah aplikasi atau menyalin
-                angka secara manual.
+                Dari jurnal sampai slip gaji. Tidak perlu berpindah aplikasi
+                atau menyalin angka secara manual.
             </p>
         </div>
 
         <div class="kisi-fitur">
             <div class="fitur">
                 <div class="fitur-ikon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>
                     </svg>
                 </div>
-                <h3>Pembukuan Berpasangan</h3>
+                <h3>Pembukuan berpasangan</h3>
                 <p>
-                    Jurnal umum, buku besar, dan neraca saldo yang saling terhubung.
+                    Jurnal umum, buku besar, dan neraca saldo saling terhubung.
                     Setiap transaksi otomatis membentuk jurnal yang seimbang.
                 </p>
             </div>
 
             <div class="fitur">
                 <div class="fitur-ikon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 10h8M8 14h5"/>
                     </svg>
                 </div>
-                <h3>Penjualan &amp; Pembelian</h3>
+                <h3>Penjualan &amp; pembelian</h3>
                 <p>
-                    Invoice, nota kredit, purchase order, dan tagihan pemasok.
-                    Termasuk perhitungan PPN keluaran dan masukan secara otomatis.
+                    Invoice, nota kredit, sales order, dan tagihan pemasok.
+                    PPN keluaran dan masukan dihitung otomatis.
                 </p>
             </div>
 
             <div class="fitur">
                 <div class="fitur-ikon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                     </svg>
                 </div>
-                <h3>Perpajakan Sesuai UU</h3>
+                <h3>Perpajakan sesuai UU</h3>
                 <p>
-                    PPh 21 dengan tarif efektif bulanan, PPh Badan termasuk Pasal 31E,
+                    PPh 21 tarif efektif bulanan, PPh Badan termasuk Pasal 31E,
                     PPN, PPh Final UMKM, dan pemotongan PPh 23.
                 </p>
             </div>
 
             <div class="fitur">
                 <div class="fitur-ikon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 7h-9M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>
                     </svg>
                 </div>
@@ -343,117 +577,227 @@
 
             <div class="fitur">
                 <div class="fitur-ikon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
                     </svg>
                 </div>
-                <h3>Laporan Keuangan Lengkap</h3>
+                <h3>Laporan keuangan lengkap</h3>
                 <p>
-                    Laba rugi, neraca, arus kas, perubahan modal, dan catatan atas
-                    laporan keuangan menurut SAK EMKM, SAK EP, dan SAK Umum.
+                    Laba rugi, neraca, arus kas, perubahan modal, dan catatan
+                    atas laporan keuangan menurut SAK EMKM, SAK EP, dan SAK Umum.
                 </p>
             </div>
 
             <div class="fitur">
                 <div class="fitur-ikon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 12a9 9 0 1 1-9-9"/><path d="M12 3v9l6 3"/>
                     </svg>
                 </div>
-                <h3>Analisis Kesehatan Keuangan</h3>
+                <h3>Analisis kesehatan keuangan</h3>
                 <p>
-                    Skor kesehatan usaha, sembilan rasio keuangan dengan
-                    acuan sehatnya, temuan yang dapat disaring per tingkat,
-                    serta simulasi skenario. Dapat diekspor dan dicetak.
+                    Skor kesehatan usaha, sembilan rasio dengan acuan sehatnya,
+                    temuan per tingkat, serta simulasi skenario. Dapat diekspor
+                    dan dicetak.
                 </p>
             </div>
 
             <div class="fitur">
                 <div class="fitur-ikon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                     </svg>
                 </div>
-                <h3>Data Tersimpan Sendiri</h3>
+                <h3>Data tersimpan sendiri</h3>
                 <p>
-                    Seluruh data pembukuan disimpan di komputer Anda, tanpa server
-                    pihak lain. Tetap bekerja walau internet mati, dengan cadangan otomatis.
+                    Seluruh data pembukuan disimpan di komputer Anda, tanpa
+                    server pihak lain. Tetap bekerja walau internet mati, dengan
+                    cadangan otomatis.
                 </p>
             </div>
 
             <div class="fitur">
                 <div class="fitur-ikon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
                     </svg>
                 </div>
-                <h3>Aset Tetap &amp; Penyusutan</h3>
+                <h3>Aset tetap &amp; penyusutan</h3>
                 <p>
-                    Penyusutan garis lurus dan saldo menurun, termasuk perhitungan
-                    fiskal menurut ketentuan perpajakan.
+                    Penyusutan garis lurus dan saldo menurun, termasuk
+                    perhitungan fiskal menurut ketentuan perpajakan.
                 </p>
             </div>
 
             <div class="fitur">
                 <div class="fitur-ikon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
                     </svg>
                 </div>
                 <h3>Payroll &amp; PPh 21</h3>
                 <p>
-                    Gaji karyawan, BPJS, dan pemotongan PPh 21 dengan tarif efektif
-                    bulanan. Slip gaji dan bukti potong dibuat otomatis.
+                    Gaji karyawan, BPJS, dan pemotongan PPh 21 dengan tarif
+                    efektif bulanan. Slip gaji dan bukti potong dibuat otomatis.
                 </p>
             </div>
 
             <div class="fitur">
                 <div class="fitur-ikon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h2"/>
                     </svg>
                 </div>
-                <h3>Kontrak &amp; Kerja Sama</h3>
+                <h3>Kontrak &amp; kerja sama</h3>
                 <p>
-                    Catat perjanjian dengan mitra, pantau masa berlaku, dan hitung
-                    pajak atas kontrak konstruksi menurut PSAK 34.
+                    Catat perjanjian dengan mitra, pantau masa berlaku, dan
+                    hitung pajak atas kontrak konstruksi menurut PSAK 34.
                 </p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- ==================================================== cara -->
-<section class="bagian bagian-abu" id="cara">
+<!-- ==================================================== mode usaha -->
+<section class="bagian bagian-krem" id="mode">
     <div class="wadah">
-        <div class="judul-bagian">
-            <h2>Mulai bekerja dalam tiga langkah</h2>
-            <p>Tanpa pemasangan server, tanpa pelatihan panjang.</p>
+        <div class="bagian-kepala">
+            <div>
+                <span class="label-bagian">Bentuk usaha</span>
+                <h2>Tampilan menyesuaikan bentuk usaha Anda.</h2>
+            </div>
+            <p>
+                Menu yang tidak relevan disembunyikan, sehingga tidak ada
+                tombol yang tidak berfungsi dan tidak ada istilah yang
+                membingungkan.
+            </p>
         </div>
 
-        <div class="langkah-kisi">
-            <div class="langkah">
-                <div class="langkah-nomor">1</div>
-                <h4>Beli lisensi</h4>
+        <div class="mode-kisi">
+            <div class="mode-kartu">
+                <h3>UMKM / Orang Pribadi</h3>
+                <span class="mode-untuk">Usaha perseorangan</span>
                 <p>
-                    Pilih paket Standar atau Enterprise. Anda menerima kunci
-                    lisensi lewat email setelah pembayaran.
+                    Pembukuan sederhana dengan PPh Final UMKM dan laporan
+                    SAK EMKM. Cukup catat penjualan, pembelian, kas, dan biaya.
+                </p>
+                <ul>
+                    <li>PPh Final UMKM</li>
+                    <li>Laporan SAK EMKM</li>
+                    <li>Kas, penjualan, pembelian, biaya</li>
+                </ul>
+            </div>
+
+            <div class="mode-kartu">
+                <h3>PT Perorangan</h3>
+                <span class="mode-untuk">Badan usaha perorangan</span>
+                <p>
+                    Kewajiban PPh Badan dan PPN tanpa kerumitan grup usaha.
+                    Laporan dan menu mengikuti kebutuhan badan usaha.
+                </p>
+                <ul>
+                    <li>PPh Badan dan PPN</li>
+                    <li>Laporan sesuai SAK</li>
+                    <li>Payroll dan aset tetap</li>
+                </ul>
+            </div>
+
+            <div class="mode-kartu">
+                <h3>PT</h3>
+                <span class="mode-untuk">Perseroan dan grup usaha</span>
+                <p>
+                    Fitur lengkap untuk perseroan, cabang, dan beberapa
+                    entitas dalam satu aplikasi.
+                </p>
+                <ul>
+                    <li>Konsolidasi multi-entitas (Enterprise)</li>
+                    <li>Dimensi biaya, proyek, cabang (Enterprise)</li>
+                    <li>Log audit lanjutan (Enterprise)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="jendela-ganda">
+            <div class="jendela">
+                <div class="jendela-kepala">
+                    <span class="jendela-titik"><i></i><i></i><i></i></span>
+                    <b>Mode UMKM / Orang Pribadi</b>
+                </div>
+                <div class="jendela-isi">
+                    <img src="tangkapan/umkm-1440.webp"
+                         srcset="tangkapan/umkm-720.webp 720w,
+                                 tangkapan/umkm-1440.webp 1440w"
+                         sizes="(max-width: 900px) 92vw, 540px"
+                         width="1440" height="900" loading="lazy"
+                         alt="Tampilan AkunTuntas mode UMKM atau Orang Pribadi">
+                </div>
+                <div class="jendela-kaki"><span>Menu disesuaikan untuk usaha perseorangan</span><span>Data contoh</span></div>
+            </div>
+
+            <div class="jendela">
+                <div class="jendela-kepala">
+                    <span class="jendela-titik"><i></i><i></i><i></i></span>
+                    <b>Mode PT</b>
+                </div>
+                <div class="jendela-isi">
+                    <img src="tangkapan/pt-1440.webp"
+                         srcset="tangkapan/pt-720.webp 720w,
+                                 tangkapan/pt-1440.webp 1440w"
+                         sizes="(max-width: 900px) 92vw, 540px"
+                         width="1440" height="900" loading="lazy"
+                         alt="Tampilan AkunTuntas mode PT dengan menu lengkap">
+                </div>
+                <div class="jendela-kaki"><span>Menu lengkap untuk perseroan</span><span>Data contoh</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================================================== data & lisensi -->
+<section class="bagian" id="aman">
+    <div class="wadah">
+        <div class="bagian-kepala">
+            <div>
+                <span class="label-bagian">Data &amp; lisensi</span>
+                <h2>Data pembukuan tetap milik Anda.</h2>
+            </div>
+            <p>
+                Tidak ada server data milik kami, tidak ada langganan yang
+                mengunci pekerjaan Anda, dan tidak ada biaya per transaksi.
+            </p>
+        </div>
+
+        <div class="pilar">
+            <div>
+                <span class="pilar-nomor">01</span>
+                <h3>Tersimpan lokal</h3>
+                <p>
+                    Basis data berada di komputer Anda. Kami tidak memiliki
+                    akses dan tidak dapat melihat isi pembukuan.
                 </p>
             </div>
-            <div class="langkah">
-                <div class="langkah-nomor">2</div>
-                <h4>Unduh &amp; pasang</h4>
+            <div>
+                <span class="pilar-nomor">02</span>
+                <h3>Bekerja offline</h3>
                 <p>
-                    Buka halaman unduh, masukkan kunci lisensi, lalu jalankan
-                    pemasang yang terunduh.
+                    Setelah aktivasi, aplikasi berjalan penuh tanpa internet.
+                    Koneksi hanya dipakai sesekali untuk memeriksa lisensi.
                 </p>
             </div>
-            <div class="langkah">
-                <div class="langkah-nomor">3</div>
-                <h4>Aktifkan &amp; mulai</h4>
+            <div>
+                <span class="pilar-nomor">03</span>
+                <h3>Cadangan otomatis</h3>
                 <p>
-                    Masukkan kunci lisensi pada layar aktivasi. Aktivasi hanya
-                    sekali dan butuh internet sebentar saja.
+                    Aplikasi membuat cadangan data secara berkala. Anda juga
+                    dapat menyimpan salinan di drive sendiri.
+                </p>
+            </div>
+            <div>
+                <span class="pilar-nomor">04</span>
+                <h3>Lisensi yang adil</h3>
+                <p>
+                    Sekali bayar, tanpa biaya bulanan. Lisensi dapat dipindahkan
+                    ke komputer lain dengan melepas perangkat lama.
                 </p>
             </div>
         </div>
@@ -461,17 +805,17 @@
 </section>
 
 <!-- ==================================================== harga -->
-<section class="bagian" id="harga">
+<section class="bagian bagian-krem" id="harga">
     <div class="wadah">
         <div class="judul-bagian">
-            <h2>Pilih lisensi sesuai kebutuhan usaha</h2>
+            <span class="label-bagian" style="justify-content:center;">Harga</span>
+            <h2>Sekali bayar, dipakai selamanya.</h2>
             <p>
-                Sekali bayar, berlaku selamanya. Tidak ada biaya bulanan
-                maupun biaya per transaksi.
+                Kedua paket memakai aplikasi yang sama. Tidak ada biaya
+                bulanan maupun biaya per transaksi.
             </p>
         </div>
 
-        <!-- ---------------------------------------- ringkasan harga -->
         <div class="kisi-harga">
             <div class="kartu-harga">
                 <h3>Standar</h3>
@@ -479,29 +823,36 @@
                 <div class="harga">Rp3.499.000</div>
                 <p class="harga-ket">Sekali bayar, berlaku selamanya</p>
                 <ul class="inti-harga">
-                    <li><strong>1</strong> perangkat</li>
+                    <li><strong>1 perangkat</strong></li>
                     <li>Pembukuan, pajak dasar, dan laporan SAK EMKM</li>
                     <li>Pembaruan versi <strong>1 tahun</strong></li>
+                    <li>Bantuan teknis lewat email</li>
                 </ul>
                 <a class="tombol tombol-garis" href="beli.html?paket=standar">Beli Paket Standar</a>
             </div>
 
             <div class="kartu-harga unggulan">
-                <span class="label-unggulan">Paling Lengkap</span>
+                <span class="label-unggulan">Paling lengkap</span>
                 <h3>Enterprise</h3>
                 <p class="sasaran">Untuk PT, grup usaha, dan kantor akuntan</p>
                 <div class="harga">Rp5.499.000</div>
                 <p class="harga-ket">Sekali bayar, berlaku selamanya</p>
                 <ul class="inti-harga">
-                    <li><strong>10</strong> perangkat</li>
-                    <li>Seluruh fitur Standar, ditambah fitur lanjutan</li>
+                    <li><strong>10 perangkat</strong></li>
+                    <li>Seluruh fitur Standar, ditambah pajak lanjutan dan faktur pajak</li>
+                    <li>Multi-entitas, cabang, dan dimensi biaya</li>
                     <li>Pembaruan versi <strong>2 tahun</strong></li>
+                    <li>Bantuan teknis lewat email dan WhatsApp</li>
                 </ul>
                 <a class="tombol" href="beli.html?paket=enterprise">Beli Paket Enterprise</a>
             </div>
         </div>
 
-        <!-- ---------------------------------------- perbandingan -->
+        <p class="harga-catatan">
+            Pembayaran melalui QRIS. Setelah bukti diterima, kunci lisensi
+            dikirim lewat WhatsApp atau email.
+        </p>
+
         <div class="banding">
             <h3 class="banding-judul">Perbandingan lengkap fitur</h3>
             <p class="banding-ket">
@@ -835,14 +1186,58 @@
                 <a href="kontak.html">Hubungi Kami</a>.
             </p>
         </div>
+
+    </div>
+</section>
+
+<!-- ==================================================== cara -->
+<section class="bagian" id="cara">
+    <div class="wadah">
+        <div class="bagian-kepala">
+            <div>
+                <span class="label-bagian">Cara mulai</span>
+                <h2>Mulai bekerja dalam tiga langkah.</h2>
+            </div>
+            <p>Tanpa pemasangan server, tanpa pelatihan panjang.</p>
+        </div>
+
+        <div class="langkah-kisi">
+            <div class="langkah">
+                <div class="langkah-nomor">1</div>
+                <h4>Beli lisensi</h4>
+                <p>
+                    Pilih paket Standar atau Enterprise di halaman pembelian,
+                    lalu bayar melalui QRIS dan kirim bukti pembayaran.
+                </p>
+            </div>
+            <div class="langkah">
+                <div class="langkah-nomor">2</div>
+                <h4>Unduh &amp; pasang</h4>
+                <p>
+                    Buka halaman unduh, jalankan pemasang untuk Windows 10/11
+                    64-bit, lalu buka aplikasi.
+                </p>
+            </div>
+            <div class="langkah">
+                <div class="langkah-nomor">3</div>
+                <h4>Aktifkan &amp; mulai</h4>
+                <p>
+                    Masukkan kunci lisensi pada layar aktivasi. Aktivasi hanya
+                    sekali dan butuh internet sebentar saja.
+                </p>
+            </div>
+        </div>
     </div>
 </section>
 
 <!-- ==================================================== ketentuan -->
-<section class="bagian bagian-abu" id="ketentuan">
+<section class="bagian bagian-krem" id="ketentuan">
     <div class="wadah">
-        <div class="judul-bagian">
-            <h2>Ketentuan pemakaian lisensi</h2>
+        <div class="bagian-kepala">
+            <div>
+                <span class="label-bagian">Ketentuan lisensi</span>
+                <h2>Aturan pemakaian yang jelas.</h2>
+            </div>
             <p>
                 Agar software ini tetap dapat dikembangkan dan tidak
                 disalahgunakan, pemakaian lisensi mengikuti ketentuan berikut.
@@ -892,8 +1287,8 @@
                     <h4>Batas jumlah perangkat</h4>
                     <p>
                         Lisensi Standar berlaku untuk 1 perangkat. Lisensi
-                        Enterprise berlaku sesuai jumlah perangkat yang tertera.
-                        Perangkat dapat dipindahkan dengan melepas perangkat lama.
+                        Enterprise berlaku untuk 10 perangkat. Perangkat dapat
+                        dipindahkan dengan melepas perangkat lama.
                     </p>
                 </div>
             </div>
@@ -928,7 +1323,9 @@
 <section class="bagian" id="tanya">
     <div class="wadah">
         <div class="judul-bagian">
-            <h2>Pertanyaan yang sering diajukan</h2>
+            <span class="label-bagian" style="justify-content:center;">Pertanyaan</span>
+            <h2>Yang sering ditanyakan.</h2>
+            <p>Bila jawabannya belum ada di sini, hubungi kami melalui WhatsApp.</p>
         </div>
 
         <div class="tanya">
@@ -948,6 +1345,16 @@
                     Bisa. Setelah aktivasi, aplikasi berjalan penuh tanpa internet.
                     Sambungan internet hanya dibutuhkan sesekali untuk memastikan
                     lisensi masih berlaku.
+                </div>
+            </details>
+
+            <details>
+                <summary>Bagaimana cara membayar dan menerima lisensi?</summary>
+                <div class="jawab">
+                    Pilih paket di <a href="beli.html">halaman pembelian</a>, lalu
+                    bayar melalui QRIS yang nominalnya sudah sesuai paket. Kirim
+                    bukti pembayaran lewat WhatsApp; kunci lisensi dikirim kembali
+                    melalui WhatsApp atau email yang Anda cantumkan.
                 </div>
             </details>
 
@@ -988,6 +1395,24 @@
             </details>
 
             <details>
+                <summary>Apakah bisa memasukkan data awal dari Excel?</summary>
+                <div class="jawab">
+                    Aplikasi menyediakan impor data massal untuk memasukkan data
+                    awal tanpa mengetik satu per satu. Untuk bantuan penyiapan
+                    data awal, hubungi kami melalui WhatsApp.
+                </div>
+            </details>
+
+            <details>
+                <summary>Berapa komputer yang bisa memakai satu lisensi?</summary>
+                <div class="jawab">
+                    Paket Standar berlaku untuk 1 perangkat dan paket Enterprise
+                    untuk 10 perangkat. Perangkat dapat diganti dengan melepas
+                    perangkat lama dari dalam aplikasi.
+                </div>
+            </details>
+
+            <details>
                 <summary>Apakah bisa dipasang di Mac atau Linux?</summary>
                 <div class="jawab">
                     Untuk saat ini AkunTuntas tersedia untuk Windows 64-bit.
@@ -1001,22 +1426,22 @@
 <!-- ==================================================== ajakan -->
 <section class="ajakan">
     <div class="wadah">
+        <span class="label-bagian">Mulai dari satu lisensi</span>
         <h2>Siap menuntaskan pembukuan usaha Anda?</h2>
         <p>
-            Hubungi kami untuk pembelian lisensi, pertanyaan teknis, atau
-            penawaran khusus untuk kantor akuntan dan konsultan pajak.
+            Pilih paket, bayar melalui QRIS, dan mulai membukukan. Untuk
+            pertanyaan teknis atau penawaran kantor akuntan, kami siap membantu.
         </p>
-
         <div class="kontak-baris">
-            <a class="tombol tombol-besar" href="kontak.html">
-                Hubungi Kami
-            </a>
-            <a class="tombol tombol-besar tombol-garis"
+            <a class="tombol tombol-besar" href="beli.html">Beli lisensi</a>
+            <a class="tombol tombol-garis tombol-besar"
                href="https://wa.me/6282224293639?text=Halo%2C%20saya%20ingin%20bertanya%20tentang%20AkunTuntas"
                target="_blank" rel="noopener">WhatsApp</a>
         </div>
     </div>
 </section>
+
+</main>
 
 <!-- ==================================================== kaki -->
 <footer class="kaki">
@@ -1029,23 +1454,26 @@
                 </div>
                 <p style="max-width: 320px;">
                     Software pembukuan dan perpajakan untuk UMKM, PT Perorangan,
-                    dan PT di Indonesia.
+                    dan PT di Indonesia. Sekali bayar, bekerja offline.
                 </p>
             </div>
 
             <div class="kaki-kolom">
                 <h5>Produk</h5>
                 <a href="#fitur">Fitur</a>
+                <a href="#produk">Tampilan aplikasi</a>
                 <a href="#harga">Harga</a>
-                <a href="#cara">Cara Kerja</a>
+                <a href="#cara">Cara kerja</a>
                 <a href="unduh.html">Unduh</a>
             </div>
 
             <div class="kaki-kolom">
                 <h5>Ketentuan</h5>
                 <a href="#ketentuan">Lisensi</a>
-                <a href="#ketentuan">Hak Cipta</a>
+                <a href="#ketentuan">Hak cipta</a>
                 <a href="#tanya">Pertanyaan</a>
+                <a href="privasi.html">Kebijakan privasi</a>
+                <a href="rilis.html">Catatan rilis</a>
             </div>
 
             <div class="kaki-kolom">
@@ -1058,9 +1486,7 @@
 
         <div class="kaki-bawah">
             <span>&copy; 2026 Xinet Group. Seluruh hak cipta dilindungi.</span>
-            <span>AkunTuntas - Pembukuan &amp; Pajak Perusahaan Indonesia</span>
-            <span><a href="privasi.html" style="color: #8FA7BE;">Kebijakan Privasi</a></span>
-            <span><a href="rilis.html" style="color: #8FA7BE;">Catatan Rilis</a></span>
+            <span>AkunTuntas — Pembukuan &amp; Pajak Perusahaan Indonesia</span>
             <span class="kaki-store">
                 <a href="https://apps.microsoft.com/detail/9nl8sbc4c5n4?hl=id-ID&amp;gl=ID"
                    target="_blank" rel="noopener"
@@ -1068,11 +1494,10 @@
                     <img src="ms-store-kecil.png" alt="Tersedia di Microsoft Store"
                          width="132" height="40" loading="lazy">
                 </a>
-                <span>Tersedia di Microsoft Store</span>
             </span>
         </div>
-</div>
-    </footer>
+    </div>
+</footer>
 
 </body>
 </html>
