@@ -19,10 +19,12 @@ from pathlib import Path
 AKAR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(AKAR / "src"))
 
-from akuntansi_id import db  # noqa: E402
+# Data uji harus ditetapkan SEBELUM akuntansi_id diimpor: config membaca
+# variabel ini sekali saat modul dimuat. Bila urutannya terbalik, aplikasi
+# memakai data pengguna sungguhan dan potret tidak lagi terisolasi.
+os.environ["AKUNTANSIID_DATA"] = str(AKAR / "_data_potret_ui")
 
-# Data uji dipakai supaya halaman berisi angka, bukan keadaan kosong.
-os.environ.setdefault("AKUNTUNTAS_DATA", str(AKAR / "_data_potret"))
+from akuntansi_id import db  # noqa: E402
 
 # Jendela digambar memakai platform asli, bukan offscreen: render
 # offscreen tidak memakai huruf sistem sehingga seluruh teks tampil
@@ -37,7 +39,8 @@ HALAMAN = [
     "penjualan",
     "pembelian",
     "jurnal",
-    "kas_bank",
+    "biaya",
+    "bank",
     "pajak",
     "laporan",
     "aset",
@@ -52,6 +55,12 @@ def siapkan_data():
     from akuntansi_id import coa
 
     db.init_db()
+    # Menu samping selalu ditampilkan pada potret, supaya hasilnya sama
+    # setiap kali dijalankan meskipun ada percobaan yang pernah
+    # menyembunyikannya pada basis data potret.
+    db.ex("INSERT INTO settings(key, value) VALUES(?, ?) "
+          "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+          ("sidebar_tersembunyi", "0"))
     perusahaan = db.q("SELECT id FROM companies ORDER BY id LIMIT 1")
     if not perusahaan:
         cid = db.ex(
@@ -85,7 +94,6 @@ def main() -> int:
     # pengaturan tampilan disamakan dengan aplikasi sungguhan, supaya
     # potretnya benar benar menggambarkan yang dilihat pengguna.
     from PySide6.QtCore import Qt
-    from PySide6.QtGui import QFont
     from akuntansi_id.ui import theme as tema
 
     QApplication.setHighDpiScaleFactorRoundingPolicy(
@@ -95,8 +103,11 @@ def main() -> int:
         app = QApplication([])
     app.setStyle("Fusion")
     tema.palet_terang(app)
-    app.setFont(QFont("Segoe UI", 10))
+    # Huruf aplikasi dipasang oleh tema, sama seperti saat aplikasi berjalan.
     app.setStyleSheet(tema.stylesheet())
+    # Samakan dengan aplikasi sungguhan: tinggi tombol angka dipatok dan
+    # label dialog dirapikan saat jendela ditampilkan.
+    tema.pasang_penyesuai_dialog(app)
 
     # Buat hasil login dari akun yang ada, sama seperti setelah pengguna
     # masuk. Bila belum ada akun, buat satu supaya halaman dapat dibuka.

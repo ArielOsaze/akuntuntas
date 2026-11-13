@@ -51,6 +51,20 @@ JENIS = {
 }
 
 
+def _rapikan(teks: str) -> str:
+    """
+    Siapkan teks untuk QLabel berformat HTML.
+
+    Label memakai format HTML, dan di dalam HTML baris baru dibaca sebagai
+    spasi biasa. Tanpa pengubahan ini, pesan berparagraf akan menyatu
+    menjadi satu blok panjang. Teks yang sudah memuat tanda HTML
+    dibiarkan apa adanya.
+    """
+    if "<" in teks:
+        return teks.replace("\n", "<br>")
+    return teks.replace("&", "&amp;").replace("\n", "<br>")
+
+
 class KotakPesan(QDialog):
     """
     Popup pesan bergaya aplikasi.
@@ -103,16 +117,17 @@ class KotakPesan(QDialog):
             "background: transparent;")
         kolom.addWidget(lbl_judul)
 
-        lbl_isi = QLabel(isi)
+        lbl_isi = QLabel(_rapikan(isi))
         lbl_isi.setWordWrap(True)
         lbl_isi.setTextFormat(Qt.RichText)
+        lbl_isi.setOpenExternalLinks(True)
         lbl_isi.setStyleSheet(
             f"font-size: {theme.FS_PESAN}px; color: {C.TEXT}; "
             "background: transparent; line-height: 170%;")
         kolom.addWidget(lbl_isi)
 
         if rincian:
-            lbl_rinci = QLabel(rincian)
+            lbl_rinci = QLabel(_rapikan(rincian))
             lbl_rinci.setWordWrap(True)
             lbl_rinci.setStyleSheet(
                 f"font-size: {theme.FS_BODY}px; color: {C.TEXT_MUTED}; "
@@ -121,13 +136,6 @@ class KotakPesan(QDialog):
 
         kl.addLayout(kolom, 1)
         luar.addWidget(kepala)
-
-        # ------------------------------------------------------------ isi
-        self.badan = QWidget()
-        bl = QVBoxLayout(self.badan)
-        bl.setContentsMargins(24, 18, 24, 18)
-        bl.setSpacing(12)
-        luar.addWidget(self.badan, 1)
 
         # ---------------------------------------------------------- tombol
         self.kaki = QFrame()
@@ -140,8 +148,19 @@ class KotakPesan(QDialog):
         self._baris_tombol = kkl
         luar.addWidget(self.kaki)
 
-        self.setMinimumWidth(lebar)
-        self.setMaximumWidth(lebar + 160)
+        # Lebar dikunci supaya teks panjang terbungkus pada lebar yang sama
+        # di setiap popup, dan tinggi dihitung dari hasil bungkusnya.
+        self.setFixedWidth(lebar)
+        self.setSizeGripEnabled(False)
+
+    def _pas_ukuran(self):
+        luar = self.layout()
+        luar.activate()
+        self.resize(self.width(), luar.heightForWidth(self.width()))
+
+    def showEvent(self, ev):
+        self._pas_ukuran()
+        super().showEvent(ev)
 
     # ------------------------------------------------------------------
     def tambah_tombol(self, kode: str, teks: str, gaya: str = "biasa",
@@ -227,12 +246,17 @@ def galat(induk, judul: str, isi: str, rincian: str = "",
 
 
 def tanya(induk, judul: str, isi: str, rincian: str = "",
-          teks_ya: str = "Ya", teks_tidak: str = "Batal") -> bool:
+          teks_ya: str = "Ya", teks_tidak: str = "Batal",
+          jenis: str = "tanya") -> bool:
     """
     Pertanyaan dengan dua pilihan. Mengembalikan True bila pengguna
     memilih pilihan pertama.
+
+    Pakai jenis "peringatan" untuk tindakan yang sulit dibatalkan, misalnya
+    menghapus data atau memulihkan cadangan, supaya ikon dan warnanya
+    memperingatkan sebelum pengguna menekan tombol.
     """
-    k = KotakPesan(induk, judul, isi, "tanya", rincian)
+    k = KotakPesan(induk, judul, isi, jenis, rincian)
     k.tambah_tombol("tidak", teks_tidak, "biasa")
     k.tambah_tombol("ya", teks_ya, "primary", utama=True)
     k.exec()

@@ -144,7 +144,8 @@ def utama() -> int:
         [chrome, "--headless=new", "--disable-gpu", "--no-sandbox",
          "--window-size=1080,1920", "--virtual-time-budget=6000",
          "--dump-dom", (tujuan / "overlay.html").as_uri()],
-        capture_output=True, text=True, timeout=180)
+        capture_output=True, text=True, encoding="utf-8",
+        errors="replace", timeout=180)
 
     dom = keluaran.stdout
     m = re.search(r'<pre id="hasil-ukur">(.*?)</pre>', dom, re.DOTALL)

@@ -41,6 +41,7 @@ _LISENSI_UJI = _LisensiUji(kunci='ATNTUJI', paket='enterprise', fitur={})
 def periksa_halaman(jw: MainWindow) -> tuple:
     """Hitung sel tabel yang akan digambar Qt dengan elipsis."""
     total = 0
+    panjang = 0
     terpotong = []
     for nama in [item[0] for _seksi, daftar in Sidebar.MENU for item in daftar]:
         try:
@@ -67,14 +68,29 @@ def periksa_halaman(jw: MainWindow) -> tuple:
                     opt.text = item.text()
                     kotak = tabel.style().subElementRect(
                         QStyle.SE_ItemViewItemText, opt, tabel)
-                    metrik = QFontMetrics(opt.font)
+                    # Font sel dapat berbeda dari font tampilan, misalnya
+                    # kolom saldo dicetak tebal. Mengukur dengan font tampilan
+                    # membuat sel bold yang terpotong tetap lolos audit.
+                    metrik = QFontMetrics(item.font())
                     total += 1
                     if metrik.elidedText(item.text(), Qt.ElideRight,
                                          kotak.width()) != item.text():
+                        # Sel pada kolom fleksibel dan keterangan panjang
+                        # boleh memakai elipsis asal teks utuhnya tersedia
+                        # lewat tooltip. Nomor, nominal, dan status pada
+                        # kolom tetap tidak boleh terpotong.
+                        kolom_fleksibel = (
+                            0 <= c < len(getattr(tabel, "_kolom", []))
+                            and tabel._kolom[c][1] < 0)
+                        if (item.toolTip() == item.text()
+                                and (kolom_fleksibel
+                                     or len(item.text()) > 30)):
+                            panjang += 1
+                            continue
                         terpotong.append(
                             (nama, item.text(), kotak.width(),
                              metrik.horizontalAdvance(item.text())))
-    return total, terpotong
+    return total, panjang, terpotong
 
 
 def main() -> int:
@@ -94,16 +110,19 @@ def main() -> int:
         time.sleep(0.01)
 
     jumlah_sel = 0
+    jumlah_panjang = 0
     semua = []
     for lebar in (1440, 1280, 1100):
         jw.resize(lebar, 820)
         for _ in range(30):
             app.processEvents()
             time.sleep(0.015)
-        total, terpotong = periksa_halaman(jw)
+        total, panjang, terpotong = periksa_halaman(jw)
         jumlah_sel += total
+        jumlah_panjang += panjang
         semua += [(lebar,) + t for t in terpotong]
-        print(f"lebar {lebar}: {total} sel, {len(terpotong)} terpotong")
+        print(f"lebar {lebar}: {total} sel, {len(terpotong)} terpotong, "
+              f"{panjang} teks fleksibel memakai elipsis")
 
     print()
     for lebar, halaman, teks, lebar_kotak, perlu in semua[:20]:
@@ -113,7 +132,8 @@ def main() -> int:
     if semua:
         print(f"HASIL: {len(semua)} sel terpotong dari {jumlah_sel} sel")
         return 1
-    print(f"HASIL: tidak ada sel terpotong ({jumlah_sel} sel diperiksa)")
+    print(f"HASIL: tidak ada data pendek yang terpotong ({jumlah_sel} sel "
+          f"diperiksa; {jumlah_panjang} teks fleksibel memakai tooltip)")
     return 0
 
 

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import platform
 import socket
 import subprocess
@@ -21,6 +22,11 @@ import sys
 import time
 import urllib.error
 import urllib.request
+
+# Diimpor di tingkat modul supaya PyInstaller ikut membundelnya. Saat impor
+# dilakukan di dalam fungsi, uuid terlewat dari bundel dan sidik perangkat
+# kehilangan komponen MAC, sehingga lisensi lama dianggap milik perangkat lain.
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -171,8 +177,7 @@ def _nomor_disk() -> str:
 
 def _alamat_mac() -> str:
     try:
-        nomor = hex(__import__("uuid").getnode())
-        return nomor
+        return hex(uuid.getnode())
     except Exception:
         return ""
 
@@ -236,6 +241,29 @@ def sidik_cocok(sidik_tersimpan: str) -> bool:
     if not sidik_tersimpan:
         return False
     return sidik_tersimpan in (sidik_perangkat(), sidik_perangkat_versi_lama())
+
+
+def _catat_sidik_tidak_cocok(sidik_tersimpan: str) -> None:
+    """
+    Catat sidik saat lisensi ditolak karena perangkat dianggap berbeda.
+
+    Sidik yang dihitung di dalam aplikasi terpasang dapat berbeda dari sidik
+    saat pengujian, misalnya karena salah satu ciri perangkat tidak terbaca
+    dari dalam EXE. Catatan ini membuat penyebabnya terlihat, bukan sekadar
+    pesan "perangkat lain" tanpa petunjuk.
+    """
+    pesan = (
+        f"Sidik perangkat tidak cocok. "
+        f"Tersimpan: {sidik_tersimpan or '(kosong)'}; "
+        f"sekarang: {sidik_perangkat()}; "
+        f"versi lama: {sidik_perangkat_versi_lama()}")
+    if os.environ.get("AKUNTANSIID_DIAGNOSTIK"):
+        pesan += (
+            f"; ciri: cakram={_nomor_disk()!r}, volume={_nomor_volume()!r}, "
+            f"prosesor={_nomor_prosesor()!r}, wmic={_nomor_prosesor_wmic()!r}, "
+            f"nama={_nama_komputer()!r}, mac={_alamat_mac()!r}, "
+            f"mesin={platform.machine()!r}")
+    _catat(pesan)
 
 
 def nama_windows() -> str:
@@ -587,6 +615,7 @@ def lisensi_sah(data_dir: Path) -> tuple[bool, str, Lisensi | None]:
                        "diubah. Aktifkan ulang dengan kunci lisensi Anda."), None
 
     if not sidik_cocok(lisensi.sidik):
+        _catat_sidik_tidak_cocok(lisensi.sidik)
         return False, ("Lisensi ini terdaftar untuk perangkat lain. "
                        "Aktifkan ulang dengan kunci lisensi Anda."), None
 

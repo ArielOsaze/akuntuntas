@@ -1,10 +1,14 @@
 """
-Periksa tumpang tindih antar elemen yang digambar pada grafik dashboard.
+Periksa tata letak elemen yang digambar manual pada grafik dashboard.
 
-Grafik batang digambar manual dengan QPainter, sehingga tata letaknya tidak
-diperiksa oleh pemeriksa widget biasa. Alat ini menghitung sendiri posisi
-setiap elemen yang digambar (label nilai, label bulan, penanda tren, penunjuk
-bulan terpilih) lalu memastikan tidak ada dua elemen yang saling menimpa.
+Grafik batang digambar dengan QPainter, sehingga pemeriksa widget biasa tidak
+melihat label bulan dan angka sumbu. Alat ini menghitung posisi elemen itu
+pada beberapa lebar jendela, lalu memastikan:
+
+  1. label bulan tidak saling menimpa dan tetap di dalam grafik,
+  2. angka sumbu Y tidak masuk ke bidang grafik,
+  3. sorotan bulan sejajar dengan pasangan batangnya,
+  4. batang tidak keluar dari bidang grafik.
 
 Cara pakai:
     python tools/audit_grafik.py
@@ -32,114 +36,146 @@ from akuntansi_id.ui.pages.dashboard import BarChart
 from akuntansi_id.core.license import Lisensi as _LisensiUji
 _LISENSI_UJI = _LisensiUji(kunci='ATNTUJI', paket='enterprise', fitur={})
 
+# Sama dengan margin di BarChart.paintEvent.
+MARGIN_KIRI, MARGIN_KANAN = 78, 20
+MARGIN_ATAS, MARGIN_BAWAH = 22, 42
 
 
-def kotak_teks(chart: BarChart, bulan_sorot: int) -> list:
-    """Hitung kotak setiap elemen yang digambar grafik pada ukuran sekarang."""
+def periksa(chart: BarChart) -> tuple[int, list[str]]:
+    """Kembalikan jumlah pasangan yang bermasalah beserta keterangannya."""
     lebar, tinggi = chart.width(), chart.height()
-    margin_kiri, margin_kanan = 86, 24
-    margin_atas, margin_bawah = 42, 46
-    lebar_grafik = lebar - margin_kiri - margin_kanan
-    tinggi_grafik = tinggi - margin_atas - margin_bawah
-    dasar = margin_atas + tinggi_grafik
+    lebar_grafik = lebar - MARGIN_KIRI - MARGIN_KANAN
+    tinggi_grafik = tinggi - MARGIN_ATAS - MARGIN_BAWAH
+    if lebar_grafik <= 10 or tinggi_grafik <= 10 or not chart.data:
+        return 0, []
 
-    data = chart.data
-    if not data or lebar_grafik <= 10 or tinggi_grafik <= 10:
-        return []
-
-    maks = max(max(d["pendapatan"], d["beban"] + d["hpp"]) for d in data)
-    maks_bulat = chart._batas_atas(maks)
-    n = len(data)
+    dasar = MARGIN_ATAS + tinggi_grafik
+    n = len(chart.data)
     lebar_grup = lebar_grafik / n
-    lebar_batang = max(5.0, min(16.0, lebar_grup * 0.28))
+    lebar_batang = max(4.0, min(12.0, lebar_grup * 0.24))
     celah = 3.0
+    fm_bulan = QFontMetrics(QFont(theme.FONT_UI, 8))
 
-    fm = QFontMetrics(QFont(theme.FONT_UI, 7))
     kotak = []
-    masalah_jarak: list[str] = []
+    for i in range(n):
+        teks = config.MONTH_ABBR_ID[i]
+        if fm_bulan.horizontalAdvance(teks) + 4 > lebar_grup:
+            teks = teks[0]
+        kiri = MARGIN_KIRI + i * lebar_grup + 2
+        lebar_label = max(1.0, min(lebar_grup - 4, lebar - 4 - kiri))
+        kotak.append((f"bulan {i} ({teks})", kiri, dasar + 11,
+                      lebar_label, 16))
 
-    for i, d in enumerate(data):
-        pusat = margin_kiri + i * lebar_grup + lebar_grup / 2
-        x0 = pusat - lebar_batang - celah / 2
-        h1 = (d["pendapatan"] / maks_bulat) * tinggi_grafik
-        h2 = ((d["beban"] + d["hpp"]) / maks_bulat) * tinggi_grafik
+    masalah: list[str] = []
+    for i in range(len(kotak)):
+        _, x, y, w, h = kotak[i]
+        if x < 0 or y < 0 or x + w > lebar + 0.5 or y + h > tinggi + 0.5:
+            masalah.append(f"label {kotak[i][0]} keluar dari grafik")
+        for j in range(i + 1, len(kotak)):
+            _, bx, by, bw, bh = kotak[j]
+            if not (x + w <= bx or bx + bw <= x
+                    or y + h <= by or by + bh <= y):
+                masalah.append(
+                    f"label {kotak[i][0]} menimpa {kotak[j][0]}")
 
-        tengah1 = x0 + lebar_batang / 2
-        tengah2 = x0 + lebar_batang * 1.5 + celah
-        t1 = chart._nilai_batang(d["pendapatan"])
-        t2 = chart._nilai_batang(d["beban"] + d["hpp"])
-        l1 = fm.horizontalAdvance(t1) + 8
-        l2 = fm.horizontalAdvance(t2) + 8
+    # Angka sumbu Y harus berhenti sebelum bidang grafik. Bila masuk ke
+    # bidang, angka itu bisa tertutup batang bulan pertama.
+    fm_sumbu = QFontMetrics(QFont(theme.FONT_UI, 8))
+    for i in range(5):
+        y = MARGIN_ATAS + tinggi_grafik * i / 4
+        teks = chart._singkat(1_000_000)
+        lebar_teks = fm_sumbu.horizontalAdvance(teks)
+        if lebar_teks > MARGIN_KIRI - 14:
+            masalah.append(
+                f"angka sumbu Y ({lebar_teks}px) melewati margin kiri")
 
-        ada1, ada2 = h1 >= 18, h2 >= 18
-        # Label disembunyikan bila kolom terlalu sempit, sama seperti yang
-        # dilakukan grafik. Tanpa penyesuaian ini, pemeriksaan mengukur label
-        # yang sebenarnya tidak digambar.
-        if lebar_grup < l1 + 6:
-            ada1 = False
-        if lebar_grup < l2 + 6:
-            ada2 = False
-        jarak_label = 8
-        tinggi_label = 13
-        berdekatan = ada1 and ada2 and abs(tengah1 - tengah2) < (l1 + l2) / 2
-        batas = margin_atas - 14
+    # Sorotan dan batang harus memakai geometri yang sama.
+    maks = max((max(d["pendapatan"], d["beban"] + d["hpp"]) for d in chart.data),
+               default=0)
+    laba_min = min((d["laba_sebelum_pajak"] for d in chart.data), default=0)
+    bawah, atas, _garis = chart._sumbu(max(maks, 1), laba_min)
+    selisih = atas - bawah
+    for i, d in enumerate(chart.data):
+        pusat_grup = MARGIN_KIRI + i * lebar_grup + lebar_grup / 2
+        x0 = pusat_grup - lebar_batang - celah / 2
+        pusat_batang = x0 + lebar_batang + celah / 2
+        if abs(pusat_grup - pusat_batang) > 0.5:
+            masalah.append(f"bulan {i}: sorotan tidak sejajar dengan batang")
+        if x0 < MARGIN_KIRI - 0.5 or x0 + 2 * lebar_batang + celah > (
+                lebar - MARGIN_KANAN + 0.5):
+            masalah.append(f"bulan {i}: batang keluar dari bidang grafik")
+        # Batang dan garis laba harus berada di dalam bidang grafik, termasuk
+        # saat laba bulan itu negatif. Sebelumnya garis laba digambar dari
+        # dasar grafik sehingga kerugian jatuh keluar bidang dan terpotong.
+        for nama, nilai in (("pendapatan", d["pendapatan"]),
+                            ("beban", d["beban"] + d["hpp"]),
+                            ("laba", d["laba_sebelum_pajak"])):
+            y = MARGIN_ATAS + ((atas - nilai) / selisih) * tinggi_grafik
+            if y < MARGIN_ATAS - 0.5 or y > MARGIN_ATAS + tinggi_grafik + 0.5:
+                masalah.append(
+                    f"bulan {i}: {nama} keluar dari bidang grafik")
 
-        kotak1 = None
-        if ada1:
-            y = dasar - h1 - jarak_label - tinggi_label
-            if berdekatan:
-                y -= tinggi_label + 1
-            y = max(y, batas)
-            x = min(max(tengah1 - l1 / 2, 2.0), lebar - l1 - 2)
-            kotak1 = (f"nilai pendapatan {t1}", x, y, l1, tinggi_label)
-            kotak.append(kotak1)
-        if ada2:
-            y = max(dasar - h2 - jarak_label - tinggi_label, batas)
-            x = min(max(tengah2 - l2 / 2, 2.0), lebar - l2 - 2)
-            if kotak1 is not None:
-                x1, y1, w1 = kotak1[1], kotak1[2], kotak1[3]
-                # Logika pergeseran harus sama dengan yang dipakai grafik,
-                # supaya pemeriksaan ini mengukur keadaan yang sebenarnya.
-                if not (x + l2 <= x1 or x1 + w1 <= x):
-                    batas_bawah = dasar - tinggi_label - 2
-                    if abs(y - y1) < tinggi_label + 2:
-                        y = min(y1 + tinggi_label + 3, batas_bawah)
-                    if abs(y - y1) < tinggi_label + 2:
-                        geser = x1 + w1 - x + 2
-                        if x + geser + l2 <= lebar - 2:
-                            x += geser
-                        elif x1 - l2 - 2 >= 2:
-                            x = x1 - l2 - 2
-            kotak.append((f"nilai beban {t2}", x, y, l2, tinggi_label))
-
-        # jarak label ke puncak batang tidak boleh nol (menempel)
-        if ada1 and not berdekatan:
-            celah1 = (dasar - h1) - (kotak1[2] + tinggi_label)
-            if celah1 < 2:
-                masalah_jarak.append(
-                    f"bulan {i}: label pendapatan menempel batang "
-                    f"(jarak {celah1:.0f}px)")
-        if ada2:
-            y_label2 = [k for k in kotak if k[0].startswith("nilai beban")][-1][2]
-            celah2 = (dasar - h2) - (y_label2 + tinggi_label)
-            if celah2 < 2:
-                masalah_jarak.append(
-                    f"bulan {i}: label beban menempel batang (jarak {celah2:.0f}px)")
-
-        fm_bulan = QFontMetrics(QFont(theme.FONT_UI, 8))
-        teks_bulan = config.MONTH_ABBR_ID[i]
-        if fm_bulan.horizontalAdvance(teks_bulan) + 4 > lebar_grup:
-            teks_bulan = teks_bulan[0]
-        kotak.append((f"bulan {i} ({teks_bulan})", margin_kiri + i * lebar_grup + 2,
-                      dasar + 11, max(1.0, lebar_grup - 4), 16))
-
-    return kotak, masalah_jarak
+    return len(masalah), masalah
 
 
-def tumpang(a, b) -> bool:
-    _, ax, ay, aw, ah = a
-    _, bx, by, bw, bh = b
-    return not (ax + aw <= bx or bx + bw <= ax or ay + ah <= by or by + bh <= ay)
+def periksa_sumbu() -> list[str]:
+    """Periksa sumbu Y untuk bulan yang merugi."""
+    masalah = []
+    data = []
+    for i in range(12):
+        pendapatan = 20_000_000 + i * 5_000_000
+        beban = 12_000_000
+        data.append({
+            "pendapatan": pendapatan, "beban": beban, "hpp": 0,
+            "laba_sebelum_pajak": pendapatan - beban,
+        })
+    data[4].update(pendapatan=5_000_000, beban=30_000_000,
+                   laba_sebelum_pajak=-25_000_000)
+
+    chart = BarChart()
+    chart.resize(760, 300)
+    chart.set_data(data)
+    temuan, masalah = periksa(chart)
+    if temuan:
+        masalah.insert(0, f"{temuan} unsur grafik keluar bidang pada data rugi")
+
+    bawah, atas, garis = chart._sumbu(70_000_000, -25_000_000)
+    if bawah > -25_000_000:
+        masalah.append("sumbu tidak turun sampai kerugian terdalam")
+    if any(abs(nilai) < 0.01 for nilai in garis) is False:
+        masalah.append("garis nol tidak mendapat label")
+    if garis != sorted(garis):
+        masalah.append("garis bantu tidak berurutan")
+    if "-" not in chart._singkat(-25_000_000):
+        masalah.append("angka sumbu negatif tidak memakai tanda minus")
+    return masalah
+
+
+def periksa_latar_kartu(chart: BarChart) -> list[str]:
+    """Pastikan kartu grafik benar-benar putih, bukan tembus pandang.
+
+    Aturan gaya tanpa selector pada wadah di atas kartu dapat menular dan
+    menghapus latar kartu. Bila itu terjadi, bidang grafik tampak sebagai
+    kotak putih yang ditempel di atas latar krem halaman.
+    """
+    from PySide6.QtGui import QColor
+
+    kartu = chart
+    while kartu is not None and kartu.objectName() not in ("Card", "CardFlat"):
+        kartu = kartu.parentWidget()
+    if kartu is None:
+        return ["kartu grafik tidak ditemukan"]
+
+    gambar = kartu.grab().toImage()
+    if gambar.isNull():
+        return ["kartu grafik gagal digambar"]
+    x = min(20, gambar.width() - 1)
+    y = min(20, gambar.height() - 1)
+    warna = QColor(gambar.pixel(x, y))
+    if warna.alpha() < 250 or min(warna.red(), warna.green(), warna.blue()) < 246:
+        return [f"latar kartu grafik tidak putih "
+                f"({warna.name()}, alfa {warna.alpha()})"]
+    return []
 
 
 def main() -> int:
@@ -169,27 +205,39 @@ def main() -> int:
         jw.resize(lebar_uji, 900)
         for _ in range(10):
             app.processEvents()
-        kotak, masalah_jarak = kotak_teks(chart, -1)
-        pasangan = 0
-        temuan = []
-        for i in range(len(kotak)):
-            for j in range(i + 1, len(kotak)):
-                pasangan += 1
-                if tumpang(kotak[i], kotak[j]):
-                    temuan.append((kotak[i][0], kotak[j][0]))
-        jumlah_temuan += len(temuan) + len(masalah_jarak)
-        print(f"lebar {lebar_uji}: {len(kotak)} elemen, {pasangan} pasangan, "
-              f"{len(temuan)} tumpang, {len(masalah_jarak)} menempel")
-        for a, b in temuan[:6]:
-            print(f"    {a!r} x {b!r}")
-        for m in masalah_jarak[:6]:
+        temuan, masalah = periksa(chart)
+        jumlah_temuan += temuan
+        print(f"lebar {lebar_uji}: {len(chart.data)} bulan, "
+              f"{temuan} masalah tata letak")
+        for m in masalah[:6]:
             print(f"    {m}")
+
+    jw.resize(1440, 900)
+    for _ in range(10):
+        app.processEvents()
+    masalah_kartu = periksa_latar_kartu(chart)
+    if masalah_kartu:
+        jumlah_temuan += len(masalah_kartu)
+        print("[GAGAL] latar kartu grafik:")
+        for m in masalah_kartu[:6]:
+            print(f"    {m}")
+    else:
+        print("[LULUS] kartu grafik putih penuh, bukan tembus pandang")
+
+    masalah_sumbu = periksa_sumbu()
+    if masalah_sumbu:
+        jumlah_temuan += len(masalah_sumbu)
+        print("[GAGAL] sumbu bulan merugi:")
+        for m in masalah_sumbu[:6]:
+            print(f"    {m}")
+    else:
+        print("[LULUS] bulan merugi tetap tampil di dalam bidang grafik")
 
     print()
     if jumlah_temuan:
-        print(f"HASIL: {jumlah_temuan} elemen grafik saling menimpa")
+        print(f"HASIL: {jumlah_temuan} masalah tata letak grafik")
         return 1
-    print("HASIL: tidak ada elemen grafik yang saling menimpa")
+    print("HASIL: grafik rapi pada seluruh ukuran dan data yang diuji")
     return 0
 
 

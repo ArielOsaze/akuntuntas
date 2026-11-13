@@ -1,6 +1,6 @@
 {
   "name": "AkunTuntas",
-  "version": "1.0.0",
+  "version": "1.4.6",
   "description": "Pembukuan & Pajak Perusahaan Indonesia",
   "author": "AkunTuntas",
   "license": "Proprietary",
@@ -34,6 +34,7 @@
     "Analisis kesehatan keuangan 30+ pemeriksaan",
     "Kalender & kalkulator sanksi pajak",
     "Mode Pemula / Ahli",
+    "Bekerja dengan dua halaman berdampingan",
     "Database lokal SQLite (sepenuhnya offline)"
   ],
   "regulasi": {
@@ -61,7 +62,7 @@
   "verifikasi": {
     "uji_backend": 320,
     "uji_antarmuka": 107,
-    "uji_antarmuka_mendalam": 120,
+    "uji_antarmuka_mendalam": 132,
     "uji_kepatuhan_pajak": 70,
     "tabel_ter": "Cocok 100% dengan PMK 168/2023"
   }

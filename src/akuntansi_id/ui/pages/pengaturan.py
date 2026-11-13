@@ -8,15 +8,16 @@ AkunTuntas - Halaman Pengaturan, Checklist Kepatuhan & Bantuan
 from __future__ import annotations
 
 import os
+import shutil
 from datetime import datetime
 
 from PySide6.QtCore import Qt, Signal, QTimer, QUrl
-from PySide6.QtGui import QDesktopServices, QTextCursor
+from PySide6.QtGui import QDesktopServices, QPixmap, QTextCursor
 from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
-    QPushButton, QDialog, QMessageBox, QInputDialog, QGridLayout, QLineEdit,
-    QCheckBox, QTabWidget, QFileDialog, QListWidget, QListWidgetItem,
-    QStackedWidget, QTextEdit, QSpinBox,
+    QPushButton, QDialog, QInputDialog, QGridLayout, QLineEdit,
+    QCheckBox, QFrame, QFileDialog, QListWidget, QListWidgetItem,
+    QScrollArea, QStackedWidget, QTextEdit, QSpinBox,
 )
 
 from ... import config, coa, db, services
@@ -27,6 +28,7 @@ from ..theme import C
 from .. import widgets as w
 
 from pathlib import Path
+from .. import popup
 
 
 # ==========================================================================
@@ -136,8 +138,7 @@ class PengaturanPage(QWidget):
         kl.addWidget(self.header)
         luar.addWidget(kepala)
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         wadah = QWidget()
         wl = QVBoxLayout(wadah)
         wl.setContentsMargins(22, 16, 22, 22)
@@ -243,6 +244,8 @@ class PengaturanPage(QWidget):
         baris = QHBoxLayout()
         baris.setSpacing(11)
         self.rb_pemula = QPushButton("  Mode Pemula")
+        self.rb_pemula.setObjectName("ModeChoice")
+        self.rb_pemula.setCursor(Qt.PointingHandCursor)
         self.rb_pemula.setCheckable(True)
         self.rb_pemula.setChecked(self.ctx.beginner)
         self.rb_pemula.setMinimumHeight(42)
@@ -250,6 +253,8 @@ class PengaturanPage(QWidget):
         baris.addWidget(self.rb_pemula)
 
         self.rb_ahli = QPushButton("  Mode Ahli")
+        self.rb_ahli.setObjectName("ModeChoice")
+        self.rb_ahli.setCursor(Qt.PointingHandCursor)
         self.rb_ahli.setCheckable(True)
         self.rb_ahli.setChecked(not self.ctx.beginner)
         self.rb_ahli.setMinimumHeight(42)
@@ -344,6 +349,9 @@ class PengaturanPage(QWidget):
         l3.addWidget(self.cmb_tahun)
         lay.addWidget(kartu3)
 
+        # identitas dokumen cetak
+        lay.addWidget(self._kartu_dokumen_cetak())
+
         # info lokasi data
         kartu4 = w.Card()
         l4 = kartu4.body()
@@ -377,6 +385,282 @@ class PengaturanPage(QWidget):
         lay.addWidget(kartu4)
         lay.addStretch()
 
+    def _kartu_dokumen_cetak(self):
+        """
+        Kartu pengaturan identitas dokumen: tanda air dan pengesahan.
+
+        Tanda air berguna untuk menandai salinan yang beredar, sedangkan
+        blok tanda tangan memberi tempat pengesahan yang tetap dan segel
+        berisi kode verifikasi isi dokumen.
+        """
+        st = db.setelan_cetak()
+        comp = (services.get_company(self.ctx.company_id)
+                if self.ctx.company_id else {}) or {}
+        nama_bawaan = (st["ttd_nama"]
+                       or getattr(self.ctx, "full_name", "")
+                       or getattr(self.ctx, "username", ""))
+        kota_bawaan = st["ttd_kota"] or comp.get("kota", "")
+
+        kartu = w.Card()
+        l = kartu.body()
+        j = QLabel("Dokumen Cetak & Tanda Tangan")
+        j.setObjectName("SectionTitle")
+        l.addWidget(j)
+        l.addWidget(w.label(
+            "Pengaturan ini berlaku untuk semua hasil cetak dan PDF. "
+            "Tanda air menandai dokumen yang beredar, sedangkan segel "
+            "verifikasi memuat kode yang dihitung dari isi dokumen.",
+            objek="Muted", wrap=True))
+
+        self.chk_air = QCheckBox("Tampilkan tanda air di setiap halaman")
+        self.chk_air.setChecked(st["air_aktif"])
+        l.addWidget(self.chk_air)
+
+        baris_air = QHBoxLayout()
+        baris_air.setSpacing(9)
+        self.txt_air = QLineEdit(st["air_teks"])
+        self.txt_air.setPlaceholderText("{perusahaan}")
+        self.txt_air.setClearButtonEnabled(True)
+        baris_air.addWidget(self.txt_air, 1)
+
+        self.cmb_pekat = QComboBox()
+        for teks, nilai in (("Ringan · 5%", 5), ("Sedang · 8%", 8),
+                            ("Tegas · 12%", 12)):
+            self.cmb_pekat.addItem(teks, nilai)
+        idx = self.cmb_pekat.findData(st["air_pekat"])
+        if idx < 0:
+            self.cmb_pekat.addItem(f"Khusus · {st['air_pekat']}%",
+                                   st["air_pekat"])
+            idx = self.cmb_pekat.count() - 1
+        self.cmb_pekat.setCurrentIndex(idx)
+        self.cmb_pekat.setMinimumWidth(118)
+        baris_air.addWidget(self.cmb_pekat)
+        l.addLayout(baris_air)
+        l.addWidget(w.label(
+            "Teks boleh memakai {perusahaan}, {tanggal}, dan {tahun}. "
+            "Tanda air dicetak diagonal dengan kepekatan rendah agar isi "
+            "tabel tetap terbaca.", objek="Faint", wrap=True))
+
+        garis = QFrame()
+        garis.setObjectName("Divider")
+        l.addWidget(garis)
+
+        self.chk_ttd = QCheckBox(
+            "Cetak blok tanda tangan dan segel verifikasi")
+        self.chk_ttd.setChecked(st["ttd_aktif"])
+        l.addWidget(self.chk_ttd)
+        l.addWidget(w.label(
+            "Blok pengesahan diletakkan di kanan bawah halaman terakhir. "
+            "Bila halaman itu sudah penuh, pengesahan dipindah ke halaman "
+            "baru agar tidak menimpa tabel. Kode verifikasi isi dokumen "
+            "tetap dicetak di kaki setiap halaman, termasuk saat blok "
+            "pengesahan dimatikan.", objek="Faint", wrap=True))
+
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(11)
+        grid.setVerticalSpacing(8)
+        self.txt_nama = QLineEdit(nama_bawaan)
+        self.txt_nama.setPlaceholderText("Nama penanda tangan")
+        self.txt_jabatan = QLineEdit(st["ttd_jabatan"])
+        self.txt_jabatan.setPlaceholderText("Jabatan, mis. Direktur")
+        self.txt_kota = QLineEdit(kota_bawaan)
+        self.txt_kota.setPlaceholderText("Kota penandatanganan")
+        for r, (label, bidang) in enumerate((
+                ("Nama", self.txt_nama),
+                ("Jabatan", self.txt_jabatan),
+                ("Kota", self.txt_kota))):
+            lbl = QLabel(label)
+            lbl.setStyleSheet(
+                f"font-size: {theme.FS_SMALL}px; font-weight: 600; "
+                "background: transparent;")
+            lbl.setMinimumWidth(72)
+            grid.addWidget(lbl, r, 0)
+            grid.addWidget(bidang, r, 1)
+        grid.setColumnStretch(1, 1)
+        l.addLayout(grid)
+
+        baris_gambar = QHBoxLayout()
+        baris_gambar.setSpacing(9)
+        self.lbl_gambar = QLabel()
+        self.lbl_gambar.setFixedSize(126, 50)
+        self.lbl_gambar.setAlignment(Qt.AlignCenter)
+        self.lbl_gambar.setStyleSheet(
+            f"QLabel {{ border: 1px solid {C.BORDER}; border-radius: 4px; "
+            f"background: {C.SURFACE_ALT}; }}")
+        baris_gambar.addWidget(self.lbl_gambar)
+
+        b_pilih = w.tombol("Pilih Gambar", gaya="biasa")
+        b_pilih.clicked.connect(self._pilih_gambar_ttd)
+        baris_gambar.addWidget(b_pilih)
+        b_hapus = w.tombol("Hapus", gaya="ghost")
+        b_hapus.clicked.connect(self._hapus_gambar_ttd)
+        baris_gambar.addWidget(b_hapus)
+        baris_gambar.addStretch()
+        l.addLayout(baris_gambar)
+        l.addWidget(w.label(
+            "Gambar tanda tangan (PNG/JPG) ditempel di atas garis. "
+            "Bila dikosongkan, garis tetap dicetak untuk tanda tangan basah.",
+            objek="Faint", wrap=True))
+
+        self._cetak_gambar = st["ttd_gambar"]
+        self._perbarui_gambar_ttd()
+
+        baris_aksi = QHBoxLayout()
+        baris_aksi.setSpacing(9)
+        b_pratinjau = w.tombol("Pratinjau Dokumen", ikon="dokumen")
+        b_pratinjau.clicked.connect(self._pratinjau_dokumen)
+        baris_aksi.addWidget(b_pratinjau)
+        baris_aksi.addStretch()
+        b_simpan = w.tombol("Simpan Pengaturan", gaya="primary", ikon="simpan")
+        b_simpan.clicked.connect(self._simpan_setelan_dokumen)
+        baris_aksi.addWidget(b_simpan)
+        l.addLayout(baris_aksi)
+
+        self.chk_air.toggled.connect(self._atur_aktif_cetak)
+        self.chk_ttd.toggled.connect(self._atur_aktif_cetak)
+        self._atur_aktif_cetak()
+        return kartu
+
+    def _atur_aktif_cetak(self):
+        aktif_air = self.chk_air.isChecked()
+        self.txt_air.setEnabled(aktif_air)
+        self.cmb_pekat.setEnabled(aktif_air)
+        aktif_ttd = self.chk_ttd.isChecked()
+        for bidang in (self.txt_nama, self.txt_jabatan, self.txt_kota):
+            bidang.setEnabled(aktif_ttd)
+
+    def _pilih_gambar_ttd(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Pilih gambar tanda tangan", str(Path.home()),
+            "Gambar (*.png *.jpg *.jpeg *.bmp)")
+        if not path:
+            return
+        try:
+            config.ensure_dirs()
+            asal = Path(path)
+            tujuan = config.DATA_DIR / f"tanda_tangan{asal.suffix.lower()}"
+            shutil.copyfile(asal, tujuan)
+            self._cetak_gambar = str(tujuan)
+            self._perbarui_gambar_ttd()
+        except Exception as e:
+            popup.galat(self, "Gambar gagal dipakai", str(e))
+
+    def _hapus_gambar_ttd(self):
+        self._cetak_gambar = ""
+        self._perbarui_gambar_ttd()
+
+    def _perbarui_gambar_ttd(self):
+        path = getattr(self, "_cetak_gambar", "")
+        pix = QPixmap(path) if path and Path(path).exists() else QPixmap()
+        if pix.isNull():
+            self.lbl_gambar.setPixmap(QPixmap())
+            self.lbl_gambar.setText("Belum ada")
+            self.lbl_gambar.setStyleSheet(
+                f"QLabel {{ border: 1px dashed {C.BORDER_STRONG}; "
+                f"border-radius: 4px; color: {C.TEXT_FAINT}; "
+                f"font-size: {theme.FS_TINY}px; "
+                f"background: {C.SURFACE_ALT}; }}")
+            return
+        self.lbl_gambar.setText("")
+        self.lbl_gambar.setPixmap(pix.scaled(
+            118, 44, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+
+    def _simpan_setelan_dokumen(self, beri_pesan: bool = True):
+        try:
+            db.simpan_setelan_cetak(
+                air_aktif=self.chk_air.isChecked(),
+                air_teks=self.txt_air.text().strip() or "{perusahaan}",
+                air_pekat=self.cmb_pekat.currentData(),
+                ttd_aktif=self.chk_ttd.isChecked(),
+                ttd_nama=self.txt_nama.text().strip(),
+                ttd_jabatan=self.txt_jabatan.text().strip(),
+                ttd_kota=self.txt_kota.text().strip(),
+                ttd_gambar=getattr(self, "_cetak_gambar", ""))
+        except Exception as e:
+            popup.galat(self, "Gagal menyimpan pengaturan", str(e))
+            return False
+        if beri_pesan:
+            popup.beri_tahu(self,
+                            "Pengaturan dokumen disimpan",
+                            "Tanda air dan pengesahan akan dipakai pada cetakan dan PDF "
+                            "berikutnya.")
+        return True
+
+    def _pratinjau_dokumen(self):
+        if not self._simpan_setelan_dokumen(beri_pesan=False):
+            return
+        try:
+            from ..ekspor_cetak import pratinjau_gambar
+            comp = (services.get_company(self.ctx.company_id)
+                    if self.ctx.company_id else {}) or {}
+            tabel = [("Ringkasan", [
+                ["Keterangan", "Nilai"],
+                ["Pendapatan usaha", 128_500_000],
+                ["Beban usaha", 74_300_000],
+                ["Laba bersih", 54_200_000],
+            ])]
+            gambar = pratinjau_gambar(
+                "Laporan Laba Rugi",
+                f"Periode 1 Januari – 31 Desember {self.ctx.tahun}",
+                tabel, lebar=740, perusahaan=comp.get("nama", ""),
+                penanda={"nama": self.txt_nama.text().strip(),
+                         "kota": self.txt_kota.text().strip()})
+        except Exception as e:
+            popup.galat(self, "Pratinjau gagal dibuat", str(e))
+            return
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Pratinjau Dokumen A4")
+        dialog.resize(880, 920)
+        theme.latar(dialog, f"background: {C.BG}; border: none;")
+        lay = QVBoxLayout(dialog)
+        lay.setContentsMargins(24, 22, 24, 20)
+        lay.setSpacing(0)
+
+        judul = QLabel("Pratinjau halaman A4")
+        judul.setStyleSheet(
+            f"font-family: '{theme.FONT_SERIF}'; font-size: 24px; "
+            f"font-weight: 600; color: {C.TEXT}; background: transparent; "
+            "letter-spacing: -0.2px;")
+        lay.addWidget(judul)
+
+        lay.addSpacing(6)
+        lay.addWidget(w.label(
+            "Tanda air dan blok pengesahan di bawah ini memakai pengaturan "
+            "yang sedang Anda isi. Hasil cetak memakai ukuran yang sama.",
+            objek="Muted", wrap=True))
+        lay.addSpacing(14)
+
+        bingkai = QFrame()
+        bingkai.setObjectName("PreviewPaper")
+        bl = QVBoxLayout(bingkai)
+        bl.setContentsMargins(10, 10, 10, 10)
+        isi = QLabel()
+        isi.setPixmap(QPixmap.fromImage(gambar))
+        isi.setAlignment(Qt.AlignCenter)
+        isi.setStyleSheet("background: transparent; border: none;")
+        bl.addWidget(isi, 0, Qt.AlignHCenter)
+
+        area = QScrollArea()
+        area.setWidgetResizable(True)
+        area.setFrameShape(QFrame.NoFrame)
+        area.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        area.setWidget(bingkai)
+        area.setStyleSheet("QScrollArea { background: transparent; }")
+        lay.addWidget(area, 1)
+
+        lay.addSpacing(12)
+        kaki = QHBoxLayout()
+        kaki.addWidget(w.label(
+            "Kertas A4 · 210 × 297 mm · gulir untuk melihat seluruh halaman",
+            objek="Faint"))
+        kaki.addStretch()
+        tutup = w.tombol("Tutup")
+        tutup.clicked.connect(dialog.accept)
+        kaki.addWidget(tutup)
+        lay.addLayout(kaki)
+        dialog.exec()
+
     def _cari_sidebar(self):
         """Ambil objek sidebar dari jendela utama."""
         jendela = self.window()
@@ -407,19 +691,20 @@ class PengaturanPage(QWidget):
             self.rb_pemula.setChecked(mode == "beginner")
             self.rb_ahli.setChecked(mode == "expert")
             self.mode_berubah.emit(mode)
-            QMessageBox.information(
-                self, "Mode diubah",
-                f"Mode aplikasi diubah ke {'Pemula' if mode == 'beginner' else 'Ahli'}.\n\n"
-                "Buka halaman lain lalu kembali agar tampilan menyesuaikan.")
+            popup.beri_tahu(self,
+                            "Mode diubah",
+                            f"Mode aplikasi diubah ke {'Pemula' if mode == 'beginner' else 'Ahli'}.\n\n"
+                            "Buka halaman lain lalu kembali agar tampilan menyesuaikan.")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal mengubah mode", str(e))
+            popup.galat(self, "Gagal mengubah mode", str(e))
 
     def _ganti_perusahaan(self):
         cid = self.cmb_perusahaan.currentData()
         self.ctx.company_id = cid
         self.ctx.company = services.get_company(cid)
-        QMessageBox.information(self, "Perusahaan diubah",
-                                f"Sekarang menampilkan data: {self.cmb_perusahaan.currentText()}")
+        popup.beri_tahu(self,
+                        "Perusahaan diubah",
+                        f"Sekarang menampilkan data: {self.cmb_perusahaan.currentText()}")
 
     # ------------------------------------------------------------------
     # PENGGUNA
@@ -499,7 +784,7 @@ class PengaturanPage(QWidget):
     def _reset_password(self):
         u = self._selected_user()
         if u is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu pengguna.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu pengguna.")
             return
         d = DialogResetPassword(self.ctx, u, self)
         if d.exec():
@@ -508,23 +793,24 @@ class PengaturanPage(QWidget):
     def _toggle_pengguna(self):
         u = self._selected_user()
         if u is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu pengguna.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu pengguna.")
             return
         if u["id"] == self.ctx.user_id:
-            QMessageBox.warning(self, "Tidak dapat",
-                                "Anda tidak dapat menonaktifkan akun sendiri.")
+            popup.peringatkan(self,
+                              "Tidak dapat",
+                              "Anda tidak dapat menonaktifkan akun sendiri.")
             return
         try:
             sec.set_user_active(u["id"], not bool(u["is_active"]),
                                 self.ctx.user_id, self.ctx.username)
             self._muat_pengguna()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
     def _ganti_password_saya(self):
         d = DialogGantiPassword(self.ctx, self)
         if d.exec():
-            QMessageBox.information(self, "Berhasil", "Password Anda telah diubah.")
+            popup.beri_tahu(self, "Berhasil", "Password Anda telah diubah.")
 
     # ------------------------------------------------------------------
     # BACKUP
@@ -701,8 +987,9 @@ class PengaturanPage(QWidget):
         """
         ringkas = self._ringkasan_reset()
         if not ringkas["jumlah"]:
-            QMessageBox.information(self, "Tidak ada data",
-                                    "Belum ada data usaha yang tercatat.")
+            popup.beri_tahu(self,
+                            "Tidak ada data",
+                            "Belum ada data usaha yang tercatat.")
             return
 
         pesan = (
@@ -716,9 +1003,9 @@ class PengaturanPage(QWidget):
             self, "Hapus seluruh data usaha", pesan)
         if not ok or teks.strip().upper() != "HAPUS":
             if ok:
-                QMessageBox.information(
-                    self, "Dibatalkan",
-                    "Data tidak dihapus karena kata konfirmasi tidak sesuai.")
+                popup.beri_tahu(self,
+                                "Dibatalkan",
+                                "Data tidak dihapus karena kata konfirmasi tidak sesuai.")
             return
 
         # Password pengelola diminta sebagai pengaman terakhir. Menghapus
@@ -730,21 +1017,20 @@ class PengaturanPage(QWidget):
             "Anda yang menghapus data ini:",
             QLineEdit.Password)
         if not ok:
-            QMessageBox.information(self, "Dibatalkan",
-                                    "Data tidak dihapus.")
+            popup.beri_tahu(self, "Dibatalkan", "Data tidak dihapus.")
             return
 
         try:
             from ...core import security as sec
             hasil_login = sec.login(self.ctx.username, sandi)
             if not hasil_login.ok:
-                QMessageBox.warning(
-                    self, "Password salah",
-                    "Password yang Anda masukkan tidak sesuai. "
-                    "Data tidak dihapus.")
+                popup.peringatkan(self,
+                                  "Password salah",
+                                  "Password yang Anda masukkan tidak sesuai. "
+                                  "Data tidak dihapus.")
                 return
         except Exception as e:
-            QMessageBox.critical(self, "Gagal memeriksa password", str(e))
+            popup.galat(self, "Gagal memeriksa password", str(e))
             return
 
         try:
@@ -753,27 +1039,27 @@ class PengaturanPage(QWidget):
                                    user_id=self.ctx.user_id,
                                    username=self.ctx.username)
         except Exception as e:
-            QMessageBox.critical(self, "Reset gagal", str(e))
+            popup.galat(self, "Reset gagal", str(e))
             return
 
-        QMessageBox.information(
-            self, "Data usaha dihapus",
-            f"{hasil['jumlah_baris']} baris data usaha sudah dihapus.\n\n"
-            f"Cadangan sebelum penghapusan disimpan sebagai:\n"
-            f"{hasil['berkas_cadangan'].name}\n\n"
-            "Anda dapat memulihkannya kapan saja dari tab ini.")
+        popup.beri_tahu(self,
+                        "Data usaha dihapus",
+                        f"{hasil['jumlah_baris']} baris data usaha sudah dihapus.\n\n"
+                        f"Cadangan sebelum penghapusan disimpan sebagai:\n"
+                        f"{hasil['berkas_cadangan'].name}\n\n"
+                        "Anda dapat memulihkannya kapan saja dari tab ini.")
 
         # Bila ada tabel yang tidak berhasil dibersihkan, pengguna diberi
         # tahu. Tanpa pemberitahuan, sisa data lama bisa terpakai lagi pada
         # pembukuan baru tanpa disadari.
         sisa = hasil.get("gagal_dihapus") or []
         if sisa:
-            QMessageBox.warning(
-                self, "Sebagian data belum terhapus",
-                "Beberapa bagian data belum berhasil dibersihkan:\n\n"
-                + "\n".join(f"• {s}" for s in sisa[:8])
-                + "\n\nCoba jalankan sekali lagi. Bila tetap gagal, tutup "
-                  "aplikasi lalu buka kembali sebelum mengulang.")
+            popup.peringatkan(self,
+                              "Sebagian data belum terhapus",
+                              "Beberapa bagian data belum berhasil dibersihkan:\n\n"
+                              + "\n".join(f"• {s}" for s in sisa[:8])
+                              + "\n\nCoba jalankan sekali lagi. Bila tetap gagal, tutup "
+                                "aplikasi lalu buka kembali sebelum mengulang.")
         self._muat_backup()
 
     def _simpan_setelan_backup(self):
@@ -782,21 +1068,21 @@ class PengaturanPage(QWidget):
             aktif=bool(self.chk_backup_auto.currentData()),
             interval_jam=self.spn_interval.value(),
             simpan_maks=self.spn_simpan.value())
-        QMessageBox.information(
-            self, "Pengaturan tersimpan",
-            "Pengaturan cadangan otomatis sudah disimpan.")
+        popup.beri_tahu(self,
+                        "Pengaturan tersimpan",
+                        "Pengaturan cadangan otomatis sudah disimpan.")
         self._muat_backup()
 
     def _buat_backup(self):
         try:
             path = db.create_backup(f"Dibuat oleh {self.ctx.username}")
-            QMessageBox.information(
-                self, "Cadangan berhasil",
-                f"Cadangan tersimpan di:\n{path}\n\n"
-                "Salin berkas ini ke lokasi lain untuk keamanan tambahan.")
+            popup.beri_tahu(self,
+                            "Cadangan berhasil",
+                            f"Cadangan tersimpan di:\n{path}\n\n"
+                            "Salin berkas ini ke lokasi lain untuk keamanan tambahan.")
             self._muat_backup()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal membuat cadangan", str(e))
+            popup.galat(self, "Gagal membuat cadangan", str(e))
 
     def _pulihkan_baris(self, r: int):
         cadangan = db.q("SELECT * FROM backups ORDER BY id DESC LIMIT 50")
@@ -816,8 +1102,9 @@ class PengaturanPage(QWidget):
         from pathlib import Path as _P
         berkas = _P(path)
         if not berkas.exists():
-            QMessageBox.warning(self, "Berkas tidak ditemukan",
-                                f"Berkas cadangan tidak ada:\n{path}")
+            popup.peringatkan(self,
+                              "Berkas tidak ditemukan",
+                              f"Berkas cadangan tidak ada:\n{path}")
             return
 
         try:
@@ -827,23 +1114,22 @@ class PengaturanPage(QWidget):
         except OSError:
             keterangan = ""
 
-        if QMessageBox.warning(
-                self, "Konfirmasi Pemulihan",
-                "Seluruh data yang ada sekarang akan diganti dengan isi "
-                "berkas cadangan ini.\n\n"
-                f"Berkas  : {berkas.name}\n"
-                f"Dibuat  : {keterangan}\n\n"
-                "Keadaan sekarang dicadangkan lebih dulu, jadi pemulihan ini "
-                "masih bisa dibatalkan.\n\n"
-                "Lanjutkan?",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Konfirmasi Pemulihan",
+                           "Seluruh data yang ada sekarang akan diganti dengan isi "
+                           "berkas cadangan ini.\n\n"
+                           f"Berkas  : {berkas.name}\n"
+                           f"Dibuat  : {keterangan}\n\n"
+                           "Keadaan sekarang dicadangkan lebih dulu, jadi pemulihan ini "
+                           "masih bisa dibatalkan.\n\n"
+                           "Lanjutkan?",
+                           jenis="peringatan"):
             return
 
         try:
             hasil = db.pulihkan_dari_cadangan(berkas)
         except Exception as e:
-            QMessageBox.critical(self, "Gagal memulihkan", str(e))
+            popup.galat(self, "Gagal memulihkan", str(e))
             return
 
         pesan = (
@@ -859,7 +1145,7 @@ class PengaturanPage(QWidget):
                       f"{hasil['cadangan_pengaman'].name}\n\n"
                       "Bila pemulihan ini ternyata salah, pilih berkas itu "
                       "untuk kembali ke keadaan semula.")
-        QMessageBox.information(self, "Pemulihan selesai", pesan)
+        popup.beri_tahu(self, "Pemulihan selesai", pesan)
 
         # Muat ulang tampilan supaya angka dan daftar mengikuti data baru.
         try:
@@ -874,8 +1160,9 @@ class PengaturanPage(QWidget):
     def _ekspor_semua(self):
         cid = self.ctx.company_id
         if not cid:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         path, _ = QFileDialog.getSaveFileName(
             self, "Ekspor Seluruh Data",
@@ -884,7 +1171,7 @@ class PengaturanPage(QWidget):
         if not path:
             return
         try:
-            from .laporan import ekspor_excel
+            from ..ekspor_cetak import ekspor_excel
             comp = services.get_company(cid)
             data: list[tuple[str, list[list]]] = []
 
@@ -974,14 +1261,16 @@ class PengaturanPage(QWidget):
                          [[b["tanggal_bayar"], b["jenis_pajak"], b["masa"], b["jumlah"],
                            b["ntpn"], b["cara_bayar"]] for b in bayar]))
 
-            ekspor_excel(comp["nama"], data, path)
-            if QMessageBox.question(
-                    self, "Ekspor selesai",
-                    f"Seluruh data berhasil diekspor:\n{path}\n\nBuka foldernya?",
-                    QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            ekspor_excel(
+                "Data AkunTuntas", data, path,
+                subjudul=f"Seluruh data · {datetime.now():%d/%m/%Y}",
+                nama_perusahaan=comp["nama"])
+            if popup.tanya(self,
+                           "Ekspor selesai",
+                           f"Seluruh data berhasil diekspor:\n{path}\n\nBuka foldernya?"):
                 QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.dirname(path)))
         except Exception as e:
-            QMessageBox.critical(self, "Gagal mengekspor", str(e))
+            popup.galat(self, "Gagal mengekspor", str(e))
 
     # ------------------------------------------------------------------
     # AUDIT
@@ -1131,40 +1420,34 @@ class PengaturanPage(QWidget):
 
         tujuan = Path(pilihan) / "AkunTuntas"
 
-        konfirmasi = QMessageBox(self)
-        konfirmasi.setWindowTitle("Pindahkan data")
-        konfirmasi.setIcon(QMessageBox.Question)
-        konfirmasi.setText("Pindahkan seluruh data ke folder ini?")
-        konfirmasi.setInformativeText(
-            f"Lokasi baru:\n{tujuan}\n\n"
-            "Seluruh data akan disalin ke sana, lalu aplikasi memakai "
-            "lokasi baru. Berkas di lokasi lama tidak dihapus, sehingga "
-            "Anda dapat memeriksa lebih dahulu.")
-        konfirmasi.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        konfirmasi.setDefaultButton(QMessageBox.No)
-        if konfirmasi.exec() != QMessageBox.Yes:
+        if not popup.tanya(
+                self, "Pindahkan data",
+                "Pindahkan seluruh data ke folder ini?",
+                rincian=f"Lokasi baru: {tujuan}\n\n"
+                        "Seluruh data akan disalin ke sana, lalu aplikasi "
+                        "memakai lokasi baru. Berkas di lokasi lama tidak "
+                        "dihapus, sehingga Anda dapat memeriksa lebih "
+                        "dahulu.",
+                teks_ya="Pindahkan", jenis="peringatan"):
             return
 
         berhasil, pesan = cfg.pindahkan_data(tujuan)
 
         if berhasil:
-            kotak = QMessageBox(self)
-            kotak.setWindowTitle("Data dipindahkan")
-            kotak.setIcon(QMessageBox.Information)
-            kotak.setText("Seluruh data berhasil dipindahkan.")
-            kotak.setInformativeText(
-                f"Lokasi baru:\n{pesan}\n\n"
-                "Tutup dan buka ulang aplikasi supaya lokasi baru dipakai "
-                "sepenuhnya.\n\n"
-                "Berkas di lokasi lama tidak dihapus. Hapus sendiri setelah "
-                "Anda yakin lokasi baru berjalan baik.")
-            kotak.addButton("Mengerti", QMessageBox.AcceptRole)
-            kotak.exec()
+            popup.sukses(
+                self, "Data dipindahkan",
+                "Seluruh data berhasil dipindahkan.",
+                rincian=f"Lokasi baru: {pesan}\n\n"
+                        "Tutup dan buka ulang aplikasi supaya lokasi baru "
+                        "dipakai sepenuhnya.\n\n"
+                        "Berkas di lokasi lama tidak dihapus. Hapus sendiri "
+                        "setelah Anda yakin lokasi baru berjalan baik.",
+                teks_tombol="Mengerti")
         else:
-            QMessageBox.warning(
-                self, "Data tidak dipindahkan",
-                f"{pesan}\n\nLokasi lama tetap dipakai, sehingga data Anda "
-                "tetap aman.")
+            popup.peringatkan(self,
+                              "Data tidak dipindahkan",
+                              f"{pesan}\n\nLokasi lama tetap dipakai, sehingga data Anda "
+                              "tetap aman.")
 
         self._muat_penyimpanan()
 
@@ -1172,28 +1455,25 @@ class PengaturanPage(QWidget):
         """Kembalikan lokasi data ke folder bawaan aplikasi."""
         from ... import config as cfg
 
-        konfirmasi = QMessageBox(self)
-        konfirmasi.setWindowTitle("Kembalikan lokasi bawaan")
-        konfirmasi.setIcon(QMessageBox.Question)
-        konfirmasi.setText("Kembalikan penyimpanan data ke lokasi bawaan?")
-        konfirmasi.setInformativeText(
-            "Data TIDAK ikut dipindahkan. Aplikasi akan memakai folder "
-            "bawaan, yang isinya mungkin berbeda dari data Anda sekarang.\n\n"
-            "Pindahkan data ke folder bawaan lebih dahulu bila ingin "
-            "melanjutkan pembukuan yang sama.")
-        konfirmasi.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        konfirmasi.setDefaultButton(QMessageBox.No)
-        if konfirmasi.exec() != QMessageBox.Yes:
+        if not popup.tanya(
+                self, "Kembalikan lokasi bawaan",
+                "Kembalikan penyimpanan data ke lokasi bawaan?",
+                rincian="Data TIDAK ikut dipindahkan. Aplikasi akan memakai "
+                        "folder bawaan, yang isinya mungkin berbeda dari "
+                        "data Anda sekarang.\n\n"
+                        "Pindahkan data ke folder bawaan lebih dahulu bila "
+                        "ingin melanjutkan pembukuan yang sama.",
+                teks_ya="Kembalikan", jenis="peringatan"):
             return
 
         berhasil, pesan = cfg.kembali_ke_lokasi_bawaan()
         if berhasil:
-            QMessageBox.information(
-                self, "Lokasi dikembalikan",
-                f"Aplikasi akan memakai folder bawaan:\n{pesan}\n\n"
-                "Tutup dan buka ulang aplikasi.")
+            popup.beri_tahu(self,
+                            "Lokasi dikembalikan",
+                            f"Aplikasi akan memakai folder bawaan:\n{pesan}\n\n"
+                            "Tutup dan buka ulang aplikasi.")
         else:
-            QMessageBox.warning(self, "Gagal", pesan)
+            popup.peringatkan(self, "Gagal", pesan)
         self._muat_penyimpanan()
 
     def _buka_folder(self, folder):
@@ -1201,7 +1481,7 @@ class PengaturanPage(QWidget):
         try:
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
         except Exception as e:
-            QMessageBox.warning(self, "Tidak dapat dibuka", str(e))
+            popup.peringatkan(self, "Tidak dapat dibuka", str(e))
 
     def _muat_audit(self):
         lay = self._bersihkan(self.tab_audit)
@@ -1516,7 +1796,6 @@ class PengaturanPage(QWidget):
         from ...core import license as LIS
         LIS.simpan(config.DATA_DIR, dlg.lisensi)
 
-        from .. import popup
         popup.sukses(
             self, "Lisensi berhasil diaktifkan",
             f"Paket <b>{dlg.lisensi.nama_paket}</b> kini aktif di komputer "
@@ -1528,45 +1807,39 @@ class PengaturanPage(QWidget):
     def _periksa_lisensi_sekarang(self):
         """Periksa lisensi ke server dan beri tahu hasilnya."""
         from ...core import license as LIS
-        from PySide6.QtWidgets import QMessageBox
 
         berhasil, pesan = LIS.perbarui(config.DATA_DIR)
         if berhasil:
-            QMessageBox.information(
-                self, "Lisensi masih berlaku",
-                "Lisensi Anda sudah diperiksa dan masih berlaku. "
-                "Keterangannya di komputer ini sudah diperbarui.")
+            popup.beri_tahu(self,
+                            "Lisensi masih berlaku",
+                            "Lisensi Anda sudah diperiksa dan masih berlaku. "
+                            "Keterangannya di komputer ini sudah diperbarui.")
             self.muat()
         else:
-            QMessageBox.warning(
-                self, "Lisensi tidak dapat diperiksa",
-                f"{pesan}\n\nBila sambungan internet Anda normal, hubungi "
-                f"penjual untuk memeriksa keadaan lisensi.")
+            popup.peringatkan(self,
+                              "Lisensi tidak dapat diperiksa",
+                              f"{pesan}\n\nBila sambungan internet Anda normal, hubungi "
+                              f"penjual untuk memeriksa keadaan lisensi.")
 
     def _lepas_perangkat(self):
         """Lepaskan komputer ini dari lisensi, dengan dua penegasan."""
         from ...core import license as LIS
-        from PySide6.QtWidgets import QMessageBox, QInputDialog
+        from PySide6.QtWidgets import QInputDialog
 
         lis = LIS.muat(config.DATA_DIR)
         if lis is None:
             return
 
-        tanya = QMessageBox(self)
-        tanya.setWindowTitle("Lepas perangkat ini?")
-        tanya.setIcon(QMessageBox.Warning)
-        tanya.setText("Komputer ini akan dilepas dari lisensi Anda.")
-        tanya.setInformativeText(
-            "Aplikasi akan kembali ke halaman aktivasi, dan kunci lisensi "
-            "yang sama dapat dipakai di komputer lain.\n\n"
-            "Data pembukuan Anda TIDAK terhapus. Data tetap ada dan dapat "
-            "dibuka lagi setelah lisensi diaktifkan kembali.\n\n"
-            "Lanjutkan?")
-        lanjut = tanya.addButton("Lepas perangkat", QMessageBox.AcceptRole)
-        tanya.addButton("Batal", QMessageBox.RejectRole)
-        tanya.exec()
-
-        if tanya.clickedButton() is not lanjut:
+        if not popup.tanya(
+                self, "Lepas perangkat ini?",
+                "Komputer ini akan dilepas dari lisensi Anda.",
+                rincian="Aplikasi akan kembali ke halaman aktivasi, dan "
+                        "kunci lisensi yang sama dapat dipakai di komputer "
+                        "lain.\n\n"
+                        "Data pembukuan Anda TIDAK terhapus. Data tetap ada "
+                        "dan dapat dibuka lagi setelah lisensi diaktifkan "
+                        "kembali.",
+                teks_ya="Lepas perangkat", jenis="peringatan"):
             return
 
         # Ketik ulang kunci lisensi sebagai penegasan, supaya tindakan ini
@@ -1577,22 +1850,24 @@ class PengaturanPage(QWidget):
         if not ok:
             return
         if "".join(c for c in kunci.upper() if c.isalnum()) != lis.kunci:
-            QMessageBox.warning(self, "Kunci tidak cocok",
-                                "Kunci yang Anda ketik tidak cocok. "
-                                "Perangkat tidak dilepas.")
+            popup.peringatkan(self,
+                              "Kunci tidak cocok",
+                              "Kunci yang Anda ketik tidak cocok. "
+                              "Perangkat tidak dilepas.")
             return
 
         berhasil, pesan = LIS.lepas(config.DATA_DIR)
         if berhasil:
-            QMessageBox.information(
-                self, "Perangkat dilepas",
-                "Komputer ini sudah dilepas dari lisensi. Aplikasi akan "
-                "kembali ke halaman aktivasi.\n\n"
-                "Data pembukuan Anda tetap tersimpan.")
+            popup.beri_tahu(self,
+                            "Perangkat dilepas",
+                            "Komputer ini sudah dilepas dari lisensi. Aplikasi akan "
+                            "kembali ke halaman aktivasi.\n\n"
+                            "Data pembukuan Anda tetap tersimpan.")
             self.muat()
         else:
-            QMessageBox.warning(self, "Gagal melepas",
-                                f"{pesan}\n\nPeriksa sambungan internet Anda.")
+            popup.peringatkan(self,
+                              "Gagal melepas",
+                              f"{pesan}\n\nPeriksa sambungan internet Anda.")
 
 
 # ==========================================================================
@@ -1700,8 +1975,9 @@ class DialogPengguna(QDialog):
     def _simpan(self):
         try:
             if self.inp_password.text() != self.inp_ulang.text():
-                QMessageBox.warning(self, "Password tidak sama",
-                                    "Password dan ulangannya tidak sama.")
+                popup.peringatkan(self,
+                                  "Password tidak sama",
+                                  "Password dan ulangannya tidak sama.")
                 return
             sec.create_user(
                 self.inp_username.text().strip(),
@@ -1713,7 +1989,7 @@ class DialogPengguna(QDialog):
                 1 if self.chk_wajib_ganti.isChecked() else 0)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogResetPassword(QDialog):
@@ -1784,20 +2060,21 @@ class DialogResetPassword(QDialog):
     def _simpan(self):
         try:
             if self.inp_password.text() != self.inp_ulang.text():
-                QMessageBox.warning(self, "Tidak sama",
-                                    "Password dan ulangannya tidak sama.")
+                popup.peringatkan(self,
+                                  "Tidak sama",
+                                  "Password dan ulangannya tidak sama.")
                 return
             sec.reset_password(self.user["id"], self.inp_password.text(),
                                self.ctx.user_id, self.ctx.username,
                                password_aktor=self.inp_admin.text())
-            QMessageBox.information(
-                self, "Password direset",
-                f"Password pengguna '{self.user['username']}' telah direset.\n\n"
-                "Sampaikan password baru kepada pengguna. Ia akan diminta "
-                "menggantinya saat login.")
+            popup.beri_tahu(self,
+                            "Password direset",
+                            f"Password pengguna '{self.user['username']}' telah direset.\n\n"
+                            "Sampaikan password baru kepada pengguna. Ia akan diminta "
+                            "menggantinya saat login.")
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal reset", str(e))
+            popup.galat(self, "Gagal reset", str(e))
 
 
 class DialogGantiPassword(QDialog):
@@ -1858,14 +2135,15 @@ class DialogGantiPassword(QDialog):
     def _simpan(self):
         try:
             if self.inp_baru.text() != self.inp_ulang.text():
-                QMessageBox.warning(self, "Tidak sama",
-                                    "Password baru dan ulangannya tidak sama.")
+                popup.peringatkan(self,
+                                  "Tidak sama",
+                                  "Password baru dan ulangannya tidak sama.")
                 return
             sec.change_password(self.ctx.user_id, self.inp_lama.text(),
                                 self.inp_baru.text())
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal mengganti password", str(e))
+            popup.galat(self, "Gagal mengganti password", str(e))
 
 
 # ==========================================================================
@@ -2073,7 +2351,7 @@ class DialogTambahChecklist(QDialog):
 
     def _simpan(self):
         if not self.inp_checklist.text().strip():
-            QMessageBox.warning(self, "Kosong", "Isi uraian checklist.")
+            popup.peringatkan(self, "Kosong", "Isi uraian checklist.")
             return
         self.frekuensi = self.cmb_frek.currentData()
         self.area = self.inp_area.text().strip() or "Umum"
@@ -2124,9 +2402,11 @@ class BantuanPage(QWidget):
         self.daftar.setFixedWidth(255)
         self.daftar.setStyleSheet(
             f"QListWidget {{ background: {C.SURFACE}; border: 1px solid {C.BORDER}; "
-            f"border-radius: 8px; padding: 6px; font-size: {theme.FS_BODY}px; }}"
-            f"QListWidget::item {{ padding: 10px 12px; border-radius: 6px; }}"
-            f"QListWidget::item:selected {{ background: {C.PRIMARY_SOFT}; "
+            f"border-radius: {theme.SUDUT_KARTU}px; padding: 6px; "
+            f"font-size: {theme.FS_BODY}px; }}"
+            f"QListWidget::item {{ padding: 10px 12px; "
+            f"border-radius: {theme.SUDUT_KONTROL}px; }}"
+            f"QListWidget::item:selected {{ background: {C.ACCENT_SOFT}; "
             f"color: {C.PRIMARY_DARK}; font-weight: 600; }}"
             f"QListWidget::item:hover {{ background: {C.SURFACE_ALT}; }}")
         wl.addWidget(self.daftar)
@@ -2254,10 +2534,10 @@ class BantuanPage(QWidget):
         daftar.setFixedWidth(300)
         daftar.setStyleSheet(
             f"QListWidget {{ background: {C.SURFACE}; border: 1px solid {C.BORDER}; "
-            f"border-radius: 8px; padding: 6px; }}\n"
-            f"QListWidget::item {{ border-radius: 6px; }}\n"
+            f"border-radius: {theme.SUDUT_KARTU}px; padding: 6px; }}\n"
+            f"QListWidget::item {{ border-radius: {theme.SUDUT_KONTROL}px; }}\n"
             f"QListWidget::item:hover {{ background: {C.BG}; }}\n"
-            f"QListWidget::item:selected {{ background: {C.PRIMARY_SOFT}; }}")
+            f"QListWidget::item:selected {{ background: {C.ACCENT_SOFT}; }}")
         daftar.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         # Setiap judul ditampilkan dua baris: kode peraturan di atas, uraian

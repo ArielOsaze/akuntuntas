@@ -15,12 +15,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtCore import Qt, Signal, QSize, QTimer
 from PySide6.QtGui import QAction, QKeySequence, QGuiApplication
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QStackedWidget, QFrame, QScrollArea, QStatusBar, QMessageBox, QApplication,
-    QLineEdit,
+    QStackedWidget, QFrame, QScrollArea, QStatusBar, QApplication,
+    QLineEdit, QComboBox, QSplitter,
 )
 
 from .. import config, services
@@ -49,6 +49,7 @@ from .pages.biaya_bank import BiayaPage, BankPage
 from .pages.tata_kelola import (PenggunaPage, AuditPage, RecycleBinPage,
                                 ImporMassalPage, PencarianPage)
 from .pages.entitas import (DimensiPage, KonsolidasiPage, PeriodePage, LanPage)
+from . import popup
 
 
 # Alamat halaman kebijakan privasi. Alamat ini juga didaftarkan ke Microsoft
@@ -166,10 +167,11 @@ class Sidebar(QFrame):
         # Kode menu yang disembunyikan. Dibuat per jendela supaya pengaturan
         # satu jendela tidak memengaruhi jendela lain.
         self.sembunyikan: set = set()
-        # Lebar dihitung dari menu terlebar ("Biaya & Pengeluaran") pada
-        # huruf 12 px: tombol 275 + margin isi 18 + margin wadah 9 +
-        # scrollbar 11 = 313 px, dibulatkan ke atas.
-        self.LEBAR = 320
+        # Lebar tetap: cukup untuk menu terpanjang tanpa memakan ruang tabel
+        # dan laporan. Pada 320 piksel, menu samping menghabiskan hampir
+        # seperempat layar 1366 piksel; 280 piksel masih memuat seluruh nama
+        # menu tetapi menyisakan 40 piksel lebih banyak untuk isi.
+        self.LEBAR = 280
         self.setFixedWidth(self.LEBAR)
         theme.latar(self, f"background: {C.SIDEBAR_BG}; border: none;")
         self.tombol: dict[str, QPushButton] = {}
@@ -187,15 +189,15 @@ class Sidebar(QFrame):
         kepala = QWidget()
         theme.latar(kepala, f"background: {C.SIDEBAR_BG};")
         kl = QVBoxLayout(kepala)
-        kl.setContentsMargins(18, 20, 18, 14)
+        kl.setContentsMargins(16, 14, 14, 10)
         kl.setSpacing(2)
 
         baris = QHBoxLayout()
-        baris.setSpacing(10)
-        ikon = w.logo_label(28)
+        baris.setSpacing(9)
+        ikon = w.logo_label(26)
         baris.addWidget(ikon)
         teks = QLabel("AkunTuntas")
-        teks.setStyleSheet("font-size: 16px; font-weight: 800; color: white; "
+        teks.setStyleSheet("font-size: 15px; font-weight: 800; color: white; "
                            "background: transparent; letter-spacing: -0.2px;")
         teks.setMinimumWidth(teks.fontMetrics().horizontalAdvance("AkunTuntas") + 6)
         baris.addWidget(teks, 0)
@@ -210,7 +212,7 @@ class Sidebar(QFrame):
         self.btn_sembunyi.setCursor(Qt.PointingHandCursor)
         self.btn_sembunyi.setFixedSize(28, 28)
         self.btn_sembunyi.setToolTip("Sembunyikan menu samping (Ctrl+Shift+B)")
-        self.btn_sembunyi.setIcon(w.icons.ikon("panah_kiri", "#C3D4E4", 16))
+        self.btn_sembunyi.setIcon(w.icons.ikon("panah_kiri", "#C7D1D5", 16))
         self.btn_sembunyi.setIconSize(QSize(16, 16))
         self.btn_sembunyi.setStyleSheet(
             f"QPushButton#SidebarSembunyi {{ background: transparent; "
@@ -222,7 +224,7 @@ class Sidebar(QFrame):
 
         v = QLabel(config.APP_EDITION)
         v.setStyleSheet(f"font-size: 10px; color: {C.SIDEBAR_SECTION}; "
-                        "background: transparent; padding-left: 38px;")
+                        "background: transparent; padding-left: 35px;")
         kl.addWidget(v)
         lay.addWidget(kepala)
 
@@ -230,17 +232,18 @@ class Sidebar(QFrame):
         cari_kotak = QWidget()
         theme.latar(cari_kotak, f"background: {C.SIDEBAR_BG};")
         ckl = QVBoxLayout(cari_kotak)
-        ckl.setContentsMargins(14, 0, 14, 10)
+        ckl.setContentsMargins(12, 0, 12, 8)
         ckl.setSpacing(0)
         self.inp_cari = QLineEdit()
         self.inp_cari.setPlaceholderText("Cari menu")
         self.inp_cari.setClearButtonEnabled(True)
-        self.inp_cari.setMinimumHeight(32)
+        self.inp_cari.setMinimumHeight(30)
         self.inp_cari.setStyleSheet(
             f"QLineEdit {{ background: {C.SIDEBAR_HOVER}; color: white; "
-            f"border: 1px solid {C.SIDEBAR_HOVER}; border-radius: 7px; "
+            f"border: 1px solid {C.SIDEBAR_HOVER}; border-radius: 4px; "
             "padding: 5px 9px; font-size: 12px; }"
-            f"QLineEdit:focus {{ border: 1px solid {C.SIDEBAR_TEXT}; }}"
+            f"QLineEdit:hover {{ border-color: {C.SIDEBAR_LINE}; }}"
+            f"QLineEdit:focus {{ border: 1px solid {C.ACCENT_LIGHT}; }}"
             f"QLineEdit::placeholder {{ color: {C.SIDEBAR_SECTION}; }}")
         self.inp_cari.textChanged.connect(self._saring_menu)
         ckl.addWidget(self.inp_cari)
@@ -261,10 +264,10 @@ class Sidebar(QFrame):
         isi = QWidget()
         theme.latar(isi, f"background: {C.SIDEBAR_BG};")
         il = QVBoxLayout(isi)
-        il.setContentsMargins(9, 8, 9, 10)
+        il.setContentsMargins(8, 6, 8, 8)
         # Jarak antar menu dilonggarkan supaya daftar panjang tidak terasa
         # padat dan salah klik tidak mudah terjadi.
-        il.setSpacing(2)
+        il.setSpacing(1)
         self._isi_menu = il
 
         for seksi, item_list in self.MENU:
@@ -282,6 +285,7 @@ class Sidebar(QFrame):
 
         il.addStretch()
         area.setWidget(isi)
+        self._area = area
         lay.addWidget(area, 1)
 
         # terapkan pilihan buka/tutup terakhir setelah semua kelompok dibuat
@@ -292,8 +296,8 @@ class Sidebar(QFrame):
         kaki = QWidget()
         theme.latar(kaki, f"background: {C.SIDEBAR_BG};")
         fl = QVBoxLayout(kaki)
-        fl.setContentsMargins(16, 11, 16, 13)
-        fl.setSpacing(5)
+        fl.setContentsMargins(14, 9, 14, 11)
+        fl.setSpacing(4)
 
         self.lbl_pengguna = QLabel("")
         self.lbl_pengguna.setStyleSheet("color: white; font-size: 12px; "
@@ -441,7 +445,7 @@ class Sidebar(QFrame):
         b = QPushButton(nama.replace('&', '&&'))
         b.setObjectName("NavButton")
         b.setCursor(Qt.PointingHandCursor)
-        b.setMinimumHeight(34)
+        b.setMinimumHeight(32)
         # checkable agar menu yang sedang dibuka dapat ditandai aktif oleh
         # stylesheet (:checked). autoExclusive tidak dipakai: sifat itu hanya
         # berlaku antar tombol yang satu induk, sedangkan menu tersebar di
@@ -471,7 +475,7 @@ class Sidebar(QFrame):
             s.setStyleSheet(
                 f"color: {C.SIDEBAR_SECTION}; font-size: 10px; font-weight: 800; "
                 "letter-spacing: 0.8px; background: transparent; "
-                "padding: 14px 10px 5px 10px;")
+                "padding: 11px 10px 4px 10px;")
             induk_lay.addWidget(s)
             for kode, nama, nama_ikon in item_list:
                 self._buat_tombol(induk_lay, kode, nama, nama_ikon)
@@ -483,7 +487,7 @@ class Sidebar(QFrame):
         judul = QPushButton(seksi.replace('&', '&&'))
         judul.setObjectName("NavGroup")
         judul.setCursor(Qt.PointingHandCursor)
-        judul.setMinimumHeight(32)
+        judul.setMinimumHeight(30)
         judul.setCheckable(True)
         induk_lay.addWidget(judul)
 
@@ -601,6 +605,26 @@ class Sidebar(QFrame):
             warna = C.SIDEBAR_TEXT_ACTIVE if aktif else C.SIDEBAR_TEXT
             b.setIcon(icons.ikon(nama_ikon, warna, 18))
         self.aktif = kode
+        self._pastikan_terlihat(kode)
+
+    def _pastikan_terlihat(self, kode: str):
+        """
+        Gulir daftar menu agar menu aktif terlihat.
+
+        Tanpa ini menu yang sedang dibuka dapat berada di luar pandangan
+        (misalnya "Aset Tetap" di bawah daftar) dan hanya menyisakan
+        potongan kecil di tepi area gulir yang tampak seperti garis nyasar.
+        """
+        tombol = self.tombol.get(kode)
+        if tombol is None or not tombol.isVisible():
+            return
+        area = getattr(self, "_area", None)
+        if area is None:
+            return
+        # Tunggu tata letak kelompok yang baru dibuka selesai dihitung,
+        # supaya posisi tombol sudah final saat digulirkan.
+        QTimer.singleShot(
+            0, lambda: area.ensureWidgetVisible(tombol, 0, 10))
 
     def set_pengguna(self, nama: str, peran: str):
         self.lbl_pengguna.setText(nama)
@@ -654,6 +678,117 @@ class PetaHalaman(dict):
         if kode in self._jendela._pabrik:
             return self[kode]
         return bawaan
+
+
+class PanelKedua(QFrame):
+    """
+    Panel halaman kedua untuk bekerja berdampingan.
+
+    Panel memuat pemilih halaman sendiri, tombol muat ulang, dan tombol
+    tutup, sehingga halaman yang ditampilkan di sini dapat diganti tanpa
+    mengubah halaman utama di sebelah kiri.
+    """
+
+    tutup_diminta = Signal()
+    halaman_diminta = Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("PanelKedua")
+        theme.latar(self, f"QFrame#PanelKedua {{ background: {C.BG}; "
+                          "border: none; }")
+
+        luar = QVBoxLayout(self)
+        luar.setContentsMargins(0, 0, 0, 0)
+        luar.setSpacing(0)
+
+        kepala = QFrame()
+        theme.latar(kepala, f"background: {C.SURFACE}; border: none; "
+                            f"border-bottom: 1px solid {C.BORDER};")
+        hl = QHBoxLayout(kepala)
+        hl.setContentsMargins(16, 9, 14, 9)
+        hl.setSpacing(10)
+
+        eyebrow = QLabel("Halaman kedua")
+        eyebrow.setStyleSheet(
+            f"QLabel {{ color: {C.TEXT_FAINT}; font-size: "
+            f"{theme.FS_TINY}px; font-weight: 700; letter-spacing: 1px; "
+            "background: transparent; }")
+        hl.addWidget(eyebrow)
+
+        self.pilih = QComboBox()
+        self.pilih.setMinimumWidth(180)
+        self.pilih.setSizeAdjustPolicy(
+            QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        self.pilih.currentIndexChanged.connect(self._ganti_pilihan)
+        hl.addWidget(self.pilih, 1)
+
+        b_segarkan = QPushButton()
+        b_segarkan.setIcon(icons.ikon("segarkan", icons.WARNA_GELAP, 16))
+        b_segarkan.setIconSize(QSize(16, 16))
+        b_segarkan.setFixedSize(30, 30)
+        b_segarkan.setCursor(Qt.PointingHandCursor)
+        b_segarkan.setToolTip("Muat ulang halaman kedua")
+        b_segarkan.setStyleSheet(
+            f"QPushButton {{ background: transparent; border: 1px solid "
+            f"transparent; border-radius: {theme.SUDUT_KONTROL}px; }}"
+            f"QPushButton:hover {{ background: {C.BG}; "
+            f"border-color: {C.BORDER}; }}")
+        b_segarkan.clicked.connect(self.muat_ulang)
+        hl.addWidget(b_segarkan)
+
+        b_tutup = w.tombol("Tutup", "ghost")
+        b_tutup.setToolTip("Tutup halaman kedua")
+        b_tutup.clicked.connect(self.tutup_diminta)
+        hl.addWidget(b_tutup)
+
+        self.tumpuk = QStackedWidget()
+        theme.latar(self.tumpuk, f"background: {C.BG}; border: none;")
+
+        # Saat panel lebih sempit daripada lebar minimum halaman, halaman
+        # digeser mendatar, bukan dihimpit sampai judul dan tombolnya
+        # bertumpuk. Lebar normal tetap memenuhi panel tanpa gulir.
+        self.gulir = QScrollArea()
+        self.gulir.setWidgetResizable(True)
+        self.gulir.setFrameShape(QFrame.NoFrame)
+        self.gulir.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.gulir.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        theme.latar(self.gulir, f"background: {C.BG}; border: none;")
+        self.gulir.setWidget(self.tumpuk)
+
+        luar.addWidget(kepala)
+        luar.addWidget(self.gulir, 1)
+
+    def isi_pilihan(self, daftar: list[tuple[str, str]]):
+        """Isi pemilih halaman dengan pasangan (kode, judul)."""
+        self.pilih.blockSignals(True)
+        self.pilih.clear()
+        for kode, judul in daftar:
+            self.pilih.addItem(judul, kode)
+        self.pilih.blockSignals(False)
+
+    def pilih_kode(self, kode: str) -> bool:
+        i = self.pilih.findData(kode)
+        if i < 0:
+            return False
+        if i == self.pilih.currentIndex():
+            self._ganti_pilihan(i)
+        else:
+            self.pilih.setCurrentIndex(i)
+        return True
+
+    def _ganti_pilihan(self, index: int):
+        kode = self.pilih.itemData(index)
+        if kode:
+            self.halaman_diminta.emit(kode)
+
+    def muat_ulang(self):
+        halaman = self.tumpuk.currentWidget()
+        if halaman is not None and hasattr(halaman, "muat"):
+            try:
+                halaman.muat()
+            except Exception as e:
+                print(f"[halaman kedua] gagal memuat: {e}")
 
 
 class MainWindow(QMainWindow):
@@ -747,7 +882,37 @@ class MainWindow(QMainWindow):
         # area konten
         self.stack = QStackedWidget()
         theme.latar(self.stack, f"background: {C.BG};")
-        lay.addWidget(self.stack, 1)
+
+        # Gulir mendatar menjaga halaman tetap pada lebar yang nyaman saat
+        # jendela dipersempit atau saat dua halaman dibuka berdampingan.
+        self.gulir_kiri = QScrollArea()
+        self.gulir_kiri.setWidgetResizable(True)
+        self.gulir_kiri.setFrameShape(QFrame.NoFrame)
+        self.gulir_kiri.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.gulir_kiri.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        theme.latar(self.gulir_kiri, f"background: {C.BG}; border: none;")
+        self.gulir_kiri.setWidget(self.stack)
+
+        # Halaman kedua ditampilkan di sisi kanan. Pemisahnya dapat digeser
+        # supaya pengguna menentukan sendiri lebar tiap halaman.
+        self.panel_kanan = PanelKedua()
+        self.panel_kanan.halaman_diminta.connect(self._pasang_halaman_kedua)
+        self.panel_kanan.tutup_diminta.connect(
+            lambda: self._dua_halaman(False))
+        self.split = QSplitter(Qt.Horizontal)
+        self.split.setChildrenCollapsible(False)
+        self.split.setHandleWidth(1)
+        self.split.addWidget(self.gulir_kiri)
+        self.split.addWidget(self.panel_kanan)
+        self.split.setStretchFactor(0, 1)
+        self.split.setStretchFactor(1, 1)
+        self.panel_kanan.hide()
+        lay.addWidget(self.split, 1)
+
+        # Halaman kedua yang sedang tampil, dan revisi data saat terakhir
+        # dimuat.
+        self._kode_kanan: str = ""
+        self._revisi_kanan: int = 0
 
         self.halaman = PetaHalaman(self)
         # Catatan revisi data saat tiap halaman terakhir dimuat. Halaman
@@ -762,6 +927,10 @@ class MainWindow(QMainWindow):
 
         # menu bar
         self._bangun_menu()
+
+        # Pilihan halaman untuk panel kedua, mengikuti menu samping dan
+        # batas paket lisensi.
+        self._isi_pemilih_kanan()
 
         # halaman awal
         self._navigasi("dashboard")
@@ -890,6 +1059,19 @@ class MainWindow(QMainWindow):
                                           f"color: {C.TEXT_MUTED}; padding-left: 8px;")
         sb.addWidget(self.lbl_perusahaan)
 
+        # Tombol pembuka halaman kedua. Diletakkan di baris status supaya
+        # selalu terlihat tanpa memakan ruang halaman.
+        self.btn_dua = QPushButton("Dua halaman")
+        self.btn_dua.setObjectName("SplitToggle")
+        self.btn_dua.setCheckable(True)
+        self.btn_dua.setCursor(Qt.PointingHandCursor)
+        self.btn_dua.setIcon(icons.ikon("dokumen", icons.WARNA_GELAP, 14))
+        self.btn_dua.setIconSize(QSize(14, 14))
+        self.btn_dua.setToolTip(
+            "Buka halaman kedua di samping halaman ini (Ctrl+Shift+D)")
+        self.btn_dua.toggled.connect(self._dua_halaman)
+        sb.addWidget(self.btn_dua)
+
         self.lbl_keseimbangan = QLabel("")
         self.lbl_keseimbangan.setStyleSheet(f"font-size: {theme.FS_TINY}px; "
                                             "padding-right: 12px;")
@@ -1003,6 +1185,14 @@ class MainWindow(QMainWindow):
                      else self._sembunyikan_sidebar()))
         m_tampilan.addAction(self.a_sidebar)
         m_tampilan.addSeparator()
+
+        # Bekerja dengan dua halaman sekaligus, misalnya Penjualan di kiri
+        # dan Biaya di kanan, tanpa berpindah-pindah menu.
+        self.a_dua = QAction("Dua Halaman Berdampingan", self, checkable=True)
+        self.a_dua.setShortcut(QKeySequence("Ctrl+Shift+D"))
+        self.a_dua.triggered.connect(self._dua_halaman)
+        m_tampilan.addAction(self.a_dua)
+        m_tampilan.addSeparator()
         aksi(m_tampilan, "Muat Ulang Halaman", self._muat_halaman_aktif,
              "F5", "segarkan")
         m_tampilan.addSeparator()
@@ -1057,40 +1247,42 @@ class MainWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl(ALAMAT_PRIVASI))
 
     def _tentang(self):
-        QMessageBox.about(
+        popup.beri_tahu(
             self, f"Tentang {config.APP_NAME}",
-            f"<h3>{config.APP_LONG_NAME}</h3>"
-            f"<p>Versi {config.APP_VERSION} ({config.APP_BUILD})<br>"
-            f"{config.APP_EDITION}</p>"
+            f"<b>{config.APP_LONG_NAME}</b><br>"
+            f"Versi {config.APP_VERSION} ({config.APP_BUILD}) &middot; "
+            f"{config.APP_EDITION}"
             f"<p>Aplikasi pembukuan dan perpajakan untuk usaha mikro, kecil, "
             f"menengah, hingga perseroan terbatas di Indonesia.</p>"
-            f"<p><b>Data tersimpan lokal:</b> {config.DATA_DIR}<br>"
+            f"<p><b>Data tersimpan lokal:</b><br>{config.DATA_DIR}<br>"
             f"Tidak ada data yang dikirim ke internet.</p>"
-            f"<p>Kebijakan privasi:<br>"
-            f"<a href='{ALAMAT_PRIVASI}'>{ALAMAT_PRIVASI}</a></p>"
-            f"<p style='color:#64748B;font-size:11px'>Aplikasi ini membantu "
-            f"administrasi dan estimasi. Transaksi khusus dan interpretasi regulasi "
-            f"tetap perlu diverifikasi sesuai fakta dan ketentuan terbaru.</p>")
+            f"<p>Kebijakan privasi: "
+            f"<a href='{ALAMAT_PRIVASI}'>{ALAMAT_PRIVASI}</a></p>",
+            rincian="Aplikasi ini membantu administrasi dan estimasi. "
+                    "Transaksi khusus dan interpretasi regulasi tetap perlu "
+                    "diverifikasi sesuai fakta dan ketentuan terbaru.",
+            teks_tombol="Tutup")
 
     def _backup_cepat(self):
         try:
             path = None
             from .. import db
             path = db.create_backup(f"Cadangan cepat oleh {self.ctx.username}")
-            QMessageBox.information(self, "Cadangan dibuat",
-                                    f"Cadangan tersimpan di:\n{path}")
+            popup.beri_tahu(self,
+                            "Cadangan dibuat",
+                            f"Cadangan tersimpan di:\n{path}")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal membuat cadangan", str(e))
+            popup.galat(self, "Gagal membuat cadangan", str(e))
 
     def _mode_berubah(self, mode: str):
         self.ctx.beginner = (mode == "beginner")
         self.a_pemula.setChecked(self.ctx.beginner)
         self._refresh_status()
-        QMessageBox.information(
-            self, "Mode diubah",
-            f"Mode aplikasi diubah ke "
-            f"{'Pemula' if self.ctx.beginner else 'Ahli'}.\n\n"
-            "Muat ulang halaman (F5) agar tampilan menyesuaikan.")
+        popup.beri_tahu(self,
+                        "Mode diubah",
+                        f"Mode aplikasi diubah ke "
+                        f"{'Pemula' if self.ctx.beginner else 'Ahli'}.\n\n"
+                        "Muat ulang halaman (F5) agar tampilan menyesuaikan.")
 
     def _muat_halaman_aktif(self):
         halaman = self.stack.currentWidget()
@@ -1098,7 +1290,7 @@ class MainWindow(QMainWindow):
             try:
                 halaman.muat()
             except Exception as e:
-                QMessageBox.warning(self, "Gagal memuat ulang", str(e))
+                popup.peringatkan(self, "Gagal memuat ulang", str(e))
         self._refresh_status()
 
     def _pilih_perusahaan(self):
@@ -1106,15 +1298,15 @@ class MainWindow(QMainWindow):
         from .. import services
         daftar = services.list_companies()
         if not daftar:
-            QMessageBox.information(
-                self, "Belum ada perusahaan",
-                "Belum ada perusahaan terdaftar. Buat perusahaan baru lebih dulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Belum ada perusahaan terdaftar. Buat perusahaan baru lebih dulu.")
             self._navigasi("perusahaan")
             return
         if len(daftar) == 1:
-            QMessageBox.information(
-                self, "Perusahaan aktif",
-                f"Saat ini hanya ada satu perusahaan:\n\n{daftar[0]['nama']}")
+            popup.beri_tahu(self,
+                            "Perusahaan aktif",
+                            f"Saat ini hanya ada satu perusahaan:\n\n{daftar[0]['nama']}")
             return
 
         from PySide6.QtWidgets import QInputDialog
@@ -1131,6 +1323,8 @@ class MainWindow(QMainWindow):
         self.ctx.company = services.get_company(self.ctx.company_id)
         self._refresh_status()
         self._muat_halaman_aktif()
+        if self.panel_kanan.isVisible():
+            self.panel_kanan.muat_ulang()
 
     def _buka_folder_data(self):
         """Buka folder penyimpanan data di penjelajah berkas Windows."""
@@ -1143,16 +1337,19 @@ class MainWindow(QMainWindow):
     def _ubah_ukuran_teks(self, faktor: float):
         """Perbesar atau perkecil ukuran teks aplikasi."""
         from PySide6.QtGui import QFont
-        dasar = QFont(theme.FONT_FAMILY, 10)
         app = QApplication.instance()
         if app is None:
             return
+        theme.pasang_font(app)
+        dasar = QFont(theme.FONT_UI)
         font = QFont(dasar)
         font.setPointSizeF(max(7.5, 10 * faktor))
         app.setFont(font)
         theme.UKURAN_TEKS = faktor
         app.setStyleSheet(theme.stylesheet())
         self._muat_halaman_aktif()
+        if self.panel_kanan.isVisible():
+            self.panel_kanan.muat_ulang()
 
     # ------------------------------------------------------------------
     # ------------------------------------------------------------------
@@ -1278,7 +1475,121 @@ class MainWindow(QMainWindow):
         # rapikan label keterangan agar tidak terpotong
         theme.rapikan_label(halaman)
 
+        # Halaman kedua ikut disegarkan bila datanya sudah berubah, supaya
+        # angka di kedua sisi tidak saling bertentangan setelah penyimpanan.
+        if self.panel_kanan.isVisible():
+            from .. import db
+            if self._revisi_kanan != db.revisi_data():
+                self.panel_kanan.muat_ulang()
+                self._revisi_kanan = db.revisi_data()
+
         self._refresh_status()
+
+    # ------------------------------------------------------------------
+    def _isi_pemilih_kanan(self):
+        """Daftar halaman yang boleh dibuka di panel kedua."""
+        from . import batas_paket
+
+        daftar = []
+        for _, isi in Sidebar.MENU:
+            for kode, judul, _ikon in isi:
+                if kode == "pencarian":
+                    continue
+                if batas_paket.boleh_buka(self.ctx.lisensi, kode):
+                    daftar.append((kode, judul))
+        self.panel_kanan.isi_pilihan(daftar)
+
+    def _dua_halaman(self, aktif: bool):
+        """Buka atau tutup panel halaman kedua."""
+        for kendali in (self.a_dua, self.btn_dua):
+            if kendali.isChecked() != aktif:
+                kendali.blockSignals(True)
+                kendali.setChecked(aktif)
+                kendali.blockSignals(False)
+        self.panel_kanan.setVisible(bool(aktif))
+        if not aktif:
+            return
+
+        if not self._kode_kanan:
+            daftar = [k for _, isi in Sidebar.MENU for k, _, _ in isi]
+            kode = next((k for k in daftar if k != self._kode_aktif),
+                        "laporan")
+            if not self.panel_kanan.pilih_kode(kode):
+                self._pasang_halaman_kedua(kode)
+        else:
+            from .. import db
+            if self._revisi_kanan != db.revisi_data():
+                self.panel_kanan.muat_ulang()
+                self._revisi_kanan = db.revisi_data()
+
+        ukuran = self.split.sizes()
+        if len(ukuran) < 2 or ukuran[1] < 260:
+            lebar = max(self.split.width(), 900)
+            self.split.setSizes([lebar // 2, lebar - lebar // 2])
+
+    def _pasang_halaman_kedua(self, kode: str):
+        """Buat dan tampilkan halaman pilihan di panel kedua."""
+        halaman = self._buat_halaman_kedua(kode)
+        if halaman is None:
+            return
+        lama = self.panel_kanan.tumpuk.currentWidget()
+        self.panel_kanan.tumpuk.addWidget(halaman)
+        self.panel_kanan.tumpuk.setCurrentWidget(halaman)
+        if lama is not None and lama is not halaman:
+            self.panel_kanan.tumpuk.removeWidget(lama)
+            lama.deleteLater()
+        self._kode_kanan = kode
+        theme.rapikan_label(halaman)
+
+        from .. import db
+        self._revisi_kanan = db.revisi_data()
+
+    def _buat_halaman_kedua(self, kode: str) -> QWidget | None:
+        """
+        Buat salinan halaman untuk panel kedua.
+
+        Halaman di panel kedua dibuat sebagai salinan tersendiri, bukan
+        dipindahkan dari panel kiri. Dengan begitu halaman yang sama dapat
+        terlihat di kedua sisi, dan menutup panel kanan tidak mengganggu
+        halaman utama.
+        """
+        from . import batas_paket
+
+        if not batas_paket.boleh_buka(self.ctx.lisensi, kode):
+            nama = batas_paket.HALAMAN_ENTERPRISE[kode][0]
+            return batas_paket.halaman_terkunci(nama)
+
+        pabrik = self._pabrik.get(kode)
+        if pabrik is None:
+            return None
+        try:
+            halaman = pabrik()
+        except Exception as e:
+            halaman = self._halaman_error(kode, e)
+
+        if hasattr(halaman, "pindah_halaman"):
+            halaman.pindah_halaman.connect(self._pindah_dari_kanan)
+        if hasattr(halaman, "mode_berubah"):
+            halaman.mode_berubah.connect(self._mode_berubah)
+        if hasattr(halaman, "muat"):
+            try:
+                halaman.muat()
+            except Exception as e:
+                print(f"[{kode} kanan] gagal memuat: {e}")
+        return halaman
+
+    def _pindah_dari_kanan(self, kode: str):
+        """
+        Ikuti tautan yang diklik di halaman kedua.
+
+        Tautan antarhalaman di panel kanan sebaiknya mengganti isi panel
+        kanan, bukan panel kiri, supaya halaman utama yang sedang dikerjakan
+        tidak hilang. Bila tujuannya tidak tersedia di panel kanan, tautan
+        dibuka di halaman utama.
+        """
+        if self.panel_kanan.isVisible() and self.panel_kanan.pilih_kode(kode):
+            return
+        self._navigasi(kode)
 
     def _perlu_muat(self, kode: str) -> bool:
         """
@@ -1312,12 +1623,11 @@ class MainWindow(QMainWindow):
         keduanya penting: menutup aplikasi berarti harus membukanya lagi dan
         menunggu pemuatan, sedangkan keluar akun cukup satu klik.
         """
-        if QMessageBox.question(
-                self, "Keluar dari akun",
-                f"Keluar dari akun {self.ctx.full_name or self.ctx.username}?\n\n"
-                "Pekerjaan yang sudah disimpan tetap aman. Anda akan kembali "
-                "ke halaman masuk untuk memakai akun lain.",
-                QMessageBox.Yes | QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Keluar dari akun",
+                           f"Keluar dari akun {self.ctx.full_name or self.ctx.username}?\n\n"
+                           "Pekerjaan yang sudah disimpan tetap aman. Anda akan kembali "
+                           "ke halaman masuk untuk memakai akun lain."):
             return
 
         try:
@@ -1408,21 +1718,12 @@ class JendelaAplikasi(QMainWindow):
 
         Mengembalikan True bila layar masuk sudah disiapkan.
         """
-        from PySide6.QtWidgets import QMessageBox
-
         from .periksa_lisensi import PemeriksaLisensi
 
-        tanya = QMessageBox(self)
-        tanya.setWindowTitle("Lisensi perlu diperiksa")
-        tanya.setIcon(QMessageBox.Information)
-        tanya.setText(alasan)
-        tanya.setInformativeText(
-            "Periksa sekarang? Komputer perlu tersambung ke internet.")
-        periksa = tanya.addButton("Periksa sekarang", QMessageBox.AcceptRole)
-        tanya.addButton("Nanti", QMessageBox.RejectRole)
-        tanya.exec()
-
-        if tanya.clickedButton() is not periksa:
+        if not popup.tanya(
+                self, "Lisensi perlu diperiksa", alasan,
+                rincian="Komputer perlu tersambung ke internet.",
+                teks_ya="Periksa sekarang", teks_tidak="Nanti"):
             return False
 
         # Pemeriksaan berjalan di latar belakang supaya jendela tidak membeku.
@@ -1565,17 +1866,16 @@ class JendelaAplikasi(QMainWindow):
         # Lisensi dicabut atau ditangguhkan server. Tampilkan keterangannya
         # lalu kembalikan ke layar aktivasi, supaya pengguna tahu sebabnya
         # dan dapat menempuh langkah berikutnya.
-        from PySide6.QtWidgets import QMessageBox
 
-        QMessageBox.critical(
-            self, "Lisensi tidak berlaku lagi",
-            f"{pesan}\n\n"
-            "Aplikasi tidak dapat dipakai dengan lisensi ini.\n\n"
-            "Langkah yang dapat ditempuh:\n"
-            "1. Periksa keadaan lisensi Anda di akuntuntas.xinet.id/beli\n"
-            "2. Bila lisensi diaktifkan kembali, masuk kembali ke aplikasi\n"
-            "3. Bila Anda memindahkan aplikasi ke komputer lain, lepas dulu\n"
-            "   perangkat lama melalui menu Pengaturan")
+        popup.galat(self,
+                    "Lisensi tidak berlaku lagi",
+                    f"{pesan}\n\n"
+                    "Aplikasi tidak dapat dipakai dengan lisensi ini.\n\n"
+                    "Langkah yang dapat ditempuh:\n"
+                    "1. Periksa keadaan lisensi Anda di akuntuntas.xinet.id/beli\n"
+                    "2. Bila lisensi diaktifkan kembali, masuk kembali ke aplikasi\n"
+                    "3. Bila Anda memindahkan aplikasi ke komputer lain, lepas dulu\n"
+                    "   perangkat lama melalui menu Pengaturan")
 
         # Bersihkan halaman masuk supaya tidak ada sisa data sesi lama.
         self.halaman_login = None
@@ -1621,6 +1921,22 @@ class JendelaAplikasi(QMainWindow):
 
     def _buka_utama(self, hasil: sec.LoginResult, mode: str):
         hasil.app_mode = mode
+        # Lepaskan widget pusat lama secara sadar. setCentralWidget() akan
+        # menghapus widget pusat sebelumnya lewat deleteLater(), sehingga
+        # referensi self.stack bisa menjadi objek C++ yang sudah mati dan
+        # baru ketahuan saat pengguna keluar dari akun.
+        self.takeCentralWidget()
+        lama = self.main_window
+        if lama is not None:
+            try:
+                lama.kembali_ke_login.disconnect(self._kembali_ke_login)
+            except (RuntimeError, TypeError):
+                pass
+            lama.deleteLater()
+        if self.stack is not None:
+            self.stack.deleteLater()
+            self.stack = None
+
         # Lisensi diberikan saat jendela utama dibuat supaya menu yang
         # tersedia langsung sesuai paket, tanpa sempat menampilkan menu
         # yang seharusnya terkunci.
@@ -1651,7 +1967,6 @@ class JendelaAplikasi(QMainWindow):
             return
         self._sudah_beri_tahu_uji_coba = True
 
-        from . import popup
 
         pilihan = popup.pilih(
             self,
@@ -1707,6 +2022,25 @@ class JendelaAplikasi(QMainWindow):
         """
         from .login import LoginPage
 
+        # Jendela utama adalah widget pusat saat ini. Lepaskan lebih dulu
+        # tanpa mengandalkan setCentralWidget(), lalu buang. Jangan memakai
+        # ulang self.stack: widget itu sudah menjadi milik jendela utama
+        # dan dapat dihapus kapan saja oleh Qt.
+        lama = self.main_window
+        self.main_window = None
+        if lama is not None:
+            try:
+                lama.kembali_ke_login.disconnect(self._kembali_ke_login)
+            except (RuntimeError, TypeError):
+                pass
+            self.takeCentralWidget()
+            lama.deleteLater()
+        if self.stack is not None:
+            self.stack.deleteLater()
+            self.stack = None
+
+        self.stack = QStackedWidget()
+        theme.latar(self.stack, f"background: {C.BG};")
         self.halaman_login = LoginPage()
         self.halaman_login.berhasil.connect(self._setelah_login)
         self.stack.addWidget(self.halaman_login)
@@ -1715,8 +2049,3 @@ class JendelaAplikasi(QMainWindow):
         self.showNormal()
         self.resize(1120, 720)
         self.setWindowTitle(config.APP_LONG_NAME)
-
-        # Buang jendela utama lama agar tidak menumpuk di memori.
-        if self.main_window is not None:
-            self.main_window.deleteLater()
-            self.main_window = None

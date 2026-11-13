@@ -67,8 +67,13 @@ def main() -> int:
     data = Path(tempfile.mkdtemp(prefix="uji_paket_"))
     print(f"  data   : {data}")
 
+    # Aplikasi membaca AKUNTANSIID_DATA, sedangkan LOCALAPPDATA dipakai
+    # untuk lisensi dan jejak pemakaian. Keduanya diarahkan ke folder
+    # sementara agar data pembukuan pengguna tidak tersentuh.
+    lokal = Path(tempfile.mkdtemp(prefix="uji_paket_lokal_"))
     lingkungan = dict(os.environ)
-    lingkungan["AKUNTUNTAS_DATA_DIR"] = str(data)
+    lingkungan["AKUNTANSIID_DATA"] = str(data)
+    lingkungan["LOCALAPPDATA"] = str(lokal)
 
     print()
     print("  Menjalankan aplikasi...")

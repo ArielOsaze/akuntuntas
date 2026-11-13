@@ -47,6 +47,20 @@ def bersihkan(app, jumlah=6):
         time.sleep(0.01)
 
 
+def tutup(app, layar):
+    """Tutup dan musnahkan jendela sebelum jendela berikutnya dibuat.
+
+    Tanpa penghancuran eksplisit, jendela-jendela top-level ini kadang
+    dimusnahkan Qt pada urutan yang salah saat proses berakhir dan
+    menimbulkan segfault. Gejalanya pemeriksaan dinyatakan gagal padahal
+    seluruh teks sudah memenuhi kontras.
+    """
+    layar.close()
+    layar.deleteLater()
+    for _ in range(3):
+        app.processEvents()
+
+
 def main() -> int:
     app = QApplication.instance() or QApplication([])
     app.setStyleSheet(theme.stylesheet())
@@ -54,7 +68,7 @@ def main() -> int:
     masalah = []
 
     # --- layar login dan panel mereknya ---
-    for nama, kelas, ukuran in (("login", LoginPage, (620, 660)),
+    for nama, kelas, ukuran in (("login", LoginPage, (920, 620)),
                                 ("merek", BrandPanel, (430, 660))):
         try:
             layar = kelas()
@@ -65,7 +79,7 @@ def main() -> int:
                 masalah.append((nama, *t))
                 print(f"  [SAMAR] {nama:12s} '{t[0]:48s}' teks={t[1]} "
                       f"latar={t[2]} rasio={t[3]} (min {t[4]})")
-            layar.close()
+            tutup(app, layar)
         except Exception as e:
             print(f"  [ERROR] {nama}: {type(e).__name__}: {e}")
 
@@ -83,7 +97,7 @@ def main() -> int:
                     masalah.append((nama, *t))
                     print(f"  [SAMAR] {nama:12s} '{t[0]:48s}' teks={t[1]} "
                           f"latar={t[2]} rasio={t[3]} (min {t[4]})")
-                layar.close()
+                tutup(app, layar)
             except Exception as e:
                 print(f"  [ERROR] {nama}: {type(e).__name__}: {e}")
 

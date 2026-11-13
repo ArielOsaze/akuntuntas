@@ -7,161 +7,32 @@ AkunTuntas - Halaman Laporan Keuangan
   • Arus Kas
   • Perubahan Ekuitas
   • Buku Besar
-  • Ringkasan Bulanan
-  • Ekspor (Excel / PDF / CSV)
+  • Cetak A4 dan ekspor Excel/PDF
 """
 from __future__ import annotations
 
-import csv
-import os
 from datetime import datetime
 
-from PySide6.QtCore import Signal
-from PySide6.QtGui import QDesktopServices
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QTabWidget,
-    QFileDialog, QMessageBox, QFrame, QMenu,
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
+    QFrame, QScrollArea,
 )
 
 from ... import config, services
 from .. import icons, theme
 from ..theme import C
 from .. import widgets as w
+from .. import popup
 
-
-# ==========================================================================
-# EKSPOR
-# ==========================================================================
-def ekspor_excel(judul: str, tabel_data: list[tuple[str, list[list]]],
-                 path: str) -> None:
-    """Ekspor beberapa tabel ke satu berkas Excel (satu sheet per tabel)."""
-    try:
-        import openpyxl
-        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
-    except ImportError:
-        raise RuntimeError("Modul openpyxl belum terpasang. "
-                           "Jalankan: pip install openpyxl")
-
-    wb = openpyxl.Workbook()
-    wb.remove(wb.active)
-
-    kepala_font = Font(bold=True, color="FFFFFF", size=11)
-    kepala_fill = PatternFill("solid", fgColor="1B4F8A")
-    tipis = Side(style="thin", color="DFE4EA")
-    border = Border(left=tipis, right=tipis, top=tipis, bottom=tipis)
-
-    for nama_sheet, baris in tabel_data:
-        ws = wb.create_sheet(title=nama_sheet[:31])
-        for r, data in enumerate(baris, start=1):
-            for c, nilai in enumerate(data, start=1):
-                cell = ws.cell(row=r, column=c)
-                if isinstance(nilai, str) and nilai.startswith("="):
-                    cell.value = nilai
-                elif isinstance(nilai, (int, float)):
-                    cell.value = nilai
-                    if abs(nilai) >= 1000:
-                        cell.number_format = '#,##0'
-                else:
-                    cell.value = str(nilai) if nilai is not None else ""
-                cell.border = border
-                if r == 1:
-                    cell.font = kepala_font
-                    cell.fill = kepala_fill
-                    cell.alignment = Alignment(horizontal="center", vertical="center")
-        for c in range(1, (len(baris[0]) if baris else 1) + 1):
-            ws.column_dimensions[openpyxl.utils.get_column_letter(c)].width = 24
-    wb.save(path)
-
-
-def ekspor_csv(nama: str, baris: list[list], path: str) -> None:
-    with open(path, "w", newline="", encoding="utf-8-sig") as f:
-        wr = csv.writer(f, delimiter=";")
-        for r in baris:
-            wr.writerow(r)
-
-
-def ekspor_pdf(judul: str, subjudul: str, tabel_data: list[tuple[str, list[list]]],
-               path: str) -> None:
-    """Ekspor laporan ke PDF dengan kop dan tata letak rapi."""
-    try:
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib import colors
-        from reportlab.lib.units import mm
-        from reportlab.platypus import (SimpleDocTemplate, Table, TableStyle,
-                                        Paragraph, Spacer)
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    except ImportError:
-        raise RuntimeError("Modul reportlab belum terpasang. "
-                           "Jalankan: pip install reportlab")
-
-    doc = SimpleDocTemplate(path, pagesize=A4,
-                            leftMargin=16 * mm, rightMargin=16 * mm,
-                            topMargin=15 * mm, bottomMargin=15 * mm,
-                            title=judul)
-    styles = getSampleStyleSheet()
-    st_judul = ParagraphStyle("JudulID", parent=styles["Title"], fontSize=15,
-                              spaceAfter=3, textColor=colors.HexColor("#1A2733"))
-    st_sub = ParagraphStyle("SubID", parent=styles["Normal"], fontSize=9,
-                            textColor=colors.HexColor("#64748B"), spaceAfter=10)
-    st_seksi = ParagraphStyle("SeksiID", parent=styles["Heading2"], fontSize=11,
-                              spaceBefore=12, spaceAfter=6,
-                              textColor=colors.HexColor("#1B4F8A"))
-    st_kecil = ParagraphStyle("KecilID", parent=styles["Normal"], fontSize=7.5,
-                              textColor=colors.HexColor("#556577"))
-
-    elemen = [Paragraph(judul, st_judul), Paragraph(subjudul, st_sub)]
-    elemen.append(Paragraph(
-        f"Dicetak {datetime.now().strftime('%d/%m/%Y %H:%M')} · "
-        f"AkunTuntas {config.APP_VERSION}", st_kecil))
-
-    for nama, baris in tabel_data:
-        elemen.append(Paragraph(nama, st_seksi))
-        if not baris:
-            elemen.append(Paragraph("(tidak ada data)", st_sub))
-            continue
-
-        # konversi angka menjadi teks berformat
-        data_tampil = []
-        for r_i, r in enumerate(baris):
-            baris_baru = []
-            for nilai in r:
-                if isinstance(nilai, (int, float)) and not isinstance(nilai, bool):
-                    baris_baru.append(f"{nilai:,.0f}".replace(",", "."))
-                else:
-                    baris_baru.append(str(nilai) if nilai is not None else "")
-            data_tampil.append(baris_baru)
-
-        n_kolom = max(len(r) for r in data_tampil)
-        for r in data_tampil:
-            while len(r) < n_kolom:
-                r.append("")
-
-        lebar = (doc.width) / n_kolom
-        t = Table(data_tampil, colWidths=[lebar] * n_kolom, repeatRows=1)
-        t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1B4F8A")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 7.5),
-            ("FONTSIZE", (0, 1), (-1, -1), 7.5),
-            ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
-            ("ALIGN", (0, 0), (0, -1), "LEFT"),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#DFE4EA")),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-             [colors.white, colors.HexColor("#FAFBFC")]),
-            ("TOPPADDING", (0, 0), (-1, -1), 3),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-        ]))
-        elemen.append(t)
-
-    elemen.append(Spacer(1, 10))
-    elemen.append(Paragraph(
-        "Dokumen ini dihasilkan otomatis oleh AkunTuntas. Angka bersumber dari "
-        "jurnal yang tercatat. Verifikasi kebenaran data sebelum digunakan untuk "
-        "pelaporan resmi.", st_kecil))
-    doc.build(elemen)
+PETA_TAB = {
+    0: "Laba Rugi",
+    1: "Neraca",
+    2: "Arus Kas",
+    3: "Perubahan Ekuitas",
+    4: "Neraca Saldo",
+    5: "Buku Besar",
+}
 
 
 # ==========================================================================
@@ -202,16 +73,19 @@ class LaporanPage(QWidget):
         self.cmb_periode.currentIndexChanged.connect(self.muat)
         self.header.tambah_aksi(self.cmb_periode)
 
-        # Satu tombol ekspor dengan pilihan format. Dua tombol terpisah
-        # membuat baris aksi meluber keluar tepi header.
         b_ekspor = w.tombol("Ekspor", ikon="ekspor")
-        menu_ekspor = QMenu(b_ekspor)
-        menu_ekspor.addAction(icons.ikon("laporan", C.TEXT, 16), "Excel (.xlsx)",
-                              lambda: self._ekspor("excel"))
-        menu_ekspor.addAction(icons.ikon("dokumen", C.TEXT, 16), "PDF (.pdf)",
-                              lambda: self._ekspor("pdf"))
-        b_ekspor.setMenu(menu_ekspor)
+        b_ekspor.setToolTip(
+            "Simpan laporan yang sedang dibuka ke Excel atau PDF.\n"
+            "Pilih format pada dialog penyimpanan.")
+        b_ekspor.clicked.connect(self._ekspor)
         self.header.tambah_aksi(b_ekspor)
+
+        b_cetak = w.tombol("Cetak", ikon="dokumen")
+        b_cetak.setToolTip(
+            "Cetak laporan yang sedang dibuka ke kertas A4.\n"
+            "Pratinjau ditampilkan lebih dulu sebelum kertas terpakai.")
+        b_cetak.clicked.connect(self._cetak)
+        self.header.tambah_aksi(b_cetak)
 
         kepala = QWidget()
         theme.latar(kepala, f"background: {C.SURFACE}; "
@@ -221,34 +95,40 @@ class LaporanPage(QWidget):
         kl.addWidget(self.header)
         luar.addWidget(kepala)
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         wadah = QWidget()
         wl = QVBoxLayout(wadah)
         wl.setContentsMargins(22, 16, 22, 22)
         wl.addWidget(self.tabs)
         luar.addWidget(wadah, 1)
 
-        self.tab_neraca_saldo = QWidget()
-        self.tab_laba_rugi = QWidget()
-        self.tab_neraca = QWidget()
-        self.tab_arus_kas = QWidget()
-        self.tab_ekuitas = QWidget()
-        self.tab_buku_besar = QWidget()
-
-        self.tabs.addTab(self.tab_laba_rugi, "Laba Rugi")
-        self.tabs.addTab(self.tab_neraca, "Neraca")
-        self.tabs.addTab(self.tab_arus_kas, "Arus Kas")
-        self.tabs.addTab(self.tab_ekuitas, "Perubahan Ekuitas")
-        self.tabs.addTab(self.tab_neraca_saldo, "Neraca Saldo")
-        self.tabs.addTab(self.tab_buku_besar, "Buku Besar")
+        self.tab_laba_rugi = self._tab_gulir("Laba Rugi")
+        self.tab_neraca = self._tab_gulir("Neraca")
+        self.tab_arus_kas = self._tab_gulir("Arus Kas")
+        self.tab_ekuitas = self._tab_gulir("Perubahan Ekuitas")
+        self.tab_neraca_saldo = self._tab_gulir("Neraca Saldo")
+        self.tab_buku_besar = self._tab_gulir("Buku Besar")
         self.tabs.currentChanged.connect(self.muat)
 
-        for t in (self.tab_neraca_saldo, self.tab_laba_rugi, self.tab_neraca,
-                  self.tab_arus_kas, self.tab_ekuitas, self.tab_buku_besar):
-            lay = QVBoxLayout(t)
-            lay.setContentsMargins(0, 12, 0, 0)
-            lay.setSpacing(12)
+    def _tab_gulir(self, judul: str) -> QWidget:
+        """
+        Buat isi tab yang dapat digulir, lalu pasang sebagai tab.
+
+        Laporan panjang seperti neraca dan buku besar tidak boleh dipotong
+        oleh tinggi jendela. Dengan satu area gulir per tab, seluruh baris
+        dan totalnya dapat dicapai tanpa gulir bertumpuk di dalam tabel.
+        """
+        isi = QWidget()
+        lay = QVBoxLayout(isi)
+        lay.setContentsMargins(0, 12, 0, 0)
+        lay.setSpacing(12)
+        area = QScrollArea()
+        area.setWidgetResizable(True)
+        area.setFrameShape(QFrame.NoFrame)
+        area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        area.setWidget(isi)
+        self.tabs.addTab(area, judul)
+        return isi
 
     def _ganti_tahun(self):
         self.ctx.tahun = self.cmb_tahun.currentData()
@@ -340,6 +220,7 @@ class LaporanPage(QWidget):
 
         baris_tabel = []
         warna = {}
+        baris_tebal = set()
 
         def tambah(uraian, nilai, tebal=False, persen=None):
             idx = len(baris_tabel)
@@ -349,6 +230,7 @@ class LaporanPage(QWidget):
                                 f"{theme.persen(p, 1)}" if lr.pendapatan_usaha else ""])
             if tebal:
                 warna[idx] = C.PRIMARY
+                baris_tebal.add(idx)
             return idx
 
         tambah("PENDAPATAN USAHA", lr.pendapatan_usaha, True, 1.0)
@@ -361,7 +243,8 @@ class LaporanPage(QWidget):
         for kode, nama, nilai in lr.rincian_beban:
             akun = services.get_account(cid, kode)
             if akun and akun["grup_lr"] == "Beban Operasional":
-                baris_tabel.append([f"    {kode} {nama}", theme.money(nilai), ""])
+                baris_tabel.append(
+                    [f"    {kode} {nama}", theme.money(-nilai), ""])
         tambah("LABA OPERASIONAL", lr.laba_operasional, True)
         tambah("Pendapatan Lain-lain", lr.pendapatan_lain)
         tambah("Beban Lain-lain", -lr.beban_lain)
@@ -369,8 +252,9 @@ class LaporanPage(QWidget):
         tambah("Beban Pajak Kini (estimasi)", -lr.beban_pajak)
         tambah("LABA BERSIH SETELAH PAJAK", lr.laba_bersih, True)
 
-        t.isi(baris_tabel, warna_baris=warna, align_kanan={1, 2})
-        t.setMinimumHeight(120)
+        t.isi(baris_tabel, warna_baris=warna, align_kanan={1, 2},
+              tebal_baris=baris_tebal)
+        t.sesuaikan_tinggi(minimum=200, maksimum=900)
         lay.addWidget(t, 1)
 
         if self.ctx.beginner:
@@ -420,37 +304,39 @@ class LaporanPage(QWidget):
             "Catat dulu transaksi pada menu Jurnal Umum, Penjualan, atau "
             "Pembelian. Laporan akan terisi sendiri.")
 
-        baris1, warna1 = [], {}
+        baris1, warna1, tebal1 = [], {}, set()
 
-        def tambah1(label, nilai, tebal=False, indent=True):
+        def tambah1(label, nilai=None, tebal=False, indent=True):
             idx = len(baris1)
-            baris1.append([("    " if indent else "") + label, theme.money(nilai)])
+            nilai_teks = theme.money(nilai) if nilai is not None else ""
+            baris1.append([("    " if indent else "") + label, nilai_teks])
             if tebal:
                 warna1[idx] = C.PRIMARY
+                tebal1.add(idx)
             return idx
 
-        tambah1("ASET LANCAR", 0, True, False)
+        tambah1("ASET LANCAR", tebal=True, indent=False)
         for kode, (nama, nilai) in sorted(n.aset_lancar.items()):
             if nilai != 0:
                 tambah1(f"{kode} {nama}", nilai)
         tambah1("Total Aset Lancar", n.total_aset_lancar, True, False)
 
-        if n.aset_tetap:
-            tambah1("ASET TETAP", 0, True, False)
+        if any(nilai != 0 for _, (_, nilai) in n.aset_tetap.items()):
+            tambah1("ASET TETAP", tebal=True, indent=False)
             for kode, (nama, nilai) in sorted(n.aset_tetap.items()):
                 if nilai != 0:
                     tambah1(f"{kode} {nama}", nilai)
             tambah1("Total Aset Tetap", n.total_aset_tetap, True, False)
 
-        if n.aset_lain:
-            tambah1("ASET LAIN", 0, True, False)
+        if any(nilai != 0 for _, (_, nilai) in n.aset_lain.items()):
+            tambah1("ASET LAIN", tebal=True, indent=False)
             for kode, (nama, nilai) in sorted(n.aset_lain.items()):
                 if nilai != 0:
                     tambah1(f"{kode} {nama}", nilai)
 
         tambah1("TOTAL ASET", n.total_aset, True, False)
-        t1.isi(baris1, warna_baris=warna1, align_kanan={1})
-        t1.setMinimumHeight(380)
+        t1.isi(baris1, warna_baris=warna1, align_kanan={1},
+               tebal_baris=tebal1)
         ka.body().addWidget(t1, 1)
         dua.addWidget(ka, 1)
 
@@ -466,23 +352,25 @@ class LaporanPage(QWidget):
             "Catat dulu transaksi pada menu Jurnal Umum, Penjualan, atau "
             "Pembelian. Laporan akan terisi sendiri.")
 
-        baris2, warna2 = [], {}
+        baris2, warna2, tebal2 = [], {}, set()
 
-        def tambah2(label, nilai, tebal=False, indent=True):
+        def tambah2(label, nilai=None, tebal=False, indent=True):
             idx = len(baris2)
-            baris2.append([("    " if indent else "") + label, theme.money(nilai)])
+            nilai_teks = theme.money(nilai) if nilai is not None else ""
+            baris2.append([("    " if indent else "") + label, nilai_teks])
             if tebal:
                 warna2[idx] = C.PRIMARY
+                tebal2.add(idx)
             return idx
 
-        tambah2("LIABILITAS JANGKA PENDEK", 0, True, False)
+        tambah2("LIABILITAS JANGKA PENDEK", tebal=True, indent=False)
         for kode, (nama, nilai) in sorted(n.liabilitas_pendek.items()):
             if nilai != 0:
                 tambah2(f"{kode} {nama}", nilai)
         tambah2("Total Liabilitas Jangka Pendek", n.total_liabilitas_pendek, True, False)
 
-        if n.liabilitas_panjang:
-            tambah2("LIABILITAS JANGKA PANJANG", 0, True, False)
+        if any(nilai != 0 for _, (_, nilai) in n.liabilitas_panjang.items()):
+            tambah2("LIABILITAS JANGKA PANJANG", tebal=True, indent=False)
             for kode, (nama, nilai) in sorted(n.liabilitas_panjang.items()):
                 if nilai != 0:
                     tambah2(f"{kode} {nama}", nilai)
@@ -490,7 +378,7 @@ class LaporanPage(QWidget):
 
         tambah2("TOTAL LIABILITAS", n.total_liabilitas, True, False)
 
-        tambah2("EKUITAS", 0, True, False)
+        tambah2("EKUITAS", tebal=True, indent=False)
         tambah2("Modal Disetor", n.modal)
         tambah2("Saldo Laba", n.saldo_laba)
         tambah2("Laba Tahun Berjalan", n.laba_tahun_berjalan)
@@ -499,8 +387,13 @@ class LaporanPage(QWidget):
         tambah2("Total Ekuitas", n.total_ekuitas, True, False)
         tambah2("TOTAL LIABILITAS & EKUITAS", n.total_liabilitas_ekuitas, True, False)
 
-        t2.isi(baris2, warna_baris=warna2, align_kanan={1})
-        t2.setMinimumHeight(380)
+        t2.isi(baris2, warna_baris=warna2, align_kanan={1},
+               tebal_baris=tebal2)
+        # Kedua sisi neraca memakai tinggi yang sama agar tampak sejajar,
+        # dan seluruh baris termasuk totalnya langsung terlihat.
+        tinggi_neraca = max(t1.tinggi_konten(), t2.tinggi_konten())
+        t1.setFixedHeight(tinggi_neraca)
+        t2.setFixedHeight(tinggi_neraca)
         ke.body().addWidget(t2, 1)
         dua.addWidget(ke, 1)
         lay.addLayout(dua)
@@ -509,7 +402,7 @@ class LaporanPage(QWidget):
         cek = QFrame()
         warna_bg = C.SUCCESS_BG if n.seimbang else C.DANGER_BG
         warna_txt = C.SUCCESS if n.seimbang else C.DANGER
-        border = "#B8E6D5" if n.seimbang else "#F5C2C2"
+        border = "#BFDCCB" if n.seimbang else "#EAC4BF"
         theme.latar(cek, f"background: {warna_bg}; border: 1px solid {border}; "
                           "border-radius: 8px;")
         cl = QHBoxLayout(cek)
@@ -584,29 +477,31 @@ class LaporanPage(QWidget):
             "Catat dulu transaksi pada menu Jurnal Umum, Penjualan, atau "
             "Pembelian. Laporan akan terisi sendiri.")
 
-        baris_t, warna = [], {}
+        baris_t, warna, tebal_baris = [], {}, set()
 
-        def tambah(label, nilai, tebal=False, indent=0):
+        def tambah(label, nilai=None, tebal=False, indent=0):
             idx = len(baris_t)
-            baris_t.append(["    " * indent + label, theme.money(nilai)])
+            nilai_teks = theme.money(nilai) if nilai is not None else ""
+            baris_t.append(["    " * indent + label, nilai_teks])
             if tebal:
                 warna[idx] = C.PRIMARY
+                tebal_baris.add(idx)
 
-        tambah("AKTIVITAS OPERASI", 0, True)
+        tambah("AKTIVITAS OPERASI", tebal=True)
         for label, nilai in a.operasi_masuk:
             tambah(f"Penerimaan - {label}", nilai, indent=1)
         for label, nilai in a.operasi_keluar:
             tambah(f"Pengeluaran - {label}", -nilai, indent=1)
         tambah("Arus Kas Bersih dari Aktivitas Operasi", a.total_operasi, True)
 
-        tambah("AKTIVITAS INVESTASI", 0, True)
+        tambah("AKTIVITAS INVESTASI", tebal=True)
         for label, nilai in a.investasi_masuk:
             tambah(f"Penerimaan - {label}", nilai, indent=1)
         for label, nilai in a.investasi_keluar:
             tambah(f"Pengeluaran - {label}", -nilai, indent=1)
         tambah("Arus Kas Bersih dari Aktivitas Investasi", a.total_investasi, True)
 
-        tambah("AKTIVITAS PENDANAAN", 0, True)
+        tambah("AKTIVITAS PENDANAAN", tebal=True)
         for label, nilai in a.pendanaan_masuk:
             tambah(f"Penerimaan - {label}", nilai, indent=1)
         for label, nilai in a.pendanaan_keluar:
@@ -617,8 +512,9 @@ class LaporanPage(QWidget):
         tambah("Kas pada Awal Periode", a.kas_awal)
         tambah("KAS PADA AKHIR PERIODE", a.kas_akhir, True)
 
-        t.isi(baris_t, warna_baris=warna, align_kanan={1})
-        t.setMinimumHeight(120)
+        t.isi(baris_t, warna_baris=warna, align_kanan={1},
+              tebal_baris=tebal_baris)
+        t.sesuaikan_tinggi()
         lay.addWidget(t, 1)
 
         if not a.seimbang:
@@ -661,14 +557,16 @@ class LaporanPage(QWidget):
             "Catat dulu transaksi pada menu Jurnal Umum, Penjualan, atau "
             "Pembelian. Laporan akan terisi sendiri.")
 
-        baris, warna = [], {}
+        baris, warna, tebal_baris = [], {}, set()
         for d in data:
             idx = len(baris)
             baris.append([d["uraian"], theme.money(d["nilai"])])
             if d.get("tebal"):
                 warna[idx] = C.PRIMARY
-        t.isi(baris, warna_baris=warna, align_kanan={1})
-        t.setMinimumHeight(120)
+                tebal_baris.add(idx)
+        t.isi(baris, warna_baris=warna, align_kanan={1},
+              tebal_baris=tebal_baris)
+        t.sesuaikan_tinggi()
         lay.addWidget(t, 1)
 
         if self.ctx.beginner:
@@ -724,14 +622,15 @@ class LaporanPage(QWidget):
                       theme.money(tk), ""])
         warna[idx_total] = C.PRIMARY
 
-        t.isi(baris, warna_baris=warna, align_kanan={4, 5, 6, 7})
-        t.setMinimumHeight(120)
+        t.isi(baris, warna_baris=warna, align_kanan={4, 5, 6, 7},
+              tebal_baris={idx_total})
+        t.sesuaikan_tinggi(minimum=200, maksimum=620)
         lay.addWidget(t, 1)
 
         status = QFrame()
         seimbang = abs(td - tk) < 0.5
         theme.latar(status, f"background: {C.SUCCESS_BG if seimbang else C.DANGER_BG}; "
-            f"border: 1px solid {'#B8E6D5' if seimbang else '#F5C2C2'}; "
+            f"border: 1px solid {'#BFDCCB' if seimbang else '#EAC4BF'}; "
             "border-radius: 8px;")
         sl = QHBoxLayout(status)
         sl.setContentsMargins(16, 12, 16, 12)
@@ -812,7 +711,7 @@ class LaporanPage(QWidget):
             "Catat dulu transaksi pada menu Jurnal Umum, Penjualan, atau "
             "Pembelian. Laporan akan terisi sendiri.")
 
-        baris, warna = [], {}
+        baris, warna, tebal_baris = [], {}, set()
         for i, d in enumerate(data):
             idx = len(baris)
             baris.append([
@@ -824,8 +723,10 @@ class LaporanPage(QWidget):
             ])
             if d.get("awal"):
                 warna[idx] = C.PRIMARY
-        t.isi(baris, warna_baris=warna, align_kanan={3, 4, 5})
-        t.setMinimumHeight(120)
+                tebal_baris.add(idx)
+        t.isi(baris, warna_baris=warna, align_kanan={3, 4, 5},
+              tebal_baris=tebal_baris)
+        t.sesuaikan_tinggi(minimum=200, maksimum=620)
         self.area_bb_lay.addWidget(t)
 
         total_d = sum(d["debit"] for d in data)
@@ -846,170 +747,226 @@ class LaporanPage(QWidget):
     # ==================================================================
     # EKSPOR
     # ==================================================================
-    def _kumpulkan_data_ekspor(self) -> list[tuple[str, list[list]]]:
-        """Siapkan seluruh tabel laporan untuk diekspor."""
+    def _kumpulkan_data_ekspor(self, bagian: str = None):
+        """
+        Siapkan tabel satu laporan, atau seluruh laporan bila bagian kosong.
+
+        Data dibentuk dari layanan yang sama dengan yang tampil di layar,
+        sehingga angka pada hasil cetak selalu sama dengan yang dilihat
+        pengguna.
+        """
         cid, tahun, bulan = self.ctx.company_id, self.ctx.tahun, self.periode()
         comp = services.get_company(cid)
         nama_periode = (config.MONTH_NAMES_ID[bulan - 1] + f" {tahun}"
                         if bulan else f"Tahun {tahun}")
-        hasil: list[tuple[str, list[list]]] = []
+        hasil = []
 
-        # identitas
-        hasil.append(("Identitas", [
-            ["Keterangan", "Nilai"],
-            ["Nama Entitas", comp["nama"]],
-            ["Bentuk Badan", config.ENTITY_TYPES.get(comp["bentuk"], {}).get("nama", comp["bentuk"])],
-            ["NPWP", comp["npwp"] or "-"],
-            ["Periode Laporan", nama_periode],
-            ["Status PKP", "Ya" if comp["status_pkp"] else "Tidak"],
-            ["Skema PPh", comp["skema_pph"]],
-            ["SAK yang Dipakai", config.ENTITY_TYPES.get(comp["bentuk"], {}).get("sak", "-")],
-        ]))
+        def perlu(nama):
+            return bagian is None or bagian == nama
 
-        # laba rugi
-        lr = services.laporan_laba_rugi(cid, tahun, bulan)
-        baris_lr = [["Uraian", "Jumlah (Rp)"]]
-        baris_lr += [
-            ["Pendapatan Usaha", lr.pendapatan_usaha],
-            ["Harga Pokok Penjualan", -lr.hpp],
-            ["LABA KOTOR", lr.laba_kotor],
-            ["Beban Operasional", -lr.beban_operasional],
-            ["LABA OPERASIONAL", lr.laba_operasional],
-            ["Pendapatan Lain-lain", lr.pendapatan_lain],
-            ["Beban Lain-lain", -lr.beban_lain],
-            ["LABA SEBELUM PAJAK", lr.laba_sebelum_pajak],
-            ["Beban Pajak Kini (estimasi)", -lr.beban_pajak],
-            ["LABA BERSIH SETELAH PAJAK", lr.laba_bersih],
-        ]
-        hasil.append(("Laba Rugi", baris_lr))
+        if bagian is None:
+            hasil.append(("Identitas", [
+                ["Keterangan", "Nilai"],
+                ["Nama Entitas", comp["nama"]],
+                ["Bentuk Badan", config.ENTITY_TYPES.get(
+                    comp["bentuk"], {}).get("nama", comp["bentuk"])],
+                ["NPWP", comp["npwp"] or "-"],
+                ["Periode Laporan", nama_periode],
+                ["Status PKP", "Ya" if comp["status_pkp"] else "Tidak"],
+                ["Skema PPh", comp["skema_pph"]],
+                ["SAK yang Dipakai", config.ENTITY_TYPES.get(
+                    comp["bentuk"], {}).get("sak", "-")],
+            ]))
 
-        # neraca
-        n = services.laporan_neraca(cid, tahun, bulan)
-        baris_n = [["Keterangan", "Jumlah (Rp)"]]
-        baris_n.append(["ASET", ""])
-        for kode, (nama, nilai) in sorted(n.aset_lancar.items()):
-            if nilai:
-                baris_n.append([f"{kode} {nama}", nilai])
-        for kode, (nama, nilai) in sorted(n.aset_tetap.items()):
-            if nilai:
-                baris_n.append([f"{kode} {nama}", nilai])
-        for kode, (nama, nilai) in sorted(n.aset_lain.items()):
-            if nilai:
-                baris_n.append([f"{kode} {nama}", nilai])
-        baris_n.append(["TOTAL ASET", n.total_aset])
-        baris_n.append(["LIABILITAS", ""])
-        for kode, (nama, nilai) in sorted(n.liabilitas_pendek.items()):
-            if nilai:
-                baris_n.append([f"{kode} {nama}", nilai])
-        for kode, (nama, nilai) in sorted(n.liabilitas_panjang.items()):
-            if nilai:
-                baris_n.append([f"{kode} {nama}", nilai])
-        baris_n.append(["TOTAL LIABILITAS", n.total_liabilitas])
-        baris_n.append(["EKUITAS", ""])
-        baris_n.append(["Modal Disetor", n.modal])
-        baris_n.append(["Saldo Laba", n.saldo_laba])
-        baris_n.append(["Laba Tahun Berjalan", n.laba_tahun_berjalan])
-        if n.prive:
-            baris_n.append(["Prive", -n.prive])
-        baris_n.append(["TOTAL EKUITAS", n.total_ekuitas])
-        baris_n.append(["TOTAL LIABILITAS & EKUITAS", n.total_liabilitas_ekuitas])
-        hasil.append(("Neraca", baris_n))
+        if perlu("Laba Rugi"):
+            lr = services.laporan_laba_rugi(cid, tahun, bulan)
+            baris = [["Uraian", "Jumlah (Rp)"]]
+            baris += [
+                ["Pendapatan Usaha", lr.pendapatan_usaha],
+                ["Harga Pokok Penjualan", -lr.hpp],
+                ["LABA KOTOR", lr.laba_kotor],
+                ["Beban Operasional", -lr.beban_operasional],
+                ["LABA OPERASIONAL", lr.laba_operasional],
+                ["Pendapatan Lain-lain", lr.pendapatan_lain],
+                ["Beban Lain-lain", -lr.beban_lain],
+                ["LABA SEBELUM PAJAK", lr.laba_sebelum_pajak],
+                ["Beban Pajak Kini (estimasi)", -lr.beban_pajak],
+                ["LABA BERSIH SETELAH PAJAK", lr.laba_bersih],
+            ]
+            hasil.append(("Laba Rugi", baris))
 
-        # neraca saldo
-        ns = services.laporan_neraca_saldo(cid, tahun, bulan)
-        baris_ns = [["Kode", "Nama Akun", "Tipe", "Saldo Awal", "Debit", "Kredit", "Saldo Akhir"]]
-        for d in ns:
-            if d.saldo_awal == 0 and d.debit == 0 and d.kredit == 0:
-                continue
-            baris_ns.append([d.kode, d.nama, d.tipe, d.saldo_awal, d.debit,
-                             d.kredit, d.saldo_akhir_normal])
-        hasil.append(("Neraca Saldo", baris_ns))
+        if perlu("Neraca"):
+            n = services.laporan_neraca(cid, tahun, bulan)
+            baris = [["Keterangan", "Jumlah (Rp)"], ["ASET", ""]]
+            for kode, (nama, nilai) in sorted(n.aset_lancar.items()):
+                if nilai:
+                    baris.append([f"{kode} {nama}", nilai])
+            for kode, (nama, nilai) in sorted(n.aset_tetap.items()):
+                if nilai:
+                    baris.append([f"{kode} {nama}", nilai])
+            for kode, (nama, nilai) in sorted(n.aset_lain.items()):
+                if nilai:
+                    baris.append([f"{kode} {nama}", nilai])
+            baris.append(["TOTAL ASET", n.total_aset])
+            baris.append(["LIABILITAS", ""])
+            for kode, (nama, nilai) in sorted(n.liabilitas_pendek.items()):
+                if nilai:
+                    baris.append([f"{kode} {nama}", nilai])
+            for kode, (nama, nilai) in sorted(n.liabilitas_panjang.items()):
+                if nilai:
+                    baris.append([f"{kode} {nama}", nilai])
+            baris.append(["TOTAL LIABILITAS", n.total_liabilitas])
+            baris.append(["EKUITAS", ""])
+            baris.append(["Modal Disetor", n.modal])
+            baris.append(["Saldo Laba", n.saldo_laba])
+            baris.append(["Laba Tahun Berjalan", n.laba_tahun_berjalan])
+            if n.prive:
+                baris.append(["Prive", -n.prive])
+            baris.append(["TOTAL EKUITAS", n.total_ekuitas])
+            baris.append(["TOTAL LIABILITAS & EKUITAS",
+                          n.total_liabilitas_ekuitas])
+            hasil.append(("Neraca", baris))
 
-        # arus kas
-        a = services.laporan_arus_kas(cid, tahun, bulan)
-        baris_a = [["Uraian", "Jumlah (Rp)"]]
-        for label, nilai in a.operasi_masuk:
-            baris_a.append([f"Penerimaan operasi - {label}", nilai])
-        for label, nilai in a.operasi_keluar:
-            baris_a.append([f"Pengeluaran operasi - {label}", -nilai])
-        baris_a.append(["Arus Kas Operasi", a.total_operasi])
-        for label, nilai in a.investasi_masuk:
-            baris_a.append([f"Penerimaan investasi - {label}", nilai])
-        for label, nilai in a.investasi_keluar:
-            baris_a.append([f"Pengeluaran investasi - {label}", -nilai])
-        baris_a.append(["Arus Kas Investasi", a.total_investasi])
-        for label, nilai in a.pendanaan_masuk:
-            baris_a.append([f"Penerimaan pendanaan - {label}", nilai])
-        for label, nilai in a.pendanaan_keluar:
-            baris_a.append([f"Pengeluaran pendanaan - {label}", -nilai])
-        baris_a.append(["Arus Kas Pendanaan", a.total_pendanaan])
-        baris_a.append(["Kenaikan/(Penurunan) Kas", a.kenaikan_kas])
-        baris_a.append(["Kas Awal", a.kas_awal])
-        baris_a.append(["Kas Akhir", a.kas_akhir])
-        hasil.append(("Arus Kas", baris_a))
+        if perlu("Arus Kas"):
+            a = services.laporan_arus_kas(cid, tahun, bulan)
+            baris = [["Uraian", "Jumlah (Rp)"]]
+            for label, nilai in a.operasi_masuk:
+                baris.append([f"Penerimaan operasi - {label}", nilai])
+            for label, nilai in a.operasi_keluar:
+                baris.append([f"Pengeluaran operasi - {label}", -nilai])
+            baris.append(["Arus Kas Operasi", a.total_operasi])
+            for label, nilai in a.investasi_masuk:
+                baris.append([f"Penerimaan investasi - {label}", nilai])
+            for label, nilai in a.investasi_keluar:
+                baris.append([f"Pengeluaran investasi - {label}", -nilai])
+            baris.append(["Arus Kas Investasi", a.total_investasi])
+            for label, nilai in a.pendanaan_masuk:
+                baris.append([f"Penerimaan pendanaan - {label}", nilai])
+            for label, nilai in a.pendanaan_keluar:
+                baris.append([f"Pengeluaran pendanaan - {label}", -nilai])
+            baris.append(["Arus Kas Pendanaan", a.total_pendanaan])
+            baris.append(["Kenaikan/(Penurunan) Kas", a.kenaikan_kas])
+            baris.append(["Kas Awal", a.kas_awal])
+            baris.append(["Kas Akhir", a.kas_akhir])
+            hasil.append(("Arus Kas", baris))
 
-        # jurnal
-        jurnal = services.list_jurnal(cid, tahun, bulan, limit=5000)
-        baris_j = [["Tanggal", "No. Bukti", "Keterangan", "Debit", "Kredit"]]
-        for e in jurnal:
-            baris_j.append([e["tanggal"], e["no_bukti"], e["keterangan"],
-                            e["total_debit"], e["total_kredit"]])
-        hasil.append(("Jurnal", baris_j))
+        if perlu("Perubahan Ekuitas"):
+            data = services.laporan_perubahan_ekuitas(cid, tahun)
+            baris = [["Uraian", "Jumlah (Rp)"]]
+            for d in data:
+                baris.append([d["uraian"], d["nilai"]])
+            hasil.append(("Perubahan Ekuitas", baris))
+
+        if perlu("Neraca Saldo"):
+            ns = services.laporan_neraca_saldo(cid, tahun, bulan)
+            baris = [["Kode", "Nama Akun", "Tipe", "Saldo Awal", "Debit",
+                      "Kredit", "Saldo Akhir"]]
+            for d in ns:
+                if d.saldo_awal == 0 and d.debit == 0 and d.kredit == 0:
+                    continue
+                baris.append([d.kode, d.nama, d.tipe, d.saldo_awal, d.debit,
+                              d.kredit, d.saldo_akhir_normal])
+            if len(baris) > 1:
+                baris.append(["", "TOTAL MUTASI", "", "",
+                              sum(d.debit for d in ns),
+                              sum(d.kredit for d in ns), ""])
+            hasil.append(("Neraca Saldo", baris))
+
+        if perlu("Buku Besar"):
+            kode = (self.cmb_akun.currentData()
+                    if hasattr(self, "cmb_akun") else None)
+            akun = services.get_account(cid, kode) if kode else None
+            nama = (f"Buku Besar · {akun['kode']} {akun['nama']}"
+                    if akun else "Buku Besar")
+            baris = [["Tanggal", "No. Bukti", "Keterangan", "Debit", "Kredit",
+                      "Saldo"]]
+            data = (services.buku_besar(cid, kode, tahun, bulan)
+                    if kode else [])
+            for d in data:
+                baris.append([
+                    d["tanggal"] if not d.get("awal") else "",
+                    d["no_bukti"], d["keterangan"], d["debit"], d["kredit"],
+                    d["saldo"],
+                ])
+            if len(baris) > 1:
+                baris.append(["", "", "TOTAL MUTASI",
+                              sum(d["debit"] for d in data),
+                              sum(d["kredit"] for d in data),
+                              data[-1]["saldo"]])
+            hasil.append((nama, baris))
+
+        if bagian is None:
+            jurnal = services.list_jurnal(cid, tahun, bulan, limit=5000)
+            baris = [["Tanggal", "No. Bukti", "Keterangan", "Debit", "Kredit"]]
+            for e in jurnal:
+                baris.append([e["tanggal"], e["no_bukti"], e["keterangan"],
+                              e["total_debit"], e["total_kredit"]])
+            hasil.append(("Jurnal", baris))
 
         return hasil
 
-    def _ekspor(self, jenis: str):
+    def _data_laporan_aktif(self):
+        """Ambil laporan pada tab yang sedang dibuka, siap dicetak."""
+        nama = PETA_TAB.get(self.tabs.currentIndex())
+        if not nama:
+            return []
+        try:
+            data = self._kumpulkan_data_ekspor(nama)
+        except Exception as e:
+            popup.galat(self, "Gagal menyiapkan data", str(e))
+            return []
+        if not data or len(data[0][1]) <= 1:
+            popup.beri_tahu(self,
+                            "Belum ada data",
+                            f"Laporan {nama} belum memiliki data untuk dicetak.")
+            return []
+        return data
+
+    def _judul_dan_subjudul(self):
         cid = self.ctx.company_id
         if not cid:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
-            return
+            return None
         comp = services.get_company(cid)
         tahun, bulan = self.ctx.tahun, self.periode()
-        periode_teks = (f"{config.MONTH_NAMES_ID[bulan - 1]} {tahun}" if bulan
-                        else f"Tahun {tahun}")
+        periode = (f"{config.MONTH_NAMES_ID[bulan - 1]} {tahun}"
+                   if bulan else f"Tahun {tahun}")
+        nama = PETA_TAB.get(self.tabs.currentIndex(), "Laporan")
+        sub = f"Periode {periode} · NPWP {comp['npwp'] or '-'}"
+        return comp, nama, sub, periode
 
-        config.ensure_dirs()
-        nama_berkas = (f"Laporan_{comp['nama'].replace(' ', '_')}_"
-                       f"{periode_teks.replace(' ', '_')}")
-
-        try:
-            data = self._kumpulkan_data_ekspor()
-        except Exception as e:
-            QMessageBox.critical(self, "Gagal menyiapkan data", str(e))
+    def _ekspor(self):
+        info = self._judul_dan_subjudul()
+        if not info:
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
-
-        if jenis == "excel":
-            path, _ = QFileDialog.getSaveFileName(
-                self, "Simpan Laporan Excel",
-                str(config.EXPORT_DIR / f"{nama_berkas}.xlsx"),
-                "Berkas Excel (*.xlsx)")
-            if not path:
-                return
-            try:
-                ekspor_excel(comp["nama"], data, path)
-            except Exception as e:
-                QMessageBox.critical(self, "Gagal mengekspor", str(e))
-                return
-        elif jenis == "pdf":
-            path, _ = QFileDialog.getSaveFileName(
-                self, "Simpan Laporan PDF",
-                str(config.EXPORT_DIR / f"{nama_berkas}.pdf"),
-                "Berkas PDF (*.pdf)")
-            if not path:
-                return
-            try:
-                ekspor_pdf(f"Laporan Keuangan - {comp['nama']}",
-                           f"Periode {periode_teks} · NPWP {comp['npwp'] or '-'}",
-                           data, path)
-            except Exception as e:
-                QMessageBox.critical(self, "Gagal mengekspor", str(e))
-                return
-        else:
+        comp, nama, sub, periode = info
+        data = self._data_laporan_aktif()
+        if not data:
             return
+        from ..ekspor_cetak import ekspor_halaman
+        ekspor_halaman(
+            self, nama, sub, data,
+            nama_berkas=f"{nama}_{comp['nama']}_{periode}",
+            perusahaan=comp["nama"],
+            penanda={"nama": getattr(self.ctx, "full_name", "")
+                             or getattr(self.ctx, "username", ""),
+                     "kota": comp.get("kota", "")})
 
-        if QMessageBox.question(
-                self, "Ekspor selesai",
-                f"Laporan berhasil disimpan:\n{path}\n\nBuka folder penyimpanan?",
-                QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
-            QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.dirname(path)))
+    def _cetak(self):
+        info = self._judul_dan_subjudul()
+        if not info:
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
+            return
+        comp, nama, sub, _ = info
+        data = self._data_laporan_aktif()
+        if not data:
+            return
+        from ..ekspor_cetak import cetak_halaman
+        cetak_halaman(self, nama, sub, data, perusahaan=comp["nama"],
+                      penanda={"nama": getattr(self.ctx, "full_name", "")
+                                       or getattr(self.ctx, "username", ""),
+                               "kota": comp.get("kota", "")})

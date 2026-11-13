@@ -818,14 +818,7 @@ a { color: var(--aksen-tua); }
     background: var(--aksen);
 }
 
-.jendela-ganda {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--r5);
-    align-items: start;
-}
-
-.jendela-ganda .jendela:last-child { margin-top: var(--r6); }
+.jendela-tunggal { max-width: 980px; margin: 0 auto; }
 
 /* -------------------------------------------------------------- keamanan */
 .pilar {
@@ -1542,8 +1535,6 @@ a { color: var(--aksen-tua); }
     .kisi-fitur .fitur:last-child h3 { margin-bottom: 7px; }
     .kisi-fitur .fitur:last-child p { max-width: none; }
     .mode-kisi { grid-template-columns: 1fr; }
-    .jendela-ganda { grid-template-columns: 1fr; }
-    .jendela-ganda .jendela:last-child { margin-top: 0; }
     .kisi-harga { grid-template-columns: 1fr; max-width: 560px; }
     .syarat-kisi { grid-template-columns: 1fr; }
     .kaki-isi { grid-template-columns: 1fr 1fr; }

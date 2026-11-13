@@ -91,10 +91,12 @@ def main() -> int:
 
     app = QApplication([])
     app.setStyleSheet(theme.stylesheet())
-    QMessageBox.information = staticmethod(lambda *a, **k: QMessageBox.Ok)
-    QMessageBox.warning = staticmethod(lambda *a, **k: QMessageBox.Ok)
-    QMessageBox.critical = staticmethod(lambda *a, **k: QMessageBox.Ok)
-    QMessageBox.question = staticmethod(lambda *a, **k: QMessageBox.Yes)
+    from akuntansi_id.ui import popup
+    popup.beri_tahu = lambda *a, **k: None
+    popup.sukses = lambda *a, **k: None
+    popup.peringatkan = lambda *a, **k: None
+    popup.galat = lambda *a, **k: None
+    popup.tanya = lambda *a, **k: True
 
     config.ensure_dirs()
     db.init_db()

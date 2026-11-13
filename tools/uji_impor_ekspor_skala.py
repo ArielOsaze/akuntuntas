@@ -250,13 +250,13 @@ def main() -> int:
     print("[10. Ekspor Excel: isinya diperiksa]")
     try:
         sys.path.insert(0, str(AKAR / "src"))
-        from akuntansi_id.ui.pages.laporan import ekspor_excel
+        from akuntansi_id.ui.ekspor_cetak import ekspor_excel
         berkas = FOLDER / "uji.xlsx"
         data_tabel = [
             ("Neraca", [["Akun", "Jumlah"], ["Kas", 6_500_000], ["Modal", 6_500_000]]),
             ("Laba Rugi", [["Akun", "Jumlah"], ["Pendapatan", 3_500_000]]),
         ]
-        ekspor_excel("Uji", data_tabel, str(berkas))
+        ekspor_excel("Uji", data_tabel, str(berkas), nama_perusahaan="PT Skala")
         p.cek("berkas Excel terbentuk", berkas.exists(),
               f"ukuran: {berkas.stat().st_size if berkas.exists() else 0} byte")
         if berkas.exists():
@@ -266,9 +266,9 @@ def main() -> int:
                        f"lembar: {wb.sheetnames}")
             ws = wb[wb.sheetnames[0]]
             p.cek_sama("angka di Excel sama dengan data (6.500.000)",
-                       ws.cell(row=2, column=2).value, 6_500_000)
+                       ws.cell(row=6, column=2).value, 6_500_000)
             p.cek_sama("teks di Excel sama dengan data",
-                       ws.cell(row=1, column=1).value, "Akun")
+                       ws.cell(row=5, column=1).value, "Akun")
     except RuntimeError as e:
         print(f"          dilewati: {e}")
     except Exception as e:
@@ -279,9 +279,12 @@ def main() -> int:
     # ==================================================================
     print("[11. Ekspor PDF: isinya diperiksa]")
     try:
-        from akuntansi_id.ui.pages.laporan import ekspor_pdf
+        from PySide6.QtWidgets import QApplication
+        from akuntansi_id.ui.ekspor_cetak import simpan_pdf
+        app = QApplication.instance() or QApplication([])
         berkas_pdf = FOLDER / "uji.pdf"
-        ekspor_pdf("Laporan Uji", "PT Skala", data_tabel, str(berkas_pdf))
+        simpan_pdf("Laporan Uji", "PT Skala", data_tabel, str(berkas_pdf),
+                   perusahaan="PT Skala")
         p.cek("berkas PDF terbentuk", berkas_pdf.exists(),
               f"ukuran: {berkas_pdf.stat().st_size if berkas_pdf.exists() else 0} byte")
         if berkas_pdf.exists():
@@ -303,20 +306,6 @@ def main() -> int:
         print(f"          dilewati: {e}")
     except Exception as e:
         p.cek("ekspor PDF berjalan tanpa galat", False,
-              f"{type(e).__name__}: {e}")
-    print()
-
-    # ==================================================================
-    print("[12. Ekspor CSV: isinya diperiksa]")
-    try:
-        from akuntansi_id.ui.pages.laporan import ekspor_csv
-        berkas_csv = FOLDER / "uji.csv"
-        ekspor_csv("Uji", [["Akun", "Jumlah"], ["Kas", 6_500_000]], str(berkas_csv))
-        teks = berkas_csv.read_text(encoding="utf-8-sig")
-        p.cek("CSV memuat baris data", "Kas" in teks and "6500000" in teks,
-              f"isi: {teks[:80]!r}")
-    except Exception as e:
-        p.cek("ekspor CSV berjalan tanpa galat", False,
               f"{type(e).__name__}: {e}")
     print()
 

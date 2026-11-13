@@ -7,7 +7,7 @@ from __future__ import annotations
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QLineEdit, QDialog,
-    QMessageBox, QGridLayout, QTabWidget, QFileDialog, QSpinBox,
+    QGridLayout, QFileDialog, QSpinBox,
 )
 
 from ... import config, modules as M, modules_ops as O
@@ -15,6 +15,7 @@ from ...core import tax_engine as tx
 from ... import istilah
 from .. import theme, widgets as w
 from ..theme import C
+from .. import popup
 
 
 class DialogMitra(QDialog):
@@ -158,7 +159,7 @@ class DialogMitra(QDialog):
     def _simpan(self):
         try:
             if not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Nama kosong", "Isi nama mitra.")
+                popup.peringatkan(self, "Nama kosong", "Isi nama mitra.")
                 return
             data = dict(
                 tipe=self.cmb_tipe.currentData(),
@@ -186,7 +187,7 @@ class DialogMitra(QDialog):
                              username=self.ctx.username, **data)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogDetailMitra(QDialog):
@@ -312,8 +313,7 @@ class MitraPage(QWidget):
         self.lay.setSpacing(13)
         luar.addWidget(isi, 1)
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         self.tab_pelanggan = QWidget()
         self.tab_pemasok = QWidget()
         self.tabs.addTab(self.tab_pelanggan, "Pelanggan")
@@ -336,10 +336,8 @@ class MitraPage(QWidget):
         inp.setMinimumWidth(320)
         inp.textChanged.connect(self.muat)
         filter_baris.addWidget(inp)
-        filter_baris.addStretch()
-        lbl = QLabel("")
-        lbl.setObjectName("Muted")
-        filter_baris.addWidget(lbl)
+        lbl = w.label_ringkas()
+        filter_baris.addWidget(lbl, 1)
         lay.addLayout(filter_baris)
 
         kolom = [("Kode", 95), ("Nama", -1), ("NPWP", 165),
@@ -407,7 +405,10 @@ class MitraPage(QWidget):
                     warna[idx] = C.WARNING
                 if m["batas_kredit"] and ringkas["piutang"] > m["batas_kredit"]:
                     warna[idx] = C.DANGER
-            tabel.isi(baris, warna_baris=warna, align_kanan={6, 7})
+            # Tandai hanya kolom saldo. Mewarnai seluruh baris membuat nama
+            # dan kode pelanggan ikut oranye sehingga sulit dibaca.
+            tabel.isi(baris, warna_baris=warna, align_kanan={6, 7},
+                      kolom_penanda=7)
             label = "pelanggan" if tipe == "customer" else "pemasok"
             tabel._lbl_info.setText(
                 f"{len(data)} {label} · total saldo {tx.rupiah(total_saldo)}")
@@ -426,8 +427,9 @@ class MitraPage(QWidget):
 
     def _tambah(self):
         if not self.ctx.company_id:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         d = DialogMitra(self.ctx, self, tipe_awal=self.tipe_aktif)
         if d.exec():
@@ -436,7 +438,7 @@ class MitraPage(QWidget):
     def _ubah(self):
         m = self._mitra_terpilih()
         if m is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu mitra.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu mitra.")
             return
         d = DialogMitra(self.ctx, self, m)
         if d.exec():
@@ -451,13 +453,12 @@ class MitraPage(QWidget):
     def _hapus(self):
         m = self._mitra_terpilih()
         if m is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu mitra.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu mitra.")
             return
-        if QMessageBox.question(
-                self, "Konfirmasi Hapus",
-                f"Hapus mitra '{m['nama']}'?\n\n"
-                "Data akan dipindahkan ke keranjang sampah dan dapat dipulihkan.",
-                QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+        if popup.tanya(self,
+                       "Konfirmasi Hapus",
+                       f"Hapus mitra '{m['nama']}'?\n\n"
+                       "Data akan dipindahkan ke keranjang sampah dan dapat dipulihkan."):
             M.hapus_mitra(m["id"], self.ctx.username)
             self.muat()
 
@@ -478,7 +479,7 @@ class MitraPage(QWidget):
                      f"Gagal: {hasil['gagal']}")
             if hasil["pesan"]:
                 pesan += "\n\nCatatan:\n" + "\n".join(hasil["pesan"][:5])
-            QMessageBox.information(self, "Hasil Impor", pesan)
+            popup.beri_tahu(self, "Hasil Impor", pesan)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal mengimpor", str(e))
+            popup.galat(self, "Gagal mengimpor", str(e))

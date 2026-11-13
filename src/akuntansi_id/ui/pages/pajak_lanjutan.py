@@ -15,18 +15,23 @@ from __future__ import annotations
 from datetime import datetime
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QTabWidget,
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
     QDialog, QDialogButtonBox, QFormLayout, QLineEdit, QDateEdit,
-    QDoubleSpinBox, QSpinBox, QMessageBox,
+    QDoubleSpinBox, QSpinBox,
 )
-from PySide6.QtCore import Qt, QDate
+from PySide6.QtCore import Qt, QDate, QLocale
 
 from ... import config, modules as M, modules_pajak as P, services
 from ...core import tax_engine as tx
-from .. import theme
+from .. import kalender, theme
 from ..theme import C
 from .. import widgets as w
 from ... import istilah
+from .. import popup
+
+# Angka pada kotak isian mengikuti kebiasaan Indonesia: titik ribuan dan
+# koma desimal, sama seperti nominal pada tabel dan laporan.
+LOCALE_ANGKA = QLocale(QLocale.Indonesian, QLocale.Indonesia)
 
 
 # ==========================================================================
@@ -67,9 +72,9 @@ class DialogDasar(QDialog):
         try:
             self.simpan()
         except ValueError as e:
-            QMessageBox.warning(self, "Data belum lengkap", str(e))
+            popup.peringatkan(self, "Data belum lengkap", str(e))
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
         else:
             self.accept()
 
@@ -78,9 +83,7 @@ class DialogDasar(QDialog):
 
 
 def _tanggal_edit(nilai: str = "") -> QDateEdit:
-    e = QDateEdit()
-    e.setCalendarPopup(True)
-    e.setDisplayFormat("dd-MM-yyyy")
+    e = kalender.pasang(QDateEdit())
     e.setDate(QDate.fromString(nilai, "yyyy-MM-dd")
               if nilai else QDate.currentDate())
     return e
@@ -88,10 +91,11 @@ def _tanggal_edit(nilai: str = "") -> QDateEdit:
 
 def _uang(maks: int = 9_999_999_999) -> QDoubleSpinBox:
     s = QDoubleSpinBox()
+    s.setLocale(LOCALE_ANGKA)
     s.setMaximum(float(maks))
     s.setDecimals(0)
     s.setGroupSeparatorShown(True)
-    s.setPrefix("Rp ")
+    s.setPrefix("Rp")
     s.setMinimumWidth(190)
     return s
 
@@ -245,7 +249,7 @@ class DialogMeterai(DialogDasar):
         self.inp_berkas.valueChanged.connect(self._hitung)
         self.form.addRow("Jumlah Berkas", self.inp_berkas)
 
-        self.lbl_total = QLabel("Rp 0")
+        self.lbl_total = QLabel(theme.money(0))
         self.lbl_total.setStyleSheet(
             f"font-weight: 700; color: {C.PRIMARY}; font-size: 14px;")
         self.form.addRow("Bea Meterai", self.lbl_total)
@@ -294,7 +298,7 @@ class DialogPajakDaerah(DialogDasar):
         self.inp_tarif.valueChanged.connect(self._hitung)
         self.form.addRow("Tarif", self.inp_tarif)
 
-        self.lbl_pajak = QLabel("Rp 0")
+        self.lbl_pajak = QLabel(theme.money(0))
         self.lbl_pajak.setStyleSheet(
             f"font-weight: 700; color: {C.PRIMARY}; font-size: 14px;")
         self.form.addRow("Pajak", self.lbl_pajak)
@@ -308,7 +312,7 @@ class DialogPajakDaerah(DialogDasar):
                                self.inp_dpp.value(), self.inp_tarif.value())
             self.lbl_pajak.setText(theme.money(h["pajak"]))
         except ValueError:
-            self.lbl_pajak.setText("Rp 0")
+            self.lbl_pajak.setText(theme.money(0))
 
     def simpan(self):
         P.catat_pajak_daerah(
@@ -336,10 +340,11 @@ class DialogKurs(DialogDasar):
         self.form.addRow("Tanggal", self.inp_tanggal)
 
         self.inp_kurs = QDoubleSpinBox()
+        self.inp_kurs.setLocale(LOCALE_ANGKA)
         self.inp_kurs.setRange(0.01, 1_000_000)
         self.inp_kurs.setDecimals(2)
         self.inp_kurs.setGroupSeparatorShown(True)
-        self.inp_kurs.setPrefix("Rp ")
+        self.inp_kurs.setPrefix("Rp")
         self.inp_kurs.setValue(config.KURS_CONTOH.get("USD", 16_000))
         self.form.addRow("Kurs", self.inp_kurs)
 
@@ -373,7 +378,7 @@ class DialogPPh15(DialogDasar):
         self.inp_bruto.valueChanged.connect(self._hitung)
         self.form.addRow("Peredaran Bruto", self.inp_bruto)
 
-        self.lbl_pph = QLabel("Rp 0")
+        self.lbl_pph = QLabel(theme.money(0))
         self.lbl_pph.setStyleSheet(
             f"font-weight: 700; color: {C.PRIMARY}; font-size: 14px;")
         self.form.addRow("PPh Terutang", self.lbl_pph)
@@ -387,7 +392,7 @@ class DialogPPh15(DialogDasar):
                                 self.inp_bruto.value())
             self.lbl_pph.setText(theme.money(h["pph_terutang"]))
         except ValueError:
-            self.lbl_pph.setText("Rp 0")
+            self.lbl_pph.setText(theme.money(0))
 
     def simpan(self):
         P.catat_pph15(self.cid, self.cmb_jenis.currentData(),
@@ -429,8 +434,7 @@ class PajakLanjutanPage(QWidget):
         kl.addWidget(self.header)
         luar.addWidget(kepala)
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         wadah = QWidget()
         wl = QVBoxLayout(wadah)
         wl.setContentsMargins(22, 16, 22, 22)
@@ -721,8 +725,8 @@ class PajakLanjutanPage(QWidget):
 
         lay.addLayout(self._baris_aksi("Tambah Kurs", self._tambah_kurs))
 
-        t = w.Tabel([("Tanggal", 130), ("Mata Uang", 120), ("Kurs", -1),
-                     ("Keterangan", 260)])
+        t = w.Tabel([("Tanggal", 130), ("Mata Uang", 120), ("Kurs", 150),
+                     ("Keterangan", -1)])
         t.isi([[theme.tanggal_id(d["tanggal"]), d["mata_uang"],
                 theme.money(d["kurs"]), d["keterangan"] or ""]
                for d in P.daftar_kurs(cid)])
@@ -804,15 +808,15 @@ class PajakLanjutanPage(QWidget):
     def _jalankan_balik(self):
         hasil = P.jalankan_jurnal_balik(self.ctx.company_id)
         if hasil["dibuat"]:
-            QMessageBox.information(
-                self, "Jurnal balik dijalankan",
-                f"{hasil['dibuat']} jurnal balik berhasil dibuat."
-                + (f" {hasil['dilewati']} jurnal dilewati karena tanggalnya "
-                   "belum tiba." if hasil["dilewati"] else ""))
+            popup.beri_tahu(self,
+                            "Jurnal balik dijalankan",
+                            f"{hasil['dibuat']} jurnal balik berhasil dibuat."
+                            + (f" {hasil['dilewati']} jurnal dilewati karena tanggalnya "
+                               "belum tiba." if hasil["dilewati"] else ""))
         else:
-            QMessageBox.information(
-                self, "Belum waktunya",
-                "Belum ada jurnal balik yang tanggalnya tiba."
-                + (f" {hasil['dilewati']} jurnal menunggu tanggalnya."
-                   if hasil["dilewati"] else ""))
+            popup.beri_tahu(self,
+                            "Belum waktunya",
+                            "Belum ada jurnal balik yang tanggalnya tiba."
+                            + (f" {hasil['dilewati']} jurnal menunggu tanggalnya."
+                               if hasil["dilewati"] else ""))
         self.muat()

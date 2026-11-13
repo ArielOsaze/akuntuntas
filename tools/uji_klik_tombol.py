@@ -117,10 +117,12 @@ def main() -> int:
     sec.ensure_default_admin()
 
     # cegah dialog pesan menghambat pengujian
-    QMessageBox.information = staticmethod(lambda *a, **k: QMessageBox.Ok)
-    QMessageBox.warning = staticmethod(lambda *a, **k: QMessageBox.Ok)
-    QMessageBox.critical = staticmethod(lambda *a, **k: QMessageBox.Ok)
-    QMessageBox.question = staticmethod(lambda *a, **k: QMessageBox.No)
+    from akuntansi_id.ui import popup
+    popup.beri_tahu = lambda *a, **k: None
+    popup.sukses = lambda *a, **k: None
+    popup.peringatkan = lambda *a, **k: None
+    popup.galat = lambda *a, **k: None
+    popup.tanya = lambda *a, **k: False
 
     perusahaan = services.list_companies(aktif_saja=False)
     if not perusahaan:

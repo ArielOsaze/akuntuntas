@@ -17,9 +17,13 @@ from pathlib import Path
 AKAR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(AKAR / "src"))
 
+# Data uji harus ditetapkan SEBELUM akuntansi_id diimpor: config membaca
+# variabel ini sekali saat modul dimuat. Tanpa ini, potret membuka data
+# pembukuan pengguna yang sebenarnya.
+os.environ["AKUNTANSIID_DATA"] = str(AKAR / "_data_potret_ui")
+
 from akuntansi_id import db  # noqa: E402
 
-os.environ.setdefault("AKUNTUNTAS_DATA", str(AKAR / "_data_potret"))
 KELUARAN = AKAR / "_potret_app"
 
 
@@ -37,7 +41,6 @@ def main() -> int:
     KELUARAN.mkdir(exist_ok=True)
 
     from PySide6.QtCore import QEventLoop, QTimer, Qt
-    from PySide6.QtGui import QFont
     from PySide6.QtWidgets import QApplication, QTabWidget, QScrollArea
     from akuntansi_id.ui import theme as tema
     from akuntansi_id.ui.main_window import MainWindow
@@ -52,8 +55,11 @@ def main() -> int:
         app = QApplication([])
     app.setStyle("Fusion")
     tema.palet_terang(app)
-    app.setFont(QFont("Segoe UI", 10))
+    # Huruf aplikasi dipasang oleh tema, sama seperti saat aplikasi berjalan.
     app.setStyleSheet(tema.stylesheet())
+    # Samakan dengan aplikasi sungguhan: tinggi tombol angka dipatok dan
+    # label dialog dirapikan saat jendela ditampilkan.
+    tema.pasang_penyesuai_dialog(app)
 
     db.init_db()
 

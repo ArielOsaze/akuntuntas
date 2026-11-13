@@ -114,6 +114,9 @@ def combo_bentuk_badan(jenis_entitas: dict) -> QComboBox:
     """
     c = QComboBox()
     c.setItemDelegate(DelegasiBentukBadan(c))
+    # Tandai agar perapian ukuran halaman tidak mengganti delegate dua
+    # baris ini dengan delegate tinggi baris biasa.
+    c.setProperty("delegasi_pilihan", True)
     c.setMinimumHeight(38)
 
     for kode, info in jenis_entitas.items():

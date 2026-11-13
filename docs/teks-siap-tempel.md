@@ -66,17 +66,14 @@ Bila ini pengiriman **pembaruan**, isi dengan teks berikut. Batas 1500
 huruf. Teks ini sengaja hanya menyebut hal yang terlihat pengguna.
 
 ```
-Menu samping dapat disembunyikan sehingga tabel dan laporan memakai
-seluruh lebar layar. Pilihannya diingat.
+Tampilan aplikasi ditata ulang agar lebih tenang dan mudah dibaca. Latar
+putih solid, huruf Public Sans yang jernih untuk tabel dan angka, serta
+judul Source Serif yang menenangkan. Angka rupiah memakai lebar tetap
+sehingga kolom nominal sejajar dan mudah dibandingkan.
 
-Lokasi penyimpanan data dapat dipindahkan ke folder atau drive lain,
-dengan pengaman agar data tidak pernah hilang bila penyalinan gagal.
-
-Seluruh popup pesan ditata ulang supaya menyatu dengan tampilan aplikasi,
-dengan huruf yang lebih besar dan mudah dibaca.
-
-Salinan Regulasi Resmi kini dapat dibaca seluruhnya. Judul peraturan
-tampil utuh, disertai keterangan jumlah baris dan tombol Salin Isi.
+Tabel, kartu ringkasan, menu, dan jendela dialog ikut dirapikan: jarak
+antarbaris lebih lega, garis tabel lebih halus, dan tombol lebih mudah
+ditemukan. Data dan format laporan tidak berubah.
 ```
 
 Catatan rilis lengkap setiap versi ada di `docs/catatan-rilis.md`.

@@ -30,7 +30,7 @@ FOLDER = Path(tempfile.mkdtemp(prefix="akuntuntas_buat_"))
 os.environ["LOCALAPPDATA"] = str(FOLDER)
 
 from PySide6.QtCore import QDate  # noqa: E402
-from PySide6.QtWidgets import QApplication, QMessageBox  # noqa: E402
+from PySide6.QtWidgets import QApplication  # noqa: E402
 
 app = QApplication.instance() or QApplication([])
 
@@ -125,16 +125,11 @@ def main() -> int:
     # Kotak pesan ditutup otomatis supaya uji tidak berhenti menunggu.
     pesan: list[tuple[str, str]] = []
 
-    def tangkap_klik(tipe, judul, teks, *a, **k):
-        pesan.append((judul, teks))
-        return QMessageBox.Ok
-
-    asli_info = QMessageBox.information
-    asli_critical = QMessageBox.critical
-    QMessageBox.information = staticmethod(
-        lambda *a, **k: tangkap_klik("info", *a[1:3]) or QMessageBox.Ok)
-    QMessageBox.critical = staticmethod(
-        lambda *a, **k: tangkap_klik("critical", *a[1:3]) or QMessageBox.Ok)
+    from akuntansi_id.ui import popup
+    asli_info = popup.beri_tahu
+    asli_critical = popup.galat
+    popup.beri_tahu = lambda *a, **k: pesan.append((a[1], a[2]))
+    popup.galat = lambda *a, **k: pesan.append((a[1], a[2]))
 
     try:
         halaman._buat()
@@ -142,8 +137,8 @@ def main() -> int:
         p.cek("Tombol tidak menimbulkan galat", False,
               f"{type(e).__name__}: {e}")
     finally:
-        QMessageBox.information = asli_info
-        QMessageBox.critical = asli_critical
+        popup.beri_tahu = asli_info
+        popup.galat = asli_critical
 
     app.processEvents()
 
@@ -217,18 +212,16 @@ def main() -> int:
     halaman2.inp_nama.setText("PT Uji Kedua")
     app.processEvents()
 
-    QMessageBox.information = staticmethod(
-        lambda *a, **k: QMessageBox.Ok)
-    QMessageBox.critical = staticmethod(
-        lambda *a, **k: QMessageBox.Ok)
+    popup.beri_tahu = lambda *a, **k: None
+    popup.galat = lambda *a, **k: None
     try:
         halaman2._buat()
     except Exception as e:
         p.cek("Perusahaan kedua dibuat tanpa galat", False,
               f"{type(e).__name__}: {e}")
     finally:
-        QMessageBox.information = asli_info
-        QMessageBox.critical = asli_critical
+        popup.beri_tahu = asli_info
+        popup.galat = asli_critical
 
     app.processEvents()
     jumlah2 = db.scalar("SELECT COUNT(*) FROM companies")
@@ -246,7 +239,7 @@ def main() -> int:
     halaman3.inp_nama.setText("   ")
     app.processEvents()
     jumlah_sebelum = db.scalar("SELECT COUNT(*) FROM companies")
-    QMessageBox.warning = staticmethod(lambda *a, **k: QMessageBox.Ok)
+    popup.peringatkan = lambda *a, **k: None
     try:
         halaman3._buat()
     except Exception:

@@ -14,9 +14,9 @@ from datetime import date, datetime
 
 from PySide6.QtCore import Qt, Signal, QDate
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QTabWidget,
-    QDialog, QMessageBox, QFrame, QGridLayout, QDateEdit, QLineEdit,
-    QSpinBox,
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
+    QDialog, QFrame, QGridLayout, QDateEdit, QLineEdit,
+    QSpinBox, QScrollArea,
 )
 
 from ... import config, coa, services
@@ -26,6 +26,7 @@ from .. import theme
 from .. import kalender
 from ..theme import C
 from .. import widgets as w
+from .. import popup
 
 
 # ==========================================================================
@@ -65,34 +66,34 @@ class PajakPage(QWidget):
         kl.addWidget(self.header)
         luar.addWidget(kepala)
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         wadah = QWidget()
         wl = QVBoxLayout(wadah)
         wl.setContentsMargins(22, 16, 22, 22)
         wl.addWidget(self.tabs)
         luar.addWidget(wadah, 1)
 
-        self.tab_pph_badan = QWidget()
-        self.tab_ppn = QWidget()
-        self.tab_potput = QWidget()
-        self.tab_rekon = QWidget()
-        self.tab_kalender = QWidget()
-        self.tab_sanksi = QWidget()
-
-        self.tabs.addTab(self.tab_pph_badan, "PPh Badan")
-        self.tabs.addTab(self.tab_ppn, "PPN")
-        self.tabs.addTab(self.tab_potput, "Potong/Pungut")
-        self.tabs.addTab(self.tab_rekon, "Rekonsiliasi Fiskal")
-        self.tabs.addTab(self.tab_kalender, "Kalender Pajak")
-        self.tabs.addTab(self.tab_sanksi, "Kalkulator Sanksi")
+        self.tab_pph_badan = self._tab_gulir("PPh Badan")
+        self.tab_ppn = self._tab_gulir("PPN")
+        self.tab_potput = self._tab_gulir("Potong/Pungut")
+        self.tab_rekon = self._tab_gulir("Rekonsiliasi Fiskal")
+        self.tab_kalender = self._tab_gulir("Kalender Pajak")
+        self.tab_sanksi = self._tab_gulir("Kalkulator Sanksi")
         self.tabs.currentChanged.connect(self.muat)
 
-        for t in (self.tab_pph_badan, self.tab_ppn, self.tab_potput,
-                  self.tab_rekon, self.tab_kalender, self.tab_sanksi):
-            l = QVBoxLayout(t)
-            l.setContentsMargins(0, 12, 0, 0)
-            l.setSpacing(13)
+    def _tab_gulir(self, judul: str) -> QWidget:
+        """Buat isi tab yang dapat digulir agar rincian panjang tidak terpotong."""
+        isi = QWidget()
+        lay = QVBoxLayout(isi)
+        lay.setContentsMargins(0, 12, 0, 0)
+        lay.setSpacing(13)
+        area = QScrollArea()
+        area.setWidgetResizable(True)
+        area.setFrameShape(QFrame.NoFrame)
+        area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        area.setWidget(isi)
+        self.tabs.addTab(area, judul)
+        return isi
 
     def _ganti_tahun(self):
         self.ctx.tahun = self.cmb_tahun.currentData()
@@ -198,10 +199,15 @@ class PajakPage(QWidget):
         baris.addWidget(w.MiniStat("PKP (Fiskal)", theme.money(rekon.pkp)))
         baris.addWidget(w.MiniStat("PPh Terutang", theme.money(hasil["pph_terutang"]),
                                    C.PRIMARY))
-        baris.addWidget(w.MiniStat("Kredit Pajak", theme.money(hasil["kredit"]),
-                                   C.SUCCESS))
+        kredit = hasil["kredit"]
+        baris.addWidget(w.MiniStat("Kredit Pajak", theme.money(kredit),
+                                   C.SUCCESS if kredit else C.TEXT_MUTED))
         kb = hasil["kurang_lebih"]
-        baris.addWidget(w.MiniStat("Kurang/(Lebih) Bayar", theme.money(kb),
+        # Label disesuaikan dengan arah selisih supaya tetap satu baris;
+        # label panjang membuat nilai tidak sejajar dengan kartu lain.
+        label_kb = ("Kurang Bayar" if kb > 0
+                    else "Lebih Bayar" if kb < 0 else "PPh Terbayar")
+        baris.addWidget(w.MiniStat(label_kb, theme.money(kb),
                                    C.NEGATIF if kb > 0 else C.SUCCESS))
         baris.addStretch()
         kartu.body().addLayout(baris)
@@ -217,13 +223,22 @@ class PajakPage(QWidget):
             "Catat dulu transaksi pada menu Jurnal Umum atau Penjualan. "
             "Perhitungan pajak akan muncul di sini.")
 
-        baris_t, warna = [], {}
+        baris_t, warna, tebal_baris = [], {}, set()
+        pemisah = set()
 
         def tambah(u, n, ket="", tebal=False, uang=True):
             idx = len(baris_t)
-            baris_t.append([u, theme.money(n) if uang else str(n), ket])
+            nilai = theme.money(n) if uang and u else str(n)
+            baris_t.append([u, nilai, ket])
             if tebal:
                 warna[idx] = C.PRIMARY
+                tebal_baris.add(idx)
+
+        def pisah():
+            # Baris kosong penuh setinggi baris data terlihat seperti data
+            # yang gagal dimuat. Cukup beri jarak tipis sebagai pemisah blok.
+            pemisah.add(len(baris_t))
+            baris_t.append(["", "", ""])
 
         tambah("Peredaran Bruto (omzet)", hasil["omzet"],
                "Total pendapatan usaha dari jurnal", True)
@@ -231,7 +246,7 @@ class PajakPage(QWidget):
                "PMK 197/2013 - Rp4,8 miliar")
         tambah("Batas fasilitas Pasal 31E", config.THRESHOLD_31E,
                "UU PPh Pasal 31E - Rp50 miliar")
-        tambah("", "", "")
+        pisah()
         tambah("Laba Komersial sebelum Pajak", rekon.laba_komersial,
                "Dari Laporan Laba Rugi", True)
         tambah("Koreksi Positif - Non-Deductible", rekon.koreksi_positif_otomatis,
@@ -252,7 +267,7 @@ class PajakPage(QWidget):
 
         if not hasil["pakai_final"]:
             h = hasil["hasil"]
-            tambah("", "", "")
+            pisah()
             tambah("PKP mendapat fasilitas (tarif 11%)", h.pkp_fasilitas, h.skema)
             tambah("PKP tanpa fasilitas (tarif 22%)", h.pkp_non_fasilitas, "")
             tambah("PPh dari bagian fasilitas", h.pph_fasilitas, "11% × PKP fasilitas")
@@ -271,7 +286,7 @@ class PajakPage(QWidget):
                    "Per bulan, disetor paling lambat tanggal 15", True)
         else:
             f = hasil["final"]
-            tambah("", "", "")
+            pisah()
             tambah("Dasar Pengenaan PPh Final", f.dasar_pengenaan,
                    "Bagian peredaran bruto yang dikenai pajak")
             tambah("Tarif PPh Final", 0.5, "PP 20/2026", False)
@@ -280,8 +295,14 @@ class PajakPage(QWidget):
             tambah("Sudah disetor", -hasil["kredit"], "Dari catatan pembayaran pajak")
             tambah("Kurang/(Lebih) Bayar", hasil["kurang_lebih"], "", True)
 
-        t.isi(baris_t, warna_baris=warna, align_kanan={1})
-        t.setMinimumHeight(420)
+        t.isi(baris_t, warna_baris=warna, align_kanan={1},
+              tebal_baris=tebal_baris)
+        # Rincian ini dibaca berurutan; mengurutkan ulang justru memutus
+        # alur perhitungan dan membuat baris pemisah berpindah tempat.
+        t.setSortingEnabled(False)
+        for idx in pemisah:
+            t.setRowHeight(idx, 12)
+        t.sesuaikan_tinggi(minimum=420, maksimum=900)
         lay.addWidget(t)
 
         # peringatan
@@ -487,9 +508,10 @@ class PajakPage(QWidget):
             self.muat()
 
     def _hapus_potput(self):
-        QMessageBox.information(self, "Pilih data",
-                                "Pilih baris pada tabel register, lalu gunakan tombol Hapus "
-                                "pada baris tersebut.")
+        popup.beri_tahu(self,
+                        "Pilih data",
+                        "Pilih baris pada tabel register, lalu gunakan tombol Hapus "
+                        "pada baris tersebut.")
 
     # ==================================================================
     # REKONSILIASI FISKAL
@@ -607,10 +629,9 @@ class PajakPage(QWidget):
         manual = services.list_koreksi_manual(self.ctx.company_id, self.ctx.tahun)
         if baris < len(manual):
             m = manual[baris]
-            if QMessageBox.question(
-                    self, "Konfirmasi",
-                    f"Hapus koreksi manual '{m['uraian']}'?",
-                    QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            if popup.tanya(self,
+                           "Konfirmasi",
+                           f"Hapus koreksi manual '{m['uraian']}'?"):
                 services.hapus_koreksi_manual(m["id"])
                 self.muat()
 
@@ -959,8 +980,10 @@ class DialogPotPut(QDialog):
         l.addWidget(self.lbl_ket)
 
         self.panel = QFrame()
-        theme.latar(self.panel, f"background: {C.PRIMARY_SOFT}; border: 1px solid "
-                                 "#CFE0F0; border-radius: 8px;")
+        theme.latar(self.panel,
+                    f"background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px;")
         pl = QVBoxLayout(self.panel)
         pl.setContentsMargins(16, 13, 16, 13)
         self.lbl_pajak = QLabel("Pajak: Rp0")
@@ -1020,16 +1043,19 @@ class DialogPotPut(QDialog):
     def _simpan(self):
         try:
             if self.inp_dpp.nilai() <= 0:
-                QMessageBox.warning(self, "DPP kosong", "Isi DPP terlebih dahulu.")
+                popup.peringatkan(self,
+                                  "DPP kosong",
+                                  "Isi DPP terlebih dahulu.")
                 return
             kode = self.cmb_kode.currentData()
             info = next((k for k in services.KODE_PAJAK_LIST if k[0] == kode), None)
             if info and info[2] is None:
                 ov = self.inp_tarif.text().replace(",", ".").strip()
                 if not ov:
-                    QMessageBox.warning(self, "Tarif diperlukan",
-                                        "Kode pajak ini tidak memiliki tarif default. "
-                                        "Isi tarif override.")
+                    popup.peringatkan(self,
+                                      "Tarif diperlukan",
+                                      "Kode pajak ini tidak memiliki tarif default. "
+                                      "Isi tarif override.")
                     return
             ov = None
             teks = self.inp_tarif.text().replace(",", ".").strip()
@@ -1046,7 +1072,7 @@ class DialogPotPut(QDialog):
                 user_id=self.ctx.user_id)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 # ==========================================================================
@@ -1129,7 +1155,7 @@ class DialogSetoranPajak(QDialog):
     def _simpan(self):
         try:
             if self.inp_jumlah.nilai() <= 0:
-                QMessageBox.warning(self, "Jumlah kosong", "Isi jumlah setoran.")
+                popup.peringatkan(self, "Jumlah kosong", "Isi jumlah setoran.")
                 return
             services.catat_pembayaran_pajak(
                 self.ctx.company_id, self.cmb_jenis.currentData(),
@@ -1140,7 +1166,7 @@ class DialogSetoranPajak(QDialog):
                 self.ctx.user_id)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 # ==========================================================================
@@ -1212,10 +1238,10 @@ class DialogKoreksiManual(QDialog):
     def _simpan(self):
         try:
             if not self.inp_uraian.text().strip():
-                QMessageBox.warning(self, "Uraian kosong", "Isi uraian koreksi.")
+                popup.peringatkan(self, "Uraian kosong", "Isi uraian koreksi.")
                 return
             if self.inp_nilai.nilai() <= 0:
-                QMessageBox.warning(self, "Nilai kosong", "Isi nilai koreksi.")
+                popup.peringatkan(self, "Nilai kosong", "Isi nilai koreksi.")
                 return
             services.simpan_koreksi_manual(
                 self.ctx.company_id, self.ctx.tahun,
@@ -1224,4 +1250,4 @@ class DialogKoreksiManual(QDialog):
                 self.inp_catatan.text().strip())
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))

@@ -114,13 +114,14 @@ def main() -> int:
               wb.sheetnames[0] == "Neraca", f"lembar: {wb.sheetnames}")
 
         ws = wb["Neraca"]
-        p.cek_sama("judul ada di kop", ws.cell(row=1, column=1).value,
-                   "Laporan Keuangan")
-        # Kop memuat perusahaan dan waktu.
+        p.cek_sama("judul lembar ada di kop", ws.cell(row=1, column=1).value,
+                   "Neraca")
+        # Kop memuat perusahaan di baris 2 dan subjudul di baris 3.
         kop = str(ws.cell(row=2, column=1).value or "")
         p.cek("kop memuat nama perusahaan", "Sinar Nusantara" in kop,
               f"kop: {kop}")
-        p.cek("kop memuat subjudul", "2026" in kop, f"kop: {kop}")
+        info = str(ws.cell(row=3, column=1).value or "")
+        p.cek("kop memuat subjudul", "2026" in info, f"info: {info}")
 
         # Baris judul tabel di baris 5, data mulai baris 6.
         p.cek_sama("baris judul tabel benar",
@@ -136,7 +137,7 @@ def main() -> int:
               f"nilai: {sel_angka.value!r}")
         p.cek_sama("nilai angka benar", sel_angka.value, 750_000_000)
         p.cek("angka memakai format ribuan",
-              sel_angka.number_format == '#,##0',
+              '#,##0' in sel_angka.number_format,
               f"format: {sel_angka.number_format}")
 
         # Teks tetap teks.
@@ -147,6 +148,19 @@ def main() -> int:
         # Baris judul dibekukan.
         p.cek("baris judul dibekukan", ws.freeze_panes is not None,
               f"freeze_panes: {ws.freeze_panes}")
+
+        # Halaman Excel sudah disiapkan untuk kertas A4.
+        p.cek("lembar Excel memakai kertas A4",
+              str(ws.page_setup.paperSize) == "9",
+              f"paperSize: {ws.page_setup.paperSize}")
+        p.cek("lebar Excel dimuat ke satu halaman",
+              ws.page_setup.fitToWidth == 1
+              and ws.sheet_properties.pageSetUpPr is not None
+              and ws.sheet_properties.pageSetUpPr.fitToPage,
+              f"fitToWidth: {ws.page_setup.fitToWidth}")
+        p.cek("judul kolom diulang saat dicetak",
+              str(ws.print_title_rows).replace("$", "") == "5:5",
+              f"print_title_rows: {ws.print_title_rows}")
 
         # Lebar kolom sudah diatur.
         lebar = ws.column_dimensions["A"].width
@@ -188,7 +202,8 @@ def main() -> int:
     print("[3. Cetak A4: ukuran kertas dan isinya]")
     pdf = FOLDER / "cetak.pdf"
     try:
-        EC.simpan_pdf(None, "Laporan Keuangan", "Tahun 2026", data, str(pdf))
+        EC.simpan_pdf("Laporan Keuangan", "Tahun 2026", data, str(pdf),
+                      perusahaan="PT Sinar Nusantara")
         p.cek("berkas PDF terbentuk", pdf.exists(),
               f"ukuran: {pdf.stat().st_size if pdf.exists() else 0} byte")
     except Exception as e:
@@ -226,8 +241,9 @@ def main() -> int:
     print("[4. Cetak A4 mendatar]")
     pdf_l = FOLDER / "cetak_mendatar.pdf"
     try:
-        EC.simpan_pdf(None, "Daftar Panjang", "", data, str(pdf_l),
-                      mendatar=True)
+        EC.simpan_pdf("Daftar Panjang", "", data, str(pdf_l),
+                      mendatar=True,
+                      perusahaan="PT Sinar Nusantara")
         isi = pdf_l.read_bytes()
         import re
         ukuran = re.search(rb"/MediaBox\s*\[\s*([\d.]+)\s+([\d.]+)\s+"
@@ -252,7 +268,7 @@ def main() -> int:
                 + [[i, f"Baris {i}", i * 1_000_000] for i in range(1, 121)])]
     pdf_p = FOLDER / "panjang.pdf"
     try:
-        EC.simpan_pdf(None, "Uji Halaman", "", panjang, str(pdf_p))
+        EC.simpan_pdf("Uji Halaman", "", panjang, str(pdf_p))
         isi = pdf_p.read_bytes()
         halaman = isi.count(b"/Type /Page") - isi.count(b"/Type /Pages")
         p.cek("tabel panjang terpecah menjadi beberapa halaman",
@@ -313,7 +329,7 @@ def main() -> int:
 
     pdf_aneh = FOLDER / "aneh.pdf"
     try:
-        EC.simpan_pdf(None, "Uji Nilai Aneh", "", aneh, str(pdf_aneh))
+        EC.simpan_pdf("Uji Nilai Aneh", "", aneh, str(pdf_aneh))
         p.cek("cetak dengan nilai kosong dan karakter khusus berhasil",
               pdf_aneh.exists())
         # Karakter khusus tidak boleh merusak tata letak HTML.
@@ -333,7 +349,7 @@ def main() -> int:
         ("Rp1.500.000", 1_500_000, "angka dengan awalan Rp"),
         ("45.000,50", 45_000.5, "angka dengan desimal koma"),
         ("-2.500.000", -2_500_000, "angka negatif"),
-        ("12,5%", 0.125, "persentase"),
+        ("12,5%", None, "persentase tetap teks agar tanda % tidak hilang"),
         ("0", 0, "nol"),
         ("Kas", None, "teks biasa"),
         ("PT Maju Bersama", None, "nama perusahaan"),
@@ -373,6 +389,233 @@ def main() -> int:
     # Tabel kosong tidak membuat galat.
     p.cek_sama("tabel kosong menghasilkan daftar kosong",
                EC.tabel_dari_widget(None), [])
+
+    # ==================================================================
+    print()
+    print("[10. Tanda air, pengesahan, dan kode verifikasi dokumen]")
+    from akuntansi_id import db
+    import pdfplumber
+    import re
+    import string
+
+    db.init_db()
+    db.simpan_setelan_cetak(
+        air_aktif=True, air_teks="{perusahaan} · SALINAN", air_pekat=8,
+        ttd_aktif=True, ttd_nama="Ariel Pratama", ttd_jabatan="Direktur",
+        ttd_kota="Jakarta", ttd_gambar="")
+
+    setelan = db.setelan_cetak()
+    p.cek_sama("nama penanda tangan tersimpan", setelan["ttd_nama"],
+               "Ariel Pratama")
+    p.cek_sama("teks tanda air tersimpan", setelan["air_teks"],
+               "{perusahaan} · SALINAN")
+    p.cek("kepekatan tanda air dibatasi", 
+          db.simpan_setelan_cetak(air_pekat=99)["air_pekat"] == 18)
+    db.simpan_setelan_cetak(air_pekat=8)
+
+    ttd_data = [("Ringkasan", [
+        ["Keterangan", "Nilai"],
+        ["Pendapatan usaha", 128_500_000],
+        ["Beban usaha", 74_300_000],
+        ["Laba bersih", 54_200_000],
+    ])]
+    penanda = {"nama": "Ariel Pratama", "jabatan": "Direktur",
+               "kota": "Jakarta"}
+    kode = EC.kode_verifikasi_dokumen(
+        "Laporan Laba Rugi", "Tahun 2026", ttd_data,
+        "PT Sinar Nusantara", penanda)
+    p.cek("kode verifikasi berformat 4-4-4-4",
+          bool(re.fullmatch(r"[0-9A-F]{4}(-[0-9A-F]{4}){3}", kode)),
+          f"kode: {kode}")
+    p.cek("kode hanya memakai huruf besar dan angka",
+          set(kode.replace("-", "")) <= set(string.hexdigits.upper()),
+          f"kode: {kode}")
+
+    kode_ulang = EC.kode_verifikasi_dokumen(
+        "Laporan Laba Rugi", "Tahun 2026", ttd_data,
+        "PT Sinar Nusantara", penanda)
+    p.cek_sama("isi yang sama menghasilkan kode yang sama", kode_ulang, kode)
+
+    ttd_lain = [("Ringkasan", [
+        ["Keterangan", "Nilai"],
+        ["Pendapatan usaha", 128_500_001],
+        ["Beban usaha", 74_300_000],
+        ["Laba bersih", 54_200_001],
+    ])]
+    kode_lain = EC.kode_verifikasi_dokumen(
+        "Laporan Laba Rugi", "Tahun 2026", ttd_lain,
+        "PT Sinar Nusantara", penanda)
+    p.cek("satu angka berubah menghasilkan kode berbeda", kode_lain != kode,
+          f"{kode} vs {kode_lain}")
+
+    nama_bagian_lain = [("Rincian Lain", ttd_data[0][1])]
+    kode_bagian = EC.kode_verifikasi_dokumen(
+        "Laporan Laba Rugi", "Tahun 2026", nama_bagian_lain,
+        "PT Sinar Nusantara", penanda)
+    p.cek("nama bagian ikut terlindungi", kode_bagian != kode,
+          f"{kode} vs {kode_bagian}")
+
+    pdf_ttd = FOLDER / "pengesahan.pdf"
+    EC.simpan_pdf("Laporan Laba Rugi", "Tahun 2026", ttd_data,
+                  str(pdf_ttd), perusahaan="PT Sinar Nusantara",
+                  penanda=penanda)
+    try:
+        with pdfplumber.open(str(pdf_ttd)) as dok:
+            halaman_ttd = [h.extract_text() or "" for h in dok.pages]
+        teks_ttd = "\n".join(halaman_ttd)
+        p.cek("pengesahan memuat nama penanda tangan",
+              "Ariel Pratama" in teks_ttd)
+        p.cek("pengesahan memuat jabatan", "Direktur" in teks_ttd)
+        p.cek("pengesahan memuat kota dan tanggal", "Jakarta" in teks_ttd)
+        p.cek("pengesahan menyebut tanda tangan elektronik",
+              "Ditandatangani secara elektronik" in teks_ttd)
+        p.cek("kode verifikasi tercetak", kode in teks_ttd)
+    except Exception as e:
+        p.cek("pengesahan dapat dibaca dari PDF", False,
+              f"{type(e).__name__}: {e}")
+
+    # Tanda air diperiksa lewat piksel: area kosong harus berubah saat
+    # tanda air dinyalakan. Teks diagonal tidak selalu terbaca oleh
+    # pengekstrak PDF, jadi pemeriksaan teks tidak cukup.
+    def non_putih(gambar, atas: int, bawah: int) -> int:
+        jumlah = 0
+        for y in range(atas, min(bawah, gambar.height()), 3):
+            for x in range(0, gambar.width(), 3):
+                if gambar.pixel(x, y) != 0xFFFFFFFF:
+                    jumlah += 1
+        return jumlah
+
+    pendek = [("Ringkasan", [["Keterangan", "Nilai"],
+                             ["Pendapatan", 128_500_000]])]
+    db.simpan_setelan_cetak(air_aktif=False, ttd_aktif=False)
+    bersih = EC.pratinjau_gambar("Uji Tanda Air", "", pendek, lebar=800,
+                                 perusahaan="PT Sinar Nusantara")
+    db.simpan_setelan_cetak(air_aktif=True, air_pekat=12)
+    berair = EC.pratinjau_gambar("Uji Tanda Air", "", pendek, lebar=800,
+                                 perusahaan="PT Sinar Nusantara")
+    atas, bawah = int(bersih.height() * 0.42), int(bersih.height() * 0.88)
+    titik_bersih = non_putih(bersih, atas, bawah)
+    titik_air = non_putih(berair, atas, bawah)
+    p.cek("tanda air terlihat pada area kosong",
+          titik_air > titik_bersih + 200,
+          f"titik berisi: {titik_bersih} -> {titik_air}")
+
+    pdf_tanpa = FOLDER / "tanpa_pengesahan.pdf"
+    EC.simpan_pdf("Laporan Laba Rugi", "Tahun 2026", ttd_data,
+                  str(pdf_tanpa), perusahaan="PT Sinar Nusantara",
+                  penanda=penanda)
+    try:
+        with pdfplumber.open(str(pdf_tanpa)) as dok:
+            teks_tanpa = "\n".join(h.extract_text() or "" for h in dok.pages)
+        p.cek("pengesahan mati tidak mencetak nama penanda tangan",
+              "Ariel Pratama" not in teks_tanpa)
+        p.cek("pengesahan mati tidak mencetak kalimat tanda tangan",
+              "Ditandatangani secara elektronik" not in teks_tanpa)
+    except Exception as e:
+        p.cek("PDF tanpa pengesahan dapat dibaca", False,
+              f"{type(e).__name__}: {e}")
+
+    # ==================================================================
+    print()
+    print("[11. Invoice: desain dokumen, tanda air, dan pengesahan]")
+    from akuntansi_id import services, modules_sales as S
+    from akuntansi_id.ui.pages.penjualan import buat_pdf_invoice
+
+    db.simpan_setelan_cetak(air_aktif=True, air_teks="{perusahaan}",
+                            air_pekat=8, ttd_aktif=True,
+                            ttd_nama="Ariel Pratama", ttd_jabatan="Direktur",
+                            ttd_kota="Jakarta")
+    cid = services.create_company("PT Uji Invoice", "pt")
+    butir = [
+        {"deskripsi": "Jasa konsultasi pajak", "qty": 1, "satuan": "paket",
+         "harga_satuan": 2_500_000, "subtotal": 2_500_000},
+        {"deskripsi": "Penyusunan laporan keuangan", "qty": 1,
+         "satuan": "paket", "harga_satuan": 1_750_000, "subtotal": 1_750_000},
+    ]
+    inv_id = S.buat_invoice(cid, "2026-10-27", butir,
+                            pelanggan="PT Pelanggan Uji",
+                            catatan="Invoice untuk pengujian.",
+                            username="uji")
+    pdf_inv = FOLDER / "invoice.pdf"
+    try:
+        buat_pdf_invoice(cid, inv_id, str(pdf_inv))
+        with pdfplumber.open(str(pdf_inv)) as dok:
+            halaman_inv = [h.extract_text() or "" for h in dok.pages]
+            besar_inv = [sum(1 for c in h.chars if c["size"] > 30)
+                         for h in dok.pages]
+        teks_inv = "\n".join(halaman_inv)
+        p.cek("invoice terbentuk dan memuat judul INVOICE",
+              pdf_inv.exists() and "INVOICE" in teks_inv)
+        p.cek("invoice memuat nama penanda tangan",
+              "Ariel Pratama" in teks_inv)
+        p.cek("invoice memuat pengesahan elektronik",
+              "Ditandatangani secara elektronik" in teks_inv)
+        p.cek("invoice memuat kode verifikasi pengesahan",
+              "Kode verifikasi" in teks_inv)
+        p.cek("invoice memuat kode dokumen di kaki",
+              "Kode dokumen" in teks_inv)
+        p.cek("invoice memuat tanda air diagonal", besar_inv[0] >= 10,
+              f"huruf besar: {besar_inv[0]}")
+    except Exception as e:
+        p.cek("invoice dapat dibuat dan dibaca", False,
+              f"{type(e).__name__}: {e}")
+
+    # Invoice panjang: kepala tabel dan tanda air berulang, pengesahan sekali.
+    butir_panjang = [
+        {"deskripsi": f"Jasa pendampingan bulan ke-{i}", "qty": 1,
+         "satuan": "paket", "harga_satuan": 1_250_000,
+         "subtotal": 1_250_000}
+        for i in range(1, 41)
+    ]
+    inv_panjang = S.buat_invoice(
+        cid, "2026-10-27", butir_panjang, pelanggan="PT Pelanggan Uji",
+        username="uji")
+    pdf_inv_panjang = FOLDER / "invoice_panjang.pdf"
+    try:
+        buat_pdf_invoice(cid, inv_panjang, str(pdf_inv_panjang))
+        with pdfplumber.open(str(pdf_inv_panjang)) as dok:
+            halaman_panjang = [h.extract_text() or "" for h in dok.pages]
+            besar_panjang = [sum(1 for c in h.chars if c["size"] > 30)
+                             for h in dok.pages]
+        teks_panjang = "\n".join(halaman_panjang)
+        p.cek("invoice panjang memakai lebih dari satu halaman",
+              len(halaman_panjang) >= 2, f"{len(halaman_panjang)} halaman")
+        p.cek("halaman lanjutan invoice diberi kepala",
+              "lanjutan" in halaman_panjang[1])
+        p.cek("pengesahan hanya tercetak sekali",
+              teks_panjang.count("Ditandatangani secara elektronik") == 1)
+        p.cek("kode dokumen tercetak di setiap halaman",
+              all("Kode dokumen" in t for t in halaman_panjang))
+        p.cek("tanda air tercetak di setiap halaman",
+              all(n >= 10 for n in besar_panjang), f"{besar_panjang}")
+    except Exception as e:
+        p.cek("invoice panjang dapat dibuat dan dibaca", False,
+              f"{type(e).__name__}: {e}")
+
+    # Invoice polos: tanpa tanda air dan pengesahan, kode tetap melindungi isi.
+    db.simpan_setelan_cetak(air_aktif=False, ttd_aktif=False)
+    pdf_inv_polos = FOLDER / "invoice_polos.pdf"
+    try:
+        buat_pdf_invoice(cid, inv_id, str(pdf_inv_polos))
+        with pdfplumber.open(str(pdf_inv_polos)) as dok:
+            halaman_polos = [h.extract_text() or "" for h in dok.pages]
+            besar_polos = [sum(1 for c in h.chars if c["size"] > 30)
+                           for h in dok.pages]
+        teks_polos = "\n".join(halaman_polos)
+        p.cek("invoice polos tanpa pengesahan",
+              "Ditandatangani secara elektronik" not in teks_polos)
+        p.cek("invoice polos tanpa tanda air", besar_polos[0] == 0,
+              f"huruf besar: {besar_polos[0]}")
+        p.cek("invoice polos tetap memuat kode dokumen",
+              "Kode dokumen" in teks_polos)
+    except Exception as e:
+        p.cek("invoice polos dapat dibuat dan dibaca", False,
+              f"{type(e).__name__}: {e}")
+
+    # Kembalikan ke keadaan netral untuk uji berikutnya.
+    db.simpan_setelan_cetak(air_aktif=False, ttd_aktif=False,
+                            ttd_nama="", ttd_jabatan="", ttd_kota="",
+                            air_teks="{perusahaan}")
 
     return p.ringkas()
 

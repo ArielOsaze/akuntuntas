@@ -8,15 +8,16 @@ from datetime import datetime
 from PySide6.QtCore import Qt, Signal, QDate
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QLineEdit, QDateEdit,
-    QDialog, QMessageBox, QGridLayout, QCheckBox, QTabWidget, QFileDialog, QMenu,
+    QDialog, QGridLayout, QCheckBox, QFileDialog, QMenu,
 )
 
-from ... import config, modules as M, modules_ops as O
+from ... import coa, config, modules as M, modules_ops as O
 from ...core import tax_engine as tx
 from ... import istilah
 from .. import theme, widgets as w
 from .. import icons, kalender
 from ..theme import C
+from .. import popup
 
 
 class DialogProduk(QDialog):
@@ -116,7 +117,9 @@ class DialogProduk(QDialog):
 
         g.addWidget(w.label("Akun Persediaan", objek="FormLabel"), 10, 0)
         self.cmb_akun_persediaan = w.combo_akun(ctx.company_id)
-        w.set_combo_by_data(self.cmb_akun_persediaan, "1104")
+        w.set_combo_by_data(
+            self.cmb_akun_persediaan,
+            coa.kode_akun_bawaan(ctx.company_id, "persediaan"))
         g.addWidget(self.cmb_akun_persediaan, 11, 0)
 
         g.addWidget(w.label("Akun Pendapatan", objek="FormLabel"), 10, 1)
@@ -133,8 +136,11 @@ class DialogProduk(QDialog):
         self.lbl_hint = QLabel("")
         self.lbl_hint.setWordWrap(True)
         self.lbl_hint.setTextFormat(Qt.RichText)
-        theme.latar(self.lbl_hint, f"background: {C.PRIMARY_SOFT}; border: 1px solid #CFE0F0; "
-            f"border-radius: 8px; padding: 12px 14px; font-size: {theme.FS_SMALL}px;")
+        theme.latar(self.lbl_hint,
+                    f"color: {C.TEXT}; background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px; "
+                    f"padding: 9px 11px; font-size: {theme.FS_SMALL}px;")
         lay.addWidget(self.lbl_hint)
 
         aksi = QHBoxLayout()
@@ -221,7 +227,7 @@ class DialogProduk(QDialog):
     def _simpan(self):
         try:
             if not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Nama kosong", "Isi nama produk.")
+                popup.peringatkan(self, "Nama kosong", "Isi nama produk.")
                 return
             data = dict(
                 kategori_id=self.cmb_kategori.currentData(),
@@ -233,7 +239,8 @@ class DialogProduk(QDialog):
                 harga_jual=self.inp_jual.nilai(),
                 metode_hpp=self.cmb_metode.currentData(),
                 stok_minimum=self.inp_stok_min.nilai(),
-                akun_persediaan=self.cmb_akun_persediaan.currentData() or "1104",
+                akun_persediaan=(self.cmb_akun_persediaan.currentData()
+                                 or coa.kode_akun_bawaan(ctx.company_id, "persediaan")),
                 akun_pendapatan=self.cmb_akun_pendapatan.currentData() or "4001",
                 akun_hpp=self.cmb_akun_hpp.currentData() or "5001",
             )
@@ -248,7 +255,7 @@ class DialogProduk(QDialog):
                               username=self.ctx.username, **data)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogGudang(QDialog):
@@ -295,14 +302,14 @@ class DialogGudang(QDialog):
     def _simpan(self):
         try:
             if not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Nama kosong", "Isi nama gudang.")
+                popup.peringatkan(self, "Nama kosong", "Isi nama gudang.")
                 return
             M.buat_gudang(self.ctx.company_id, self.inp_nama.text().strip(),
                           lokasi=self.inp_lokasi.text().strip(),
                           pic=self.inp_pic.text().strip())
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogStockOpname(QDialog):
@@ -353,6 +360,9 @@ class DialogStockOpname(QDialog):
 
         self.tabel = w.Tabel([("Produk", -1), ("Satuan", 90), ("Stok Tercatat", 145),
                               ("Stok Fisik", 165), ("Selisih", 145)])
+        for kolom in (2, 3, 4):
+            self.tabel.horizontalHeaderItem(kolom).setTextAlignment(
+                Qt.AlignRight | Qt.AlignVCenter)
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel.set_pesan_kosong(
@@ -390,19 +400,46 @@ class DialogStockOpname(QDialog):
             saldo = M.saldo_stok(self.ctx.company_id, p["id"], gudang_id)
             self.tabel.setItem(i, 0, w.QTableWidgetItem(f"{p['kode']} - {p['nama']}"))
             self.tabel.setItem(i, 1, w.QTableWidgetItem(p["satuan"] or "pcs"))
-            self.tabel.setItem(i, 2, w.QTableWidgetItem(f"{saldo['qty']:g}"))
+            tercatat = w.QTableWidgetItem(f"{saldo['qty']:g}".replace(".", ","))
+            tercatat.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            self.tabel.setItem(i, 2, tercatat)
 
-            inp = w.InputRupiah()
-            inp.set_nilai(int(saldo["qty"]))
-            self.inputs[p["id"]] = (inp, saldo["qty"], p["nama"])
+            inp = w.InputQty()
+            inp.set_nilai(saldo["qty"])
             self.tabel.setCellWidget(i, 3, inp)
 
             lbl = QLabel("0")
-            lbl.setStyleSheet(f"font-family: {theme.FONT_ANGKA}; "
-                              "background: transparent;")
+            lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            lbl.setStyleSheet(
+                f"color: {C.TEXT_MUTED}; font-family: {theme.FONT_ANGKA}; "
+                "padding-right: 12px; background: transparent;")
+            self.inputs[p["id"]] = (inp, saldo["qty"], p["nama"], lbl)
+            inp.valueChanged.connect(
+                lambda _=None, pid=p["id"]: self._perbarui_selisih(pid))
             self.tabel.setCellWidget(i, 4, lbl)
 
         self.lbl_info.setText(f"{len(produk)} produk barang di gudang ini")
+
+    def _perbarui_selisih(self, pid: int):
+        data = self.inputs.get(pid)
+        if not data:
+            return
+        inp, qty_lama, _nama, lbl = data
+        if lbl is None:
+            return
+        beda = float(inp.nilai()) - float(qty_lama)
+        if abs(beda) < 0.005:
+            lbl.setText("0")
+            lbl.setStyleSheet(
+                f"color: {C.TEXT_MUTED}; font-family: {theme.FONT_ANGKA}; "
+                "padding-right: 12px; background: transparent;")
+            return
+        lbl.setText(f"{beda:+g}".replace(".", ","))
+        warna = C.SUCCESS if beda > 0 else C.DANGER
+        lbl.setStyleSheet(
+            f"color: {warna}; font-weight: 700; "
+            f"font-family: {theme.FONT_ANGKA}; padding-right: 12px; "
+            "background: transparent;")
 
     def _simpan(self):
         try:
@@ -412,7 +449,7 @@ class DialogStockOpname(QDialog):
             jumlah_disesuaikan = 0
             total_selisih = 0
 
-            for pid, (inp, qty_lama, nama) in self.inputs.items():
+            for pid, (inp, qty_lama, nama, _lbl) in self.inputs.items():
                 qty_baru = float(inp.nilai())
                 if abs(qty_baru - qty_lama) < 0.01:
                     continue
@@ -423,17 +460,18 @@ class DialogStockOpname(QDialog):
                 total_selisih += r["nilai"]
 
             if jumlah_disesuaikan == 0:
-                QMessageBox.information(self, "Tidak ada perubahan",
-                                        "Tidak ada selisih stok yang perlu disesuaikan.")
+                popup.beri_tahu(self,
+                                "Tidak ada perubahan",
+                                "Tidak ada selisih stok yang perlu disesuaikan.")
                 return
 
-            QMessageBox.information(
-                self, "Penyesuaian selesai",
-                f"{jumlah_disesuaikan} produk disesuaikan.\n"
-                f"Nilai penyesuaian: {tx.rupiah(total_selisih)}")
+            popup.beri_tahu(self,
+                            "Penyesuaian selesai",
+                            f"{jumlah_disesuaikan} produk disesuaikan.\n"
+                            f"Nilai penyesuaian: {tx.rupiah(total_selisih)}")
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class ProdukPage(QWidget):
@@ -489,8 +527,7 @@ class ProdukPage(QWidget):
         self.banner_lay.setContentsMargins(0, 0, 0, 0)
         self.lay.addWidget(self.banner)
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         self.tab_produk = QWidget()
         self.tab_stok = QWidget()
         self.tab_kartu = QWidget()
@@ -523,10 +560,8 @@ class ProdukPage(QWidget):
         self.cmb_tipe_filter.addItem("Jasa", "jasa")
         self.cmb_tipe_filter.currentIndexChanged.connect(self.muat)
         baris.addWidget(self.cmb_tipe_filter)
-        baris.addStretch()
-        self.lbl_produk = QLabel("")
-        self.lbl_produk.setObjectName("Muted")
-        baris.addWidget(self.lbl_produk)
+        self.lbl_produk = w.label_ringkas()
+        baris.addWidget(self.lbl_produk, 1)
         lay.addLayout(baris)
 
         self.tabel_produk = w.Tabel([
@@ -577,10 +612,8 @@ class ProdukPage(QWidget):
         self.cmb_gudang_stok.addItem("Semua Gudang", None)
         self.cmb_gudang_stok.currentIndexChanged.connect(self._refresh_gudang_combo)
         baris.addWidget(self.cmb_gudang_stok)
-        baris.addStretch()
-        self.lbl_stok = QLabel("")
-        self.lbl_stok.setObjectName("Muted")
-        baris.addWidget(self.lbl_stok)
+        self.lbl_stok = w.label_ringkas()
+        baris.addWidget(self.lbl_stok, 1)
         lay.addLayout(baris)
 
         self.tabel_stok = w.Tabel([
@@ -591,10 +624,10 @@ class ProdukPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_stok.set_pesan_kosong(
-            "Belum ada produk atau jasa yang terdaftar."
+            "Belum ada stok barang."
             "\n\n"
-            "Tekan tombol Tambah Produk untuk mencatat barang atau jasa "
-            "yang Anda jual.")
+            "Tambahkan produk bertipe barang, atau catat pembelian agar "
+            "posisi stok terisi.")
 
         lay.addWidget(self.tabel_stok, 1)
 
@@ -646,10 +679,10 @@ class ProdukPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_kartu.set_pesan_kosong(
-            "Belum ada produk atau jasa yang terdaftar."
+            "Belum ada mutasi stok pada periode ini."
             "\n\n"
-            "Tekan tombol Tambah Produk untuk mencatat barang atau jasa "
-            "yang Anda jual.")
+            "Pilih produk dan rentang tanggal lain, atau catat pembelian "
+            "dan penjualan agar kartu stok terisi.")
 
         lay.addWidget(self.tabel_kartu, 1)
 
@@ -827,8 +860,9 @@ class ProdukPage(QWidget):
 
     def _tambah(self):
         if not self.ctx.company_id:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         d = DialogProduk(self.ctx, self)
         if d.exec():
@@ -837,7 +871,7 @@ class ProdukPage(QWidget):
     def _ubah(self):
         r = self.tabel_produk.baris_terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu produk.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu produk.")
             return
         data = M.daftar_produk(self.ctx.company_id, self.inp_cari.text().strip(),
                                self.cmb_tipe_filter.currentData())
@@ -849,18 +883,17 @@ class ProdukPage(QWidget):
     def _hapus(self):
         r = self.tabel_produk.baris_terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu produk.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu produk.")
             return
         data = M.daftar_produk(self.ctx.company_id, self.inp_cari.text().strip(),
                                self.cmb_tipe_filter.currentData())
         if r >= len(data):
             return
         p = data[r]
-        if QMessageBox.question(
-                self, "Konfirmasi Hapus",
-                f"Hapus produk '{p['nama']}'?\n\n"
-                "Data dipindahkan ke keranjang sampah dan dapat dipulihkan.",
-                QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+        if popup.tanya(self,
+                       "Konfirmasi Hapus",
+                       f"Hapus produk '{p['nama']}'?\n\n"
+                       "Data dipindahkan ke keranjang sampah dan dapat dipulihkan."):
             M.hapus_produk(p["id"], self.ctx.username)
             self.muat()
 
@@ -897,10 +930,10 @@ class ProdukPage(QWidget):
                      f"Gagal: {hasil['gagal']}")
             if hasil["pesan"]:
                 pesan += "\n\nCatatan:\n" + "\n".join(hasil["pesan"][:5])
-            QMessageBox.information(self, "Hasil Impor", pesan)
+            popup.beri_tahu(self, "Hasil Impor", pesan)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal mengimpor", str(e))
+            popup.galat(self, "Gagal mengimpor", str(e))
 
 
 class DialogTransferStok(QDialog):
@@ -942,7 +975,7 @@ class DialogTransferStok(QDialog):
         g.addWidget(self.cmb_ke, 3, 1)
 
         g.addWidget(w.label("Jumlah", objek="FormLabel"), 4, 0)
-        self.inp_qty = w.InputRupiah()
+        self.inp_qty = w.InputQty()
         g.addWidget(self.inp_qty, 5, 0)
 
         g.addWidget(w.label("Tanggal", objek="FormLabel"), 4, 1)
@@ -957,8 +990,12 @@ class DialogTransferStok(QDialog):
         lay.addLayout(g)
 
         self.lbl_saldo = QLabel("")
-        theme.latar(self.lbl_saldo, f"background: {C.PRIMARY_SOFT}; border: 1px solid #CFE0F0; "
-            f"border-radius: 8px; padding: 11px 13px; font-size: {theme.FS_SMALL}px;")
+        self.lbl_saldo.setTextFormat(Qt.RichText)
+        theme.latar(self.lbl_saldo,
+                    f"color: {C.TEXT}; background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px; "
+                    f"padding: 9px 11px; font-size: {theme.FS_SMALL}px;")
         lay.addWidget(self.lbl_saldo)
 
         aksi = QHBoxLayout()
@@ -982,10 +1019,10 @@ class DialogTransferStok(QDialog):
             return
         s = M.saldo_stok(self.ctx.company_id, pid, gid)
         p = M.get_produk(pid)
+        jumlah = f"{s['qty']:g}".replace(".", ",")
         self.lbl_saldo.setText(
-            f"Stok tersedia di gudang asal: <b>{s['qty']:g} "
+            f"Stok tersedia di gudang asal: <b>{jumlah} "
             f"{p['satuan'] if p else ''}</b> · nilai {tx.rupiah(s['nilai_total'])}")
-        self.lbl_saldo.setTextFormat(Qt.RichText)
 
     def _simpan(self):
         try:
@@ -994,18 +1031,21 @@ class DialogTransferStok(QDialog):
             ke = self.cmb_ke.currentData()
             qty = self.inp_qty.nilai()
             if not pid:
-                QMessageBox.warning(self, "Produk kosong", "Pilih produk.")
+                popup.peringatkan(self, "Produk kosong", "Pilih produk.")
                 return
             if dari == ke:
-                QMessageBox.warning(self, "Gudang sama",
-                                    "Gudang asal dan tujuan harus berbeda.")
+                popup.peringatkan(self,
+                                  "Gudang sama",
+                                  "Gudang asal dan tujuan harus berbeda.")
                 return
             if qty <= 0:
-                QMessageBox.warning(self, "Jumlah kosong", "Isi jumlah yang dipindah.")
+                popup.peringatkan(self,
+                                  "Jumlah kosong",
+                                  "Isi jumlah yang dipindah.")
                 return
             M.transfer_stok(self.ctx.company_id, pid, qty, dari, ke,
                             self.inp_tanggal.date().toString("yyyy-MM-dd"),
                             self.inp_ket.text().strip())
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal transfer", str(e))
+            popup.galat(self, "Gagal transfer", str(e))

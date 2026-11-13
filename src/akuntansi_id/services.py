@@ -38,8 +38,9 @@ def list_companies(aktif_saja: bool = True) -> list:
     return db.q(sql)
 
 
-def get_company(company_id: int):
-    return db.q1("SELECT * FROM companies WHERE id=?", (company_id,))
+def get_company(company_id: int) -> Optional[dict]:
+    baris = db.q1("SELECT * FROM companies WHERE id=?", (company_id,))
+    return dict(baris) if baris is not None else None
 
 
 def create_company(nama: str, bentuk: str = "umkm_op", **kwargs) -> int:
@@ -146,10 +147,14 @@ def create_company(nama: str, bentuk: str = "umkm_op", **kwargs) -> int:
                    VALUES(?,?,?,?,?,?)""",
                 (cid, f"KB{kode_akun}", nama_akun, tipe, kode_akun, bank_id))
 
-        # Kategori biaya dasar
-        for nama_kat, akun in [("Operasional", "6003"), ("Gaji & SDM", "6001"),
-                               ("Marketing", "6009"), ("Transportasi", "6005"),
-                               ("Perlengkapan", "6008"), ("Lain-lain", "6023")]:
+        # Kategori biaya dasar. Akunnya mengikuti template bentuk badan,
+        # karena kode beban pada UMKM berbeda dari kode pada PT lengkap.
+        for nama_kat, peran in [
+                ("Operasional", "utilitas"), ("Gaji & SDM", ""),
+                ("Marketing", "marketing"), ("Transportasi", "transportasi"),
+                ("Perlengkapan", "perlengkapan"), ("Lain-lain", "beban_umum")]:
+            akun = (coa.kode_akun_template(bentuk, peran)
+                    if peran else "6001")
             conn.execute(
                 """INSERT INTO expense_categories(company_id, nama, akun_beban)
                    VALUES(?,?,?)""", (cid, nama_kat, akun))
@@ -423,8 +428,7 @@ def simpan_penjualan(company_id: int, tanggal: str, no_invoice: str, pelanggan: 
                 "lawan_transaksi": pelanggan, "catatan": keterangan or no_invoice,
             }]
             if ppn.ppn > 0:
-                akun_ppn = "2101" if db.q1("SELECT 1 FROM accounts WHERE company_id=? "
-                                           "AND kode='2101'", (company_id,)) else "2003"
+                akun_ppn = coa.kode_akun_bawaan(company_id, "utang_ppn_keluaran")
                 baris.append({
                     "kode_akun": akun_ppn, "debit": 0, "kredit": ppn.ppn,
                     "lawan_transaksi": pelanggan, "ref_pajak": "PPN Keluaran",
@@ -500,7 +504,7 @@ def list_pembelian(company_id: int, tahun: Optional[int] = None,
 
 def simpan_pembelian(company_id: int, tanggal: str, no_invoice: str, vendor: str,
                      nilai_sebelum_ppn: int, jenis_ppn: str = "Non-PKP/Tidak Dipungut",
-                     jenis: str = "Beban", akun_beban: str = "6008",
+                     jenis: str = "Beban", akun_beban: str = "",
                      npwp_nik: str = "", keterangan: str = "",
                      dapat_dikreditkan: bool = True, dibayar: bool = True,
                      tanggal_bayar: Optional[str] = None, catatan: str = "",
@@ -513,6 +517,8 @@ def simpan_pembelian(company_id: int, tanggal: str, no_invoice: str, vendor: str
         raise ValueError("Nilai pembelian harus lebih besar dari nol.")
     if not no_invoice.strip():
         raise ValueError("Nomor invoice wajib diisi.")
+    if not akun_beban:
+        akun_beban = coa.kode_akun_bawaan(company_id, "beban_umum")
 
     ppn = tx.hitung_ppn(nilai_sebelum_ppn, jenis_ppn)
     ppn_dikreditkan = ppn.ppn if dapat_dikreditkan else 0
@@ -546,9 +552,7 @@ def simpan_pembelian(company_id: int, tanggal: str, no_invoice: str, vendor: str
                 "catatan": keterangan or no_invoice,
             }]
             if ppn.ppn > 0:
-                akun_ppn_masukan = "1108" if db.q1(
-                    "SELECT 1 FROM accounts WHERE company_id=? AND kode='1108'",
-                    (company_id,)) else "1104"
+                akun_ppn_masukan = coa.kode_akun_bawaan(company_id, "ppn_masukan")
                 if dapat_dikreditkan:
                     baris.append({
                         "kode_akun": akun_ppn_masukan, "debit": ppn.ppn, "kredit": 0,
@@ -608,8 +612,8 @@ def simpan_aset(company_id: int, kode_aset: str, nama_aset: str, tanggal_peroleh
                 harga_perolehan: int, kelompok_fiskal: str = "Kelompok 1",
                 metode_fiskal: str = "Garis Lurus", umur_komersial: int = 4,
                 residu_komersial: int = 0, nbv_fiskal_awal: int = 0,
-                akun_aset: str = "1201", akun_akum: str = "1202",
-                akun_beban: str = "6007", catatan: str = "",
+                akun_aset: str = "", akun_akum: str = "",
+                akun_beban: str = "", catatan: str = "",
                 akun_kas: str = "", user_id=None, buat_jurnal: bool = True) -> int:
     if harga_perolehan <= 0:
         raise ValueError("Harga perolehan harus lebih besar dari nol.")
@@ -617,6 +621,10 @@ def simpan_aset(company_id: int, kode_aset: str, nama_aset: str, tanggal_peroleh
         raise ValueError("Nama aset wajib diisi.")
     if kelompok_fiskal not in config.FISCAL_ASSET_GROUPS:
         raise ValueError(f"Kelompok fiskal '{kelompok_fiskal}' tidak dikenal.")
+
+    akun_aset = akun_aset or coa.kode_akun_bawaan(company_id, "aset_peralatan")
+    akun_akum = akun_akum or coa.kode_akun_bawaan(company_id, "akum_penyusutan")
+    akun_beban = akun_beban or coa.kode_akun_bawaan(company_id, "beban_penyusutan")
 
     if not kode_aset.strip():
         n = int(db.scalar("SELECT COUNT(*) FROM fixed_assets WHERE company_id=?",
@@ -1024,9 +1032,24 @@ def posting_payroll(run_id: int, user_id=None) -> int:
         return default
 
     akun_beban_gaji = akun("6001", ["6001"], "6001")
-    akun_beban_bpjs = akun("6004", ["6004", "6013", "6003"], "6004")
-    akun_utang_pph21 = akun("2004", ["2004", "2102"], "2004")
-    akun_utang_bpjs = akun("2010", ["2010", "2009", "2102"], "2010")
+    # BPJS memakai penomoran berbeda: PT lengkap 6003/6004, perseroan
+    # perorangan 6012/6013. Pada UMKM tidak ada akun BPJS khusus, jadi
+    # beban digabung ke Gaji & Tunjangan, bukan ke akun marketing.
+    bentuk_row = db.q1("SELECT bentuk FROM companies WHERE id=?", (cid,))
+    bentuk = (bentuk_row["bentuk"] if bentuk_row else "") or "pt"
+    if bentuk in ("pt", "cv", "koperasi"):
+        kandidat_beban_bpjs = ["6003", "6004"]
+        kandidat_utang_bpjs = ["2009", "2010"]
+    elif bentuk == "pt_perorangan":
+        kandidat_beban_bpjs = ["6012", "6013"]
+        kandidat_utang_bpjs = ["2009", "2010"]
+    else:
+        kandidat_beban_bpjs = ["6001"]
+        kandidat_utang_bpjs = ["2001"]
+    akun_beban_bpjs = akun(kandidat_beban_bpjs[0], kandidat_beban_bpjs, "6001")
+    akun_utang_pph21 = akun("2004", ["2004", "2102"], "2102")
+    akun_utang_bpjs = akun(kandidat_utang_bpjs[0],
+                           kandidat_utang_bpjs + ["2001"], "2001")
     akun_kas = db.q1("SELECT kode FROM accounts WHERE company_id=? AND is_kas_bank=1 "
                      "ORDER BY kode LIMIT 1", (cid,))
     kode_kas = akun_kas["kode"] if akun_kas else "1001"
@@ -1163,20 +1186,30 @@ def simpan_pajak(company_id: int, tanggal: str, kode_pajak: str, dpp: int,
         tid = cur.lastrowid
 
         if buat_jurnal and pajak > 0:
-            # Jurnal: Debit Beban/Utang Usaha, Kredit Utang Pajak
-            akun_beban = "6006"  # jasa profesional
-            akun_utang = "2005"
-            if kode_pajak.startswith("PPh4"):
-                akun_utang = "2006"
-            elif kode_pajak == "PPh21":
-                akun_utang = "2004"
+            # Akun mengikuti arti kode pajak dan bagan akun bentuk usaha.
+            # Kode tetap seperti 6006 berarti Sewa pada PT lengkap, tetapi
+            # Jasa Profesional pada UMKM, sehingga tidak boleh dipakai
+            # langsung untuk semua bentuk.
+            if kode_pajak == "PPh21":
+                peran_beban, peran_utang = "beban_gaji", "utang_pph21"
+            elif kode_pajak.startswith("PPh4-SEWA"):
+                peran_beban, peran_utang = "sewa", "utang_pph4"
+            elif kode_pajak.startswith("PPh4"):
+                peran_beban, peran_utang = "beban_umum", "utang_pph4"
             elif kode_pajak.startswith("PPh22"):
-                akun_utang = "2007"
-            for k in (akun_beban, akun_utang):
-                if not db.q1("SELECT 1 FROM accounts WHERE company_id=? AND kode=?",
-                             (company_id, k)):
-                    akun_utang = "2102"
-                    akun_beban = "6006"
+                peran_beban, peran_utang = "persediaan", "utang_pph_badan"
+            elif kode_pajak.startswith("PPh23") or kode_pajak == "PPh26":
+                peran_beban, peran_utang = "beban_jasa", "utang_pph23"
+            elif kode_pajak == "PPh-FINAL05":
+                peran_beban, peran_utang = "beban_umum", "utang_pph_final"
+            else:
+                peran_beban, peran_utang = "beban_umum", "utang_pph"
+            akun_beban = coa.kode_akun_bawaan(company_id, peran_beban)
+            akun_utang = coa.kode_akun_bawaan(company_id, peran_utang)
+            if not akun_beban:
+                akun_beban = coa.kode_akun_bawaan(company_id, "beban_umum")
+            if not akun_utang:
+                akun_utang = coa.kode_akun_bawaan(company_id, "utang_pph")
 
             baris = [{
                 "kode_akun": akun_beban, "debit": pajak, "kredit": 0,
@@ -1236,25 +1269,20 @@ def catat_pembayaran_pajak(company_id: int, jenis_pajak: str, masa: str,
         pid = cur.lastrowid
 
         if buat_jurnal:
-            akun_utang_map = {
-                "PPN": "2003", "PPh21": "2004", "PPh23": "2005", "PPh4": "2006",
-                "PPh25": "2007", "PPhBadan": "2007", "PPhFinal": "2008",
-            }
-            akun_utang = akun_utang_map.get(jenis_pajak, "2007")
-            if not db.q1("SELECT 1 FROM accounts WHERE company_id=? AND kode=?",
-                         (company_id, akun_utang)):
-                akun_utang = "2102" if db.q1(
-                    "SELECT 1 FROM accounts WHERE company_id=? AND kode='2102'",
-                    (company_id,)) else "2101"
+            peran_utang = {
+                "PPN": "utang_ppn_keluaran", "PPh21": "utang_pph21",
+                "PPh23": "utang_pph23", "PPh4": "utang_pph4",
+                "PPhBadan": "utang_pph_badan", "PPhFinal": "utang_pph_final",
+            }.get(jenis_pajak, "utang_pph_badan")
+            if jenis_pajak == "PPh25":
+                # PPh 25 bukan pelunasan utang, melainkan pembayaran di muka.
+                akun_utang = coa.kode_akun_bawaan(
+                    company_id, "pajak_dibayar_dimuka")
+            else:
+                akun_utang = coa.kode_akun_bawaan(company_id, peran_utang)
             akun_kas = db.q1("SELECT kode FROM accounts WHERE company_id=? AND is_kas_bank=1 "
                              "ORDER BY kode LIMIT 1", (company_id,))
             kode_kas = akun_kas["kode"] if akun_kas else "1001"
-
-            # PPh 25 bukan pelunasan utang, melainkan pembayaran di muka
-            if jenis_pajak == "PPh25":
-                akun_utang = "1109" if db.q1(
-                    "SELECT 1 FROM accounts WHERE company_id=? AND kode='1109'",
-                    (company_id,)) else "1104"
 
             baris = [{
                 "kode_akun": akun_utang, "debit": int(jumlah), "kredit": 0,

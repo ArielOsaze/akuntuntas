@@ -5,19 +5,22 @@ Alur:
   1. Login (wajib - data pembukuan bersifat rahasia)
   2. Ganti password (bila pertama kali)
   3. Pilih mode penggunaan: Pemula (banyak penjelasan) atau Ahli
+
+Tampilan dibuat seperti formulir resmi: kolom keterangan di atas kertas
+hangat, kolom isian di atas permukaan terang, dipisahkan satu garis rambut.
+Tanpa kartu melayang, bayangan, strip warna, atau ikon hiasan.
 """
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal, QTimer
-from PySide6.QtGui import QPainter, QColor, QLinearGradient, QBrush
+from PySide6.QtCore import Qt, Signal, QTimer, QSize, QEvent
 from PySide6.QtWidgets import (
-    QSizePolicy,
-    QDialog, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QCheckBox, QFrame,
+    QSizePolicy, QScrollArea, QDialog, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QLineEdit, QPushButton, QCheckBox, QFrame,
 )
 
 from .. import config
 from ..core import security as sec
+from . import icons
 from . import theme
 from .theme import C
 from . import widgets as w
@@ -38,184 +41,181 @@ def capslock_menyala() -> bool:
         return False
 
 
+def _label(teks: str, ukuran: float, warna: str, tebal: int = 400,
+           spasi: float = 0, serif: bool = False) -> QLabel:
+    """Label polos dengan latar transparan, dipakai di kolom merek."""
+    lbl = QLabel(teks)
+    jenis = theme.FONT_SERIF if serif else theme.FONT_UI
+    lbl.setStyleSheet(
+        f"font-family: '{jenis}'; font-size: {ukuran}px; font-weight: {tebal}; "
+        f"color: {warna}; background: transparent; letter-spacing: {spasi}px;")
+    return lbl
+
+
+def _kepala_merek(tepi_kiri: int = 28, tepi_atas: int = 24) -> QWidget:
+    """Baris merek kecil di kiri atas layar penyiapan."""
+    kepala = QWidget()
+    kl = QHBoxLayout(kepala)
+    kl.setContentsMargins(tepi_kiri, tepi_atas, 28, 0)
+    kl.setSpacing(8)
+    kl.addWidget(w.logo_label(20), 0, Qt.AlignVCenter)
+    kl.addWidget(_label("AkunTuntas", 13, C.TEXT, 600, -0.1, True), 0,
+                 Qt.AlignVCenter)
+    kl.addStretch()
+    return kepala
+
+
 # ==========================================================================
-# PANEL KIRI (BRANDING)
+# PANEL KIRI (MEREK)
 # ==========================================================================
 class BrandPanel(QFrame):
-    """Panel gelap berisi nama aplikasi dan penjelasan singkat."""
+    """Kolom merek: pernyataan, alur kerja, dan keterangan data lokal."""
 
-    # Lebar panel merek: dipakai bila jendela lapang.
-    LEBAR_INGIN = 452
+    LEBAR_INGIN = 500
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        # Panel merek memakai lebar 452 piksel bila ruang mencukupi, tetapi
-        # boleh menyusut sampai 380 piksel pada jendela sempit. Di bawah
-        # 380 piksel teks penjelasannya mulai terpotong, jadi batas itu
-        # tidak diturunkan.
         self.setMinimumWidth(380)
-        self.setMaximumWidth(452)
-        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-        theme.latar(self, f"background: {C.SIDEBAR_BG}; border: none;")
+        self.setMaximumWidth(560)
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        theme.latar(self, f"background: {C.BG}; border: none;")
 
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(44, 44, 44, 38)
+        lay.setContentsMargins(52, 44, 46, 34)
         lay.setSpacing(0)
+        self._lay = lay
 
-        # Logo
-        logo = w.logo_label(64)
-        lay.addWidget(logo)
+        # ---------------------------------------------------------- merek
+        kepala = QHBoxLayout()
+        kepala.setSpacing(10)
+        kepala.addWidget(w.logo_label(30), 0, Qt.AlignVCenter)
+        kolom = QVBoxLayout()
+        kolom.setSpacing(0)
+        kolom.addWidget(_label("AkunTuntas", 17, C.TEXT, 600, -0.2, True))
+        kolom.addWidget(_label("Akuntansi & pajak usaha", 10, C.TEXT_FAINT,
+                               400, 0.2))
+        kepala.addLayout(kolom)
+        kepala.addStretch()
+        lay.addLayout(kepala)
 
-        lay.addSpacing(16)
-        judul = QLabel("AkunTuntas")
-        judul.setObjectName("LoginTitle")
+        lay.addStretch(3)
+
+        # --------------------------------------------------------- judul
+        judul = _label("Pembukuan dan perpajakan usaha Indonesia.", 31,
+                       C.TEXT, 600, -0.4, True)
+        judul.setWordWrap(True)
         lay.addWidget(judul)
 
-        sub = QLabel("Pembukuan & Pajak\nPerusahaan Indonesia")
-        sub.setObjectName("LoginSub")
-        sub.setStyleSheet("font-size: 17px; color: #F2F7FB; background: transparent; "
-                          "line-height: 150%;")
+        lay.addSpacing(14)
+        sub = _label(
+            "Catatan transaksi, laporan keuangan, dan perhitungan pajak "
+            "disusun dari satu sumber data yang sama.", 12.5, C.TEXT_MUTED)
+        sub.setWordWrap(True)
         lay.addWidget(sub)
 
-        lay.addSpacing(12)
-        versi = QLabel(f"{config.APP_EDITION} · v{config.APP_VERSION}")
-        versi.setStyleSheet("font-size: 11px; color: #DCE7F0; background: transparent;")
-        lay.addWidget(versi)
+        lay.addStretch(2)
 
-        # Nomor regulasi disebutkan supaya klaim "sesuai aturan terbaru" dapat
-        # diperiksa, bukan sekadar tulisan. Ini yang dicari calon pengguna
-        # sebelum memutuskan memakai aplikasi pembukuan.
-        aturan = QLabel("PP 55/2022 · PP 20/2026 · PMK 81/2024 · PMK 168/2023")
-        aturan.setWordWrap(True)
-        aturan.setStyleSheet("font-size: 10px; color: #C8D8E6; "
-                             "background: transparent;")
-        lay.addWidget(aturan)
-
-        lay.addSpacing(24)
-
-        # Contoh nyata dari cara aplikasi bekerja. Angka besar seperti
-        # "96 akun" tidak menjelaskan apa pun; contoh di bawah ini
-        # memperlihatkan hal yang membedakan aplikasi ini — pajaknya
-        # dihitung sendiri dari transaksi, bukan diketik terpisah.
-        kartu = QFrame()
-        theme.latar(kartu, "background: rgba(255, 255, 255, 0.05); "
-                           "border: 1px solid rgba(195, 212, 228, 0.20); "
-                           "border-radius: 9px;")
-        kl = QVBoxLayout(kartu)
-        kl.setContentsMargins(16, 14, 16, 14)
-        kl.setSpacing(8)
-
-        j = QLabel("Penjualan jasa Rp10.000.000 ke pelanggan PKP")
-        j.setStyleSheet("font-size: 11px; font-weight: 700; color: #F2F7FB; "
-                        "background: transparent;")
-        kl.addWidget(j)
-
-        for kiri, kanan, warna in (
-                ("Piutang usaha", "11.100.000", "#E8F1F8"),
-                ("PPN keluaran 11%", "1.100.000", "#6EE7B7"),
-                ("Pendapatan jasa", "10.000.000", "#E8F1F8")):
-            b = QHBoxLayout()
-            b.setSpacing(8)
-            n = QLabel(kiri)
-            n.setStyleSheet("font-size: 11px; color: #E8F1F8; "
-                            "background: transparent;")
-            b.addWidget(n)
-            b.addStretch()
-            v = QLabel(kanan)
-            v.setStyleSheet(f"font-size: 11px; color: {warna}; "
-                            "font-family: Consolas, monospace; "
-                            "background: transparent;")
-            b.addWidget(v)
-            kl.addLayout(b)
-
-        cat = QLabel("PPN dihitung dengan DPP nilai lain (11/12), jurnal "
-                     "tetap seimbang.")
-        cat.setWordWrap(True)
-        cat.setStyleSheet("font-size: 10px; color: #C8D8E6; "
-                          "background: transparent;")
-        kl.addWidget(cat)
-        lay.addWidget(kartu)
-
-        lay.addSpacing(22)
-
-        # Tiga keterangan, disusun sebagai daftar bernomor supaya berbeda
-        # dari blok di atas dan tidak terasa berulang.
-        for nomor, judul_baris, rincian in (
-                ("1", "Pajak dihitung, bukan diketik ulang",
-                 "Nilai PPh dan PPN muncul dari jurnal yang Anda masukkan, "
-                 "lengkap dengan pasal dan dasar hukumnya."),
-                ("2", "Tersimpan di komputer Anda",
-                 "Pembukuan tidak dikirim ke internet. Cadangan dibuat "
-                 "otomatis agar data tidak hilang."),
-                ("3", "Tercatat siapa mengubah apa",
-                 "Setiap perubahan data dan setiap kali masuk aplikasi masuk "
-                 "jejak audit.")):
-            b = QHBoxLayout()
-            b.setSpacing(12)
-
-            no = QLabel(nomor)
-            no.setFixedSize(20, 20)
-            no.setAlignment(Qt.AlignCenter)
-            theme.latar(no, "background: rgba(195, 212, 228, 0.14); "
-                            "border-radius: 10px; color: #DCE7F0; "
-                            "font-size: 11px; font-weight: 700;")
-            b.addWidget(no, 0, Qt.AlignTop)
-
-            kolom = QVBoxLayout()
-            kolom.setSpacing(1)
-            j = QLabel(judul_baris)
-            j.setStyleSheet("font-size: 12px; font-weight: 600; color: #FFFFFF; "
-                            "background: transparent;")
-            kolom.addWidget(j)
-            r = QLabel(rincian)
-            r.setWordWrap(True)
-            r.setStyleSheet("font-size: 11px; color: #C8D8E6; "
-                            "background: transparent; line-height: 140%;")
-            kolom.addWidget(r)
-            b.addLayout(kolom, 1)
-
-            lay.addLayout(b)
-            lay.addSpacing(13)
-
-        lay.addStretch()
-
-        # Catatan hukum
-        catatan = QLabel(
-            "Aplikasi ini membantu administrasi dan estimasi perpajakan. "
-            "Transaksi khusus dan interpretasi regulasi tetap perlu diverifikasi "
-            "sesuai fakta dan ketentuan terbaru."
+        # ------------------------------------------------------- cakupan
+        # Daftar ini disusun seperti daftar isi dokumen resmi: judul, uraian,
+        # dan garis pemisah tipis. Tidak ada penanda berwarna.
+        self.indeks = QWidget()
+        il = QVBoxLayout(self.indeks)
+        il.setContentsMargins(0, 0, 0, 0)
+        il.setSpacing(0)
+        cakupan = (
+            ("Jurnal dan buku besar",
+             "Transaksi harian tercatat dengan nomor bukti dan tanggal."),
+            ("Laporan keuangan",
+             "Laba rugi, neraca, dan arus kas dari sumber data yang sama."),
+            ("Perpajakan",
+             "PPN, PPh, dan rekap SPT dihitung dari pembukuan."),
         )
-        catatan.setWordWrap(True)
-        catatan.setStyleSheet("font-size: 10px; color: #DCE7F0; background: transparent; "
-                              "line-height: 145%;")
-        lay.addWidget(catatan)
+        for i, (nama, rincian) in enumerate(cakupan):
+            if i:
+                garis = QFrame()
+                garis.setFixedHeight(1)
+                theme.latar(garis, f"background: {C.BORDER}; border: none;")
+                il.addWidget(garis)
+            kol = QVBoxLayout()
+            kol.setContentsMargins(0, 0 if i == 0 else 11,
+                                   0, 0 if i == len(cakupan) - 1 else 11)
+            kol.setSpacing(3)
+            kol.addWidget(_label(nama, 12.5, C.TEXT, 600))
+            kol.addWidget(_label(rincian, 11.5, C.TEXT_MUTED))
+            il.addLayout(kol)
+        lay.addWidget(self.indeks)
+
+        lay.addStretch(2)
+
+        # ------------------------------------------------------------- kaki
+        lay.addWidget(_label("Data tersimpan di komputer ini dan tidak diunggah.",
+                             11, C.TEXT_MUTED))
+        lay.addSpacing(3)
+        lay.addWidget(_label("PP 55/2022 · PMK 81/2024 · PP 20/2026",
+                             10, C.TEXT_FAINT))
+
+    def resizeEvent(self, peristiwa):
+        """
+        Rapatkan bantalan pada jendela sempit.
+
+        Panel ini boleh menyusut sampai 380 piksel. Dengan bantalan 52 piksel
+        judul kehilangan ruang, jadi tepi dikurangi lebih dulu sebelum
+        teksnya mulai terpotong.
+        """
+        super().resizeEvent(peristiwa)
+        tepi = 38 if self.width() < 430 else 52
+        if self._lay.contentsMargins().left() != tepi:
+            self._lay.setContentsMargins(tepi, 40, tepi - 6, 30)
 
     def sizeHint(self):
-        """
-        Lebar yang diinginkan panel merek.
-
-        Qt memakai isyarat ini untuk membagi ruang antara panel merek dan
-        formulir. Tanpa isyarat ini, panel akan memakai ukuran minimumnya
-        (380 piksel) meskipun jendela lapang, sehingga panel merek tampak
-        lebih sempit daripada rancangannya.
-        """
+        """Lebar yang diinginkan panel merek pada jendela lapang."""
         ukuran = super().sizeHint()
         ukuran.setWidth(self.LEBAR_INGIN)
         return ukuran
 
-    def paintEvent(self, event):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
-        g = QLinearGradient(0, 0, self.width(), self.height())
-        g.setColorAt(0.0, QColor(C.SIDEBAR_BG))
-        g.setColorAt(1.0, QColor("#0A1F33"))
-        p.fillRect(self.rect(), QBrush(g))
-        p.end()
-
 
 # ==========================================================================
-# HALAMAN LOGIN
+# KOLOM ISIAN
 # ==========================================================================
+class _BidangLogin(QFrame):
+    """
+    Kolom isian berbingkai dengan penanda fokus pada bingkainya.
+
+    QFrame dipakai sebagai pembungkus supaya tombol lihat password dapat
+    duduk sejajar teks, sedangkan QLineEdit-nya tanpa garis tepi. Tebal
+    bingkai tidak berubah saat fokus, hanya warnanya, sehingga teks tidak
+    bergeser satu piksel pun ketika kolom dipilih.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("LoginField")
+        self.setFixedHeight(46)
+
+        self.inp = QLineEdit()
+        self.inp.setObjectName("LoginFieldInput")
+        self.inp.installEventFilter(self)
+
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(2, 0, 6, 0)
+        lay.setSpacing(6)
+        lay.addWidget(self.inp, 1)
+
+    def tambah_kanan(self, widget: QWidget):
+        """Tambahkan tombol di ujung kanan, mis. tombol lihat password."""
+        self.layout().addWidget(widget, 0, Qt.AlignVCenter)
+
+    def eventFilter(self, obj, peristiwa):
+        if obj is self.inp and peristiwa.type() in (QEvent.FocusIn,
+                                                     QEvent.FocusOut):
+            self.setProperty("fokus", peristiwa.type() == QEvent.FocusIn)
+            gaya = self.style()
+            gaya.unpolish(self)
+            gaya.polish(self)
+            self.update()
+        return super().eventFilter(obj, peristiwa)
+
+
 class LoginPage(QWidget):
     berhasil = Signal(object)   # LoginResult
 
@@ -227,189 +227,226 @@ class LoginPage(QWidget):
         luar.setContentsMargins(0, 0, 0, 0)
         luar.setSpacing(0)
 
-        luar.addWidget(BrandPanel())
+        self.panel_merek = BrandPanel()
+        luar.addWidget(self.panel_merek)
 
-        # sisi kanan: form
+        pemisah = QFrame()
+        pemisah.setFixedWidth(1)
+        theme.latar(pemisah, f"background: {C.BORDER}; border: none;")
+        luar.addWidget(pemisah)
+
+        # --------------------------------------------------------- sisi kanan
         kanan = QWidget()
-        theme.latar(kanan, f"background: {C.SURFACE};")
+        theme.latar(kanan, f"background: {C.SURFACE}; border: none;")
         kl = QVBoxLayout(kanan)
-        # Bantalan samping form menyesuaikan lebar jendela: 64 piksel bila
-        # lapang, dan menyusut sampai 36 piksel pada jendela sempit supaya
-        # formulir selebar 400 piksel tetap mendapat ruang penuh.
-        kl.setContentsMargins(36, 40, 36, 40)
+        kl.setContentsMargins(0, 0, 0, 0)
         kl.setSpacing(0)
-        kl.addStretch()
 
-        form = QWidget()
-        # Formulir memakai lebar tetap 400 piksel. Sebelumnya hanya batas
-        # maksimum yang dipasang, sehingga Qt memakai lebar alaminya (259
-        # piksel) dan formulir tampak sempit di tengah ruang yang lapang.
-        # Jendela terkecil yang didukung adalah 920 piksel, sedangkan panel
-        # merek menyusut sampai 380 piksel, jadi 400 piksel selalu muat.
-        form.setFixedWidth(400)
-        fl = QVBoxLayout(form)
+        # Area bergulir menjaga formulir tetap utuh pada layar pendek,
+        # termasuk saat kotak pesan kesalahan muncul dan menambah tinggi.
+        gulung = QScrollArea()
+        gulung.setWidgetResizable(True)
+        gulung.setFrameShape(QFrame.NoFrame)
+        gulung.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        gulung.setStyleSheet(
+            "QScrollArea { background: transparent; border: none; }"
+            "QScrollArea > QWidget > QWidget { background: transparent; }")
+        gulung.viewport().setAutoFillBackground(False)
+
+        isi = QWidget()
+        il = QVBoxLayout(isi)
+        il.setContentsMargins(32, 34, 32, 10)
+        il.setSpacing(0)
+        il.addStretch(1)
+
+        formulir = QWidget()
+        # Lebar tetap 400 px: formulir harus muat pada jendela minimum
+        # 920x620 (kolom kanan masih sekitar 515 px). Lebar mengikuti ukuran
+        # saran anak-anaknya membuat kolom isian menyusut menjadi 200 px
+        # dan judul terlipat di tengah kata.
+        formulir.setFixedWidth(400)
+        fl = QVBoxLayout(formulir)
         fl.setContentsMargins(0, 0, 0, 0)
         fl.setSpacing(0)
 
-        judul = QLabel("Masuk ke akun Anda")
-        judul.setStyleSheet(f"font-size: 25px; font-weight: 700; color: {C.TEXT}; "
-                            "background: transparent;")
+        # --------------------------------------------------------- kepala
+        judul = QLabel("Masuk ke akun")
+        judul.setObjectName("LoginTitle")
+        judul.setWordWrap(True)
         fl.addWidget(judul)
-        fl.addSpacing(7)
-        ket = QLabel("Data pembukuan Anda dilindungi. Masukkan kredensial untuk melanjutkan.")
-        ket.setWordWrap(True)
-        ket.setStyleSheet(f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
-                          "background: transparent;")
-        fl.addWidget(ket)
-        fl.addSpacing(30)
 
-        fl.addWidget(w.label("Nama Pengguna", objek="FormLabel"))
-        fl.addSpacing(6)
-        self.inp_user = QLineEdit()
-        self.inp_user.setObjectName("LoginInput")
+        fl.addSpacing(7)
+        ket = QLabel("Gunakan akun yang terdaftar untuk melanjutkan pembukuan "
+                     "yang tersimpan di komputer ini.")
+        ket.setObjectName("LoginSub")
+        ket.setWordWrap(True)
+        fl.addWidget(ket)
+
+        fl.addSpacing(28)
+
+        # ----------------------------------------------------- nama pengguna
+        fl.addWidget(w.label("Nama pengguna", objek="LoginLabel"))
+        fl.addSpacing(7)
+        self.bidang_user = _BidangLogin()
+        self.inp_user = self.bidang_user.inp
         self.inp_user.setPlaceholderText("mis. admin")
-        self.inp_user.setMinimumHeight(42)
-        fl.addWidget(self.inp_user)
+        self.inp_user.returnPressed.connect(lambda: self.inp_pass.setFocus())
+        fl.addWidget(self.bidang_user)
+
         fl.addSpacing(16)
 
-        fl.addWidget(w.label("Password", objek="FormLabel"))
-        fl.addSpacing(6)
+        # ---------------------------------------------------------- password
+        baris_label = QHBoxLayout()
+        baris_label.setSpacing(8)
+        baris_label.addWidget(w.label("Kata sandi", objek="LoginLabel"), 0)
+        baris_label.addStretch(1)
+        self.btn_lupa = QPushButton("Lupa password?")
+        self.btn_lupa.setCursor(Qt.PointingHandCursor)
+        self.btn_lupa.setStyleSheet(
+            f"QPushButton {{ border: none; background: transparent; "
+            f"color: {C.ACCENT_DARK}; font-size: {theme.FS_TINY}px; "
+            "font-weight: 600; padding: 0; }}"
+            f"QPushButton:hover {{ color: {C.PRIMARY_DARK}; }}")
+        self.btn_lupa.clicked.connect(self._lupa_password)
+        baris_label.addWidget(self.btn_lupa, 0, Qt.AlignVCenter)
+        fl.addLayout(baris_label)
 
-        # Kolom password dengan tombol lihat/sembunyikan. Tombol ini penting:
-        # salah ketik password sulit disadari karena hurufnya tersembunyi,
-        # apalagi saat Caps Lock menyala tanpa disadari.
-        wadah_pass = QFrame()
-        theme.latar(wadah_pass, f"background: {C.SURFACE}; "
-                                f"border: 1px solid {C.BORDER}; border-radius: 8px;")
-        wpl = QHBoxLayout(wadah_pass)
-        wpl.setContentsMargins(0, 0, 6, 0)
-        wpl.setSpacing(0)
-
-        self.inp_pass = QLineEdit()
-        self.inp_pass.setPlaceholderText("••••••••")
+        fl.addSpacing(7)
+        self.bidang_pass = _BidangLogin()
+        self.inp_pass = self.bidang_pass.inp
+        self.inp_pass.setPlaceholderText("Kata sandi")
         self.inp_pass.setEchoMode(QLineEdit.Password)
-        self.inp_pass.setMinimumHeight(42)
-        self.inp_pass.setStyleSheet(
-            "QLineEdit { border: none; background: transparent; "
-            f"padding: 0 10px; font-size: {theme.FS_BODY}px; }}")
         self.inp_pass.returnPressed.connect(self._login)
         self.inp_pass.textChanged.connect(self._perbarui_capslock)
-        wpl.addWidget(self.inp_pass, 1)
 
+        # Tombol lihat memakai teks, bukan hanya ikon: pengguna baru belum
+        # tentu mengenali lambang mata. Lebarnya mengikuti teks sehingga
+        # "Sembunyikan" tidak pernah terpotong saat ditekan.
         self.btn_lihat = QPushButton("Lihat")
-        self.btn_lihat.setObjectName("Ghost")
+        self.btn_lihat.setObjectName("LoginReveal")
         self.btn_lihat.setCursor(Qt.PointingHandCursor)
         self.btn_lihat.setCheckable(True)
-        self.btn_lihat.setFixedWidth(62)
-        self.btn_lihat.setStyleSheet(
-            f"QPushButton {{ border: none; background: transparent; color: {C.PRIMARY}; "
-            f"font-size: {theme.FS_SMALL}px; font-weight: 600; padding: 4px; }}"
-            f"QPushButton:hover {{ color: {C.PRIMARY_DARK}; }}")
+        self.btn_lihat.setMinimumWidth(58)
+        self.btn_lihat.setFixedHeight(28)
+        self.btn_lihat.setIcon(icons.ikon("mata", C.TEXT_MUTED, 14))
+        self.btn_lihat.setIconSize(QSize(14, 14))
         self.btn_lihat.toggled.connect(self._ganti_lihat_password)
-        wpl.addWidget(self.btn_lihat)
+        self.bidang_pass.tambah_kanan(self.btn_lihat)
+        fl.addWidget(self.bidang_pass)
 
-        fl.addWidget(wadah_pass)
-
-        # Peringatan Caps Lock: muncul hanya saat menyala dan kolom password
-        # sedang dipakai, supaya tidak menambah kebisingan tampilan.
+        # Peringatan Caps Lock muncul hanya saat menyala dan kolom password
+        # sedang berisi, supaya tidak menambah kebisingan tampilan.
         self.lbl_caps = QLabel("Caps Lock menyala")
         self.lbl_caps.setStyleSheet(
             f"font-size: {theme.FS_TINY}px; color: {C.WARNING}; "
             "background: transparent; font-weight: 600;")
         self.lbl_caps.hide()
-        fl.addSpacing(5)
+        fl.addSpacing(6)
         fl.addWidget(self.lbl_caps)
 
         fl.addSpacing(10)
-        baris_opsi = QHBoxLayout()
         self.chk_ingat = QCheckBox("Ingat nama pengguna")
-        self.chk_ingat.setStyleSheet(f"font-size: {theme.FS_SMALL}px; "
-                                     "background: transparent;")
-        baris_opsi.addWidget(self.chk_ingat)
-        baris_opsi.addStretch()
-        self.btn_lupa = QPushButton("Lupa password?")
-        self.btn_lupa.setObjectName("Ghost")
-        self.btn_lupa.setCursor(Qt.PointingHandCursor)
-        self.btn_lupa.clicked.connect(self._lupa_password)
-        baris_opsi.addWidget(self.btn_lupa)
-        fl.addLayout(baris_opsi)
+        self.chk_ingat.setStyleSheet(
+            f"QCheckBox {{ font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
+            "background: transparent; spacing: 8px; }"
+            f"QCheckBox:hover {{ color: {C.TEXT}; }}"
+            "QCheckBox::indicator { width: 15px; height: 15px; "
+            f"border: 1px solid {C.BORDER_STRONG}; border-radius: 2px; "
+            f"background: {C.SURFACE}; }}"
+            f"QCheckBox::indicator:hover {{ border-color: {C.ACCENT}; }}"
+            f"QCheckBox::indicator:checked {{ background: {C.PRIMARY}; "
+            f"border-color: {C.PRIMARY}; }}")
+        fl.addWidget(self.chk_ingat)
 
-        fl.addSpacing(16)
+        fl.addSpacing(8)
         self.lbl_error = QLabel("")
         self.lbl_error.setWordWrap(True)
-        theme.latar(self.lbl_error, f"background: {C.DANGER_BG}; color: {C.DANGER}; border-radius: 7px; "
-            f"padding: 10px 12px; font-size: {theme.FS_SMALL}px; font-weight: 600;")
+        self.lbl_error.setObjectName("LoginError")
         self.lbl_error.hide()
         fl.addWidget(self.lbl_error)
 
-        fl.addSpacing(14)
-        self.btn_login = w.tombol("Masuk", gaya="primary")
+        fl.addSpacing(16)
+        self.btn_login = QPushButton("Masuk")
+        self.btn_login.setCursor(Qt.PointingHandCursor)
         self.btn_login.setMinimumHeight(46)
-        # Tombol utama memakai gradasi halus dari warna merek ke warna yang
-        # sedikit lebih tua. Tombol rata satu warna tampak datar dan murah;
-        # gradasi tipis memberi kesan tombol yang bisa ditekan tanpa berlebihan.
         self.btn_login.setStyleSheet(
-            f"QPushButton {{ border: none; color: white; border-radius: 8px; "
-            f"font-size: {theme.FS_H3}px; font-weight: 600; padding: 0 16px; "
-            f"background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-            f"stop:0 {C.PRIMARY_LIGHT}, stop:1 {C.PRIMARY}); }}"
-            f"QPushButton:hover {{ background: qlineargradient(x1:0, y1:0, "
-            f"x2:0, y2:1, stop:0 {C.PRIMARY}, stop:1 {C.PRIMARY_DARK}); }}"
-            f"QPushButton:pressed {{ background: {C.PRIMARY_DARK}; }}"
-            f"QPushButton:disabled {{ background: {C.BORDER}; color: {C.TEXT_MUTED}; }}")
+            f"QPushButton {{ border: 1px solid {C.PRIMARY}; color: white; "
+            f"border-radius: 4px; font-size: {theme.FS_H3}px; "
+            "font-weight: 600; padding: 0 18px; min-height: 46px; "
+            f"background: {C.PRIMARY}; }}"
+            f"QPushButton:hover {{ background: {C.PRIMARY_DARK}; "
+            f"border-color: {C.PRIMARY_DARK}; }}"
+            "QPushButton:pressed { background: #0F1518; border-color: #0F1518; }"
+            f"QPushButton:focus {{ border: 1px solid {C.ACCENT_LIGHT}; }}"
+            f"QPushButton:disabled {{ background: {C.BORDER}; "
+            f"border-color: {C.BORDER}; color: {C.TEXT_MUTED}; }}")
         self.btn_login.clicked.connect(self._login)
         fl.addWidget(self.btn_login)
 
-        fl.addSpacing(18)
-        # Keterangan akun bawaan ditampilkan sebagai teks halus tanpa kotak.
-        # Kotak berlatar abu di tengah formulir membuat halaman masuk tampak
-        # seperti formulir bawaan sistem, bukan halaman masuk yang dirancang.
-        self.petunjuk = QFrame()
-        self.petunjuk.setMaximumWidth(400)
-        theme.latar(self.petunjuk, "background: transparent; border: none;")
-        pl = QVBoxLayout(self.petunjuk)
-        pl.setContentsMargins(0, 0, 0, 0)
-        pl.setSpacing(3)
-        pt = w.LabelTinggiOtomatis(
-            f"Masuk pertama kali? Gunakan <b>{config.DEFAULT_ADMIN_USER}</b> "
-            f"dengan kata sandi <b>{config.DEFAULT_ADMIN_PASSWORD}</b>. "
-            "Anda akan diminta menggantinya.")
-        pt.setWordWrap(True)
-        pt.setTextFormat(Qt.RichText)
-        pt.setAlignment(Qt.AlignCenter)
-        # Keterangan ini penting bagi pengguna baru, jadi warnanya memakai
-        # TEXT (bukan TEXT_MUTED) dan ukurannya satu tingkat lebih besar.
-        # Tulisan yang terlalu samar membuat pengguna baru tidak menemukan
-        # kata sandi bawaannya.
-        pt.setStyleSheet(f"font-size: {theme.FS_SMALL}px; "
-                         f"color: {C.TEXT}; background: transparent;")
-        # Tinggi minimum diambil dari pengukuran teks berformat: Qt
-        # menghitungnya terlalu pendek sehingga baris terakhir terpotong.
-        pt.setMinimumHeight(theme.tinggi_rich_text(pt))
-        kebijakan_pt = pt.sizePolicy()
-        kebijakan_pt.setVerticalPolicy(QSizePolicy.MinimumExpanding)
-        pt.setSizePolicy(kebijakan_pt)
-        pl.addWidget(pt)
-        fl.addWidget(self.petunjuk)
-
+        # --------------------------------------------------- akun bawaan
         fl.addSpacing(16)
-
-        # Keterangan singkat keadaan data: mengisi ruang bawah sekaligus
-        # memberi tahu pengguna apakah ini pemasangan baru atau sudah berisi.
-        self.lbl_keadaan = QLabel()
-        self.lbl_keadaan.setWordWrap(True)
-        self.lbl_keadaan.setAlignment(Qt.AlignCenter)
-        self.lbl_keadaan.setStyleSheet(
+        self.petunjuk = QFrame()
+        self.petunjuk.setObjectName("LoginHintBox")
+        pl = QVBoxLayout(self.petunjuk)
+        pl.setContentsMargins(14, 11, 14, 12)
+        pl.setSpacing(4)
+        pl.addWidget(w.label("Akun bawaan", objek="LoginLabel"))
+        kredensial = QLabel(f"{config.DEFAULT_ADMIN_USER} / "
+                            f"{config.DEFAULT_ADMIN_PASSWORD}")
+        kredensial.setStyleSheet(
+            f"font-size: {theme.FS_SMALL}px; font-weight: 700; "
+            f"color: {C.TEXT}; background: transparent;")
+        pl.addWidget(kredensial)
+        catatan_akun = QLabel("Anda akan diminta mengganti kata sandi.")
+        catatan_akun.setWordWrap(True)
+        catatan_akun.setStyleSheet(
             f"font-size: {theme.FS_TINY}px; color: {C.TEXT_MUTED}; "
             "background: transparent;")
-        fl.addWidget(self.lbl_keadaan)
-        self._perbarui_keadaan()
+        pl.addWidget(catatan_akun)
+        fl.addWidget(self.petunjuk)
 
-        kl.addWidget(form, 0, Qt.AlignCenter)
-        kl.addStretch()
+        il.addWidget(formulir, 0, Qt.AlignHCenter)
+        il.addStretch(1)
+
+        gulung.setWidget(isi)
+        kl.addWidget(gulung, 1)
+
+        # ------------------------------------------------------------ kaki
+        kaki = QWidget()
+        theme.latar(kaki, f"background: {C.SURFACE}; border: none;")
+        kl_kaki = QHBoxLayout(kaki)
+        kl_kaki.setContentsMargins(32, 6, 32, 18)
+        kl_kaki.setSpacing(7)
+        kl_kaki.addStretch(1)
+        self.lbl_keadaan = QLabel()
+        self.lbl_keadaan.setObjectName("LoginFooter")
+        kl_kaki.addWidget(self.lbl_keadaan, 0)
+        titik = QLabel("·")
+        titik.setObjectName("LoginFooter")
+        kl_kaki.addWidget(titik, 0)
+        versi = QLabel(f"{config.APP_EDITION} v{config.APP_VERSION}")
+        versi.setObjectName("LoginFooter")
+        kl_kaki.addWidget(versi, 0)
+        kl_kaki.addStretch(1)
+        kl.addWidget(kaki)
+
         luar.addWidget(kanan, 1)
 
+        self._perbarui_keadaan()
         self._muat_preferensi()
+
+    def resizeEvent(self, peristiwa):
+        """
+        Bagi lebar jendela antara panel merek dan kolom formulir.
+
+        Panel merek mengambil 44% lebar dengan batas 380-500 piksel. Pada
+        jendela 920 piksel kolom formulir masih mendapat lebih dari 500
+        piksel, cukup untuk isian selebar 400 piksel beserta bantalannya.
+        """
+        super().resizeEvent(peristiwa)
+        lebar = max(380, min(BrandPanel.LEBAR_INGIN, int(self.width() * 0.44)))
+        if self.panel_merek.width() != lebar:
+            self.panel_merek.setFixedWidth(lebar)
 
     def _petunjuk_masih_perlu(self) -> bool:
         """
@@ -440,14 +477,11 @@ class LoginPage(QWidget):
             perusahaan = db.scalar("SELECT COUNT(*) FROM companies") or 0
             if perusahaan:
                 self.lbl_keadaan.setText(
-                    f"{pengguna} pengguna · {perusahaan} perusahaan terdaftar "
-                    f"di komputer ini")
+                    f"{pengguna} pengguna · {perusahaan} perusahaan")
             else:
-                self.lbl_keadaan.setText(
-                    "Belum ada perusahaan terdaftar. Anda akan dipandu "
-                    "menambahkannya setelah masuk.")
+                self.lbl_keadaan.setText("Belum ada perusahaan")
         except Exception:
-            self.lbl_keadaan.setText("")
+            self.lbl_keadaan.setText("Data lokal")
 
         self.petunjuk.setVisible(self._petunjuk_masih_perlu())
 
@@ -469,7 +503,12 @@ class LoginPage(QWidget):
         self.inp_pass.setEchoMode(
             QLineEdit.Normal if terlihat else QLineEdit.Password)
         self.btn_lihat.setText("Sembunyikan" if terlihat else "Lihat")
-        self.btn_lihat.setFixedWidth(96 if terlihat else 62)
+        self.btn_lihat.setIcon(icons.ikon(
+            "mata_tutup" if terlihat else "mata",
+            C.ACCENT_DARK if terlihat else C.TEXT_MUTED, 14))
+        self.btn_lihat.setToolTip(
+            "Sembunyikan kata sandi" if terlihat else "Tampilkan kata sandi")
+        self.btn_lihat.updateGeometry()
 
     def _perbarui_capslock(self, _teks: str = ""):
         """
@@ -538,45 +577,81 @@ class LoginPage(QWidget):
     def _lupa_password(self):
         dlg = QDialog(self)
         dlg.setWindowTitle("Lupa Password")
-        dlg.setMinimumWidth(470)
+        dlg.setFixedWidth(520)
+        dlg.setStyleSheet(f"QDialog {{ background: {C.SURFACE}; }}")
         lay = QVBoxLayout(dlg)
-        lay.setContentsMargins(24, 22, 24, 22)
-        lay.setSpacing(12)
+        lay.setContentsMargins(30, 28, 30, 24)
+        lay.setSpacing(0)
 
-        j = QLabel("Tidak dapat masuk?")
-        j.setStyleSheet(f"font-size: {theme.FS_H2}px; font-weight: 700; "
-                        "background: transparent;")
+        j = QLabel("Pemulihan akses")
+        j.setStyleSheet(
+            f"font-family: '{theme.FONT_SERIF}'; font-size: 25px; "
+            f"font-weight: 600; color: {C.TEXT}; background: transparent; "
+            "letter-spacing: -0.2px;")
         lay.addWidget(j)
 
-        isi = QLabel(
-            "Aplikasi ini menyimpan data secara lokal, sehingga tidak ada pemulihan "
-            "password melalui email.\n\n"
-            "Langkah yang dapat dilakukan:\n"
-            "1. Minta pengguna dengan peran <b>owner</b> membuka menu "
-            "<b>Pengaturan -> Pengguna</b> dan mereset password Anda.\n"
-            "2. Bila Anda satu-satunya pengguna, buat berkas pemulihan bernama "
-            "<b>reset_admin.txt</b> di folder data aplikasi, lalu jalankan ulang "
-            "aplikasi. Aplikasi akan meminta Anda membuat password baru."
-        )
-        isi.setWordWrap(True)
-        isi.setTextFormat(Qt.RichText)
-        isi.setStyleSheet(f"font-size: {theme.FS_SMALL}px; color: {C.TEXT}; "
-                          "background: transparent;")
-        lay.addWidget(isi)
+        lay.addSpacing(9)
+        intro = QLabel(
+            "Data pembukuan tersimpan di komputer ini, sehingga tidak ada "
+            "pemulihan melalui email. Gunakan salah satu cara berikut.")
+        intro.setWordWrap(True)
+        intro.setStyleSheet(f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
+                            "background: transparent;")
+        lay.addWidget(intro)
+        lay.addSpacing(22)
 
-        folder = QLabel(f"Folder data: <code>{config.DATA_DIR}</code>")
-        folder.setWordWrap(True)
-        folder.setTextFormat(Qt.RichText)
-        folder.setStyleSheet(f"font-size: {theme.FS_TINY}px; color: {C.TEXT_MUTED}; "
-                             "background: transparent;")
-        lay.addWidget(folder)
+        langkah = [
+            ("1.", "Minta bantuan pemilik usaha",
+             "Pengguna dengan peran owner membuka Pengaturan, memilih "
+             "Pengguna, lalu mereset kata sandi Anda."),
+            ("2.", "Atur ulang sendiri",
+             "Buat berkas reset_admin.txt di folder data, lalu jalankan "
+             "ulang aplikasi. Aplikasi akan meminta kata sandi baru."),
+        ]
+        for nomor, judul, ket in langkah:
+            baris = QHBoxLayout()
+            baris.setSpacing(10)
+            baris.addWidget(_label(nomor, 12, C.TEXT_MUTED, 600),
+                            0, Qt.AlignTop)
+            kol = QVBoxLayout()
+            kol.setSpacing(3)
+            l_judul = QLabel(judul)
+            l_judul.setStyleSheet(
+                f"font-size: {theme.FS_SMALL}px; font-weight: 600; "
+                f"color: {C.TEXT}; background: transparent;")
+            kol.addWidget(l_judul)
+            l_ket = QLabel(ket)
+            l_ket.setWordWrap(True)
+            l_ket.setStyleSheet(f"font-size: {theme.FS_SMALL}px; "
+                                f"color: {C.TEXT_MUTED}; background: transparent;")
+            kol.addWidget(l_ket)
+            baris.addLayout(kol, 1)
+            lay.addLayout(baris)
+            lay.addSpacing(16)
 
+        kotak = QFrame()
+        kotak.setObjectName("PathBox")
+        kl = QVBoxLayout(kotak)
+        kl.setContentsMargins(12, 10, 12, 10)
+        kl.setSpacing(4)
+        kl.addWidget(w.label("Folder data", objek="LoginLabel"))
+        path = QLabel(str(config.DATA_DIR))
+        path.setWordWrap(True)
+        path.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        path.setStyleSheet(
+            f"font-family: '{theme.FONT_MONO}'; font-size: {theme.FS_TINY}px; "
+            f"color: {C.TEXT}; background: transparent;")
+        kl.addWidget(path)
+        lay.addWidget(kotak)
+
+        lay.addSpacing(20)
         btn = w.tombol("Mengerti", gaya="primary")
+        btn.setMinimumHeight(40)
         btn.clicked.connect(dlg.accept)
-        baris = QHBoxLayout()
-        baris.addStretch()
-        baris.addWidget(btn)
-        lay.addLayout(baris)
+        baris_tombol = QHBoxLayout()
+        baris_tombol.addStretch()
+        baris_tombol.addWidget(btn)
+        lay.addLayout(baris_tombol)
         dlg.exec()
 
 
@@ -589,84 +664,117 @@ class GantiPasswordWajib(QWidget):
     def __init__(self, user: sec.LoginResult, parent=None):
         super().__init__(parent)
         self.user = user
-        theme.latar(self, f"background: {C.BG};")
+        theme.latar(self, f"background: {C.SURFACE}; border: none;")
 
         luar = QVBoxLayout(self)
         luar.setContentsMargins(0, 0, 0, 0)
-        luar.addStretch()
+        luar.setSpacing(0)
+        luar.addWidget(_kepala_merek())
 
-        kartu = w.Card(padding=34)
-        kartu.setMaximumWidth(520)
-        lay = kartu.body()
-        lay.setSpacing(14)
+        isi = QWidget()
+        lay_luar = QVBoxLayout(isi)
+        lay_luar.setContentsMargins(28, 0, 28, 26)
+        lay_luar.setSpacing(0)
+        lay_luar.addStretch(1)
 
-        ikon = QLabel()
-        ikon.setPixmap(w.icons.pixmap("kunci", w.icons.WARNA_PRIMER, 44))
-        ikon.setAlignment(Qt.AlignCenter)
-        ikon.setStyleSheet("background: transparent;")
-        lay.addWidget(ikon)
+        kolom = QWidget()
+        # Lebar tetap supaya isian tidak menyusut menjadi 290 px pada
+        # jendela 920 px; 430 px masih muat dengan bantalan halaman.
+        kolom.setFixedWidth(430)
+        lay = QVBoxLayout(kolom)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(0)
 
-        j = QLabel("Amankan akun Anda")
-        j.setAlignment(Qt.AlignCenter)
-        j.setStyleSheet("font-size: 21px; font-weight: 700; background: transparent;")
+        j = QLabel("Ganti kata sandi")
+        j.setObjectName("LoginTitle")
         lay.addWidget(j)
 
+        lay.addSpacing(7)
         ket = w.LabelTinggiOtomatis(
-            "Anda memakai password bawaan sistem. Demi keamanan data pembukuan, "
-            "password <b>wajib</b> diganti sebelum melanjutkan."
+            "Anda masih memakai kata sandi bawaan. Demi keamanan data "
+            "pembukuan, kata sandi wajib diganti sebelum melanjutkan."
         )
         ket.setWordWrap(True)
         ket.setTextFormat(Qt.RichText)
-        ket.setAlignment(Qt.AlignCenter)
         ket.setStyleSheet(f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
                           "background: transparent;")
-        # Qt menghitung tinggi teks berformat lebih pendek dari kebutuhan
-        # sebenarnya pada lebar sempit, sehingga baris terakhir terpotong.
-        # Tinggi minimum diambil dari pengukuran dokumen teks.
         ket.setMinimumHeight(theme.tinggi_rich_text(ket))
         lay.addWidget(ket)
-        lay.addSpacing(6)
 
-        lay.addWidget(w.label("Password Saat Ini", objek="FormLabel"))
+        lay.addSpacing(6)
+        siapa = QLabel(f"Masuk sebagai {user.full_name or user.username} "
+                       f"· @{user.username}")
+        siapa.setStyleSheet(f"font-size: {theme.FS_TINY}px; color: {C.TEXT_FAINT}; "
+                            "background: transparent;")
+        lay.addWidget(siapa)
+
+        lay.addSpacing(26)
+        lay.addWidget(w.label("Kata sandi saat ini", objek="LoginLabel"))
+        lay.addSpacing(6)
         self.inp_lama = QLineEdit()
         self.inp_lama.setEchoMode(QLineEdit.Password)
-        self.inp_lama.setMinimumHeight(38)
+        self.inp_lama.setMinimumHeight(40)
         self.inp_lama.setText(config.DEFAULT_ADMIN_PASSWORD)
         lay.addWidget(self.inp_lama)
 
-        lay.addWidget(w.label("Password Baru", objek="FormLabel"))
+        lay.addSpacing(16)
+        lay.addWidget(w.label("Kata sandi baru", objek="LoginLabel"))
+        lay.addSpacing(6)
         self.inp_baru = QLineEdit()
         self.inp_baru.setEchoMode(QLineEdit.Password)
-        self.inp_baru.setMinimumHeight(38)
+        self.inp_baru.setMinimumHeight(40)
         self.inp_baru.textChanged.connect(self._cek_kekuatan)
         lay.addWidget(self.inp_baru)
 
-        self.bar_kekuatan = QLabel("")
-        self.bar_kekuatan.setStyleSheet(f"font-size: {theme.FS_TINY}px; "
-                                        "background: transparent;")
-        lay.addWidget(self.bar_kekuatan)
+        # Kekuatan kata sandi ditampilkan sebagai empat ruas garis, bukan
+        # deretan balok teks, supaya sejalan dengan garis tipis di halaman.
+        self.baris_kekuatan = QWidget()
+        bl = QHBoxLayout(self.baris_kekuatan)
+        bl.setContentsMargins(0, 0, 0, 0)
+        bl.setSpacing(4)
+        self._segmen = []
+        for _ in range(4):
+            seg = QFrame()
+            seg.setFixedHeight(3)
+            seg.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            theme.latar(seg, f"background: {C.BORDER}; border: none;")
+            bl.addWidget(seg)
+            self._segmen.append(seg)
+        lay.addSpacing(8)
+        lay.addWidget(self.baris_kekuatan)
+        self.lbl_kekuatan = QLabel("")
+        self.lbl_kekuatan.setStyleSheet(
+            f"font-size: {theme.FS_TINY}px; color: {C.TEXT_FAINT}; "
+            "background: transparent;")
+        lay.addSpacing(5)
+        lay.addWidget(self.lbl_kekuatan)
 
-        lay.addWidget(w.label("Ulangi Password Baru", objek="FormLabel"))
+        lay.addSpacing(16)
+        lay.addWidget(w.label("Ulangi kata sandi baru", objek="LoginLabel"))
+        lay.addSpacing(6)
         self.inp_ulang = QLineEdit()
         self.inp_ulang.setEchoMode(QLineEdit.Password)
-        self.inp_ulang.setMinimumHeight(38)
+        self.inp_ulang.setMinimumHeight(40)
         self.inp_ulang.returnPressed.connect(self._simpan)
         lay.addWidget(self.inp_ulang)
 
         self.lbl_pesan = QLabel("")
         self.lbl_pesan.setWordWrap(True)
+        self.lbl_pesan.setObjectName("LoginError")
         self.lbl_pesan.hide()
+        lay.addSpacing(12)
         lay.addWidget(self.lbl_pesan)
 
-        btn = w.tombol("Simpan Password Baru", gaya="primary")
-        btn.setMinimumHeight(42)
+        lay.addSpacing(18)
+        btn = w.tombol("Simpan kata sandi baru", gaya="primary")
+        btn.setMinimumHeight(44)
         btn.clicked.connect(self._simpan)
         lay.addWidget(btn)
 
+        lay.addSpacing(12)
         syarat = QLabel(
-            "Syarat password: minimal 8 karakter, gabungan huruf besar-kecil, "
-            "angka, dan simbol."
-        )
+            "Minimal 8 karakter, gabungan huruf besar dan kecil, angka, "
+            "serta simbol.")
         syarat.setWordWrap(True)
         syarat.setStyleSheet(f"font-size: {theme.FS_TINY}px; color: {C.TEXT_FAINT}; "
                              "background: transparent;")
@@ -674,27 +782,32 @@ class GantiPasswordWajib(QWidget):
 
         tengah = QHBoxLayout()
         tengah.addStretch()
-        tengah.addWidget(kartu)
+        tengah.addWidget(kolom)
         tengah.addStretch()
-        luar.addLayout(tengah)
-        luar.addStretch()
+        lay_luar.addLayout(tengah)
+        lay_luar.addStretch(1)
+        luar.addWidget(isi, 1)
 
     def _cek_kekuatan(self, teks: str):
         if not teks:
-            self.bar_kekuatan.setText("")
+            self.lbl_kekuatan.setText("")
+            for seg in self._segmen:
+                theme.latar(seg, f"background: {C.BORDER}; border: none;")
             return
-        skor, label, saran = sec.password_strength(teks)
+        skor, label, _saran = sec.password_strength(teks)
         warna = [C.DANGER, C.DANGER, C.WARNING, C.SUCCESS, C.SUCCESS][skor]
-        bar = "█" * (skor + 1) + "░" * (4 - skor)
-        self.bar_kekuatan.setText(f"Kekuatan: <b style='color:{warna}'>{label}</b> "
-                                  f"<span style='color:{warna}'>{bar}</span>")
-        self.bar_kekuatan.setTextFormat(Qt.RichText)
+        isi = max(1, skor)
+        for i, seg in enumerate(self._segmen):
+            theme.latar(
+                seg,
+                f"background: {warna if i < isi else C.BORDER}; border: none;")
+        self.lbl_kekuatan.setText(f"Kekuatan: {label}")
 
     def _simpan(self):
         self.lbl_pesan.hide()
         lama, baru, ulang = self.inp_lama.text(), self.inp_baru.text(), self.inp_ulang.text()
         if baru != ulang:
-            self._error("Password baru dan ulangannya tidak sama.")
+            self._error("Kata sandi baru dan ulangannya tidak sama.")
             return
         try:
             sec.change_password(self.user.user_id, lama, baru)
@@ -708,8 +821,6 @@ class GantiPasswordWajib(QWidget):
 
     def _error(self, pesan: str):
         self.lbl_pesan.setText(pesan)
-        theme.latar(self.lbl_pesan, f"background: {C.DANGER_BG}; color: {C.DANGER}; border-radius: 7px; "
-            f"padding: 9px 11px; font-size: {theme.FS_SMALL}px; font-weight: 600;")
         self.lbl_pesan.show()
 
 
@@ -726,133 +837,129 @@ class PilihMode(QWidget):
     def __init__(self, user: sec.LoginResult, parent=None):
         super().__init__(parent)
         self.user = user
-        theme.latar(self, f"background: {C.BG};")
+        theme.latar(self, f"background: {C.BG}; border: none;")
 
         luar = QVBoxLayout(self)
-        luar.setContentsMargins(60, 40, 60, 40)
-        luar.addStretch()
+        luar.setContentsMargins(0, 0, 0, 0)
+        luar.setSpacing(0)
+        luar.addWidget(_kepala_merek())
+
+        isi = QWidget()
+        kisi = QVBoxLayout(isi)
+        kisi.setContentsMargins(56, 0, 56, 30)
+        kisi.setSpacing(0)
+        kisi.addStretch(1)
 
         kepala = QVBoxLayout()
-        kepala.setSpacing(8)
-        j = QLabel(f"Selamat datang, {user.full_name or user.username}")
+        kepala.setSpacing(0)
+        j = QLabel("Bagaimana Anda ingin bekerja?")
         j.setAlignment(Qt.AlignCenter)
-        j.setStyleSheet("font-size: 25px; font-weight: 700; background: transparent;")
+        j.setWordWrap(True)
+        j.setStyleSheet(
+            f"font-family: '{theme.FONT_SERIF}'; font-size: 30px; "
+            f"font-weight: 600; color: {C.TEXT}; background: transparent; "
+            "letter-spacing: -0.3px;")
         kepala.addWidget(j)
-        s = QLabel("Pilih cara Anda ingin menggunakan aplikasi ini.\n"
-                   "Pilihan ini dapat diubah kapan saja dari menu Pengaturan.")
+
+        kepala.addSpacing(8)
+        s = w.LabelTinggiOtomatis(
+            f"Selamat datang, {user.full_name or user.username}. Pilihan ini "
+            "mengatur seberapa banyak penjelasan yang ditampilkan, dan dapat "
+            "diubah kapan saja.")
         s.setAlignment(Qt.AlignCenter)
         s.setWordWrap(True)
-        s.setStyleSheet(f"font-size: {theme.FS_BODY}px; color: {C.TEXT_MUTED}; "
+        s.setStyleSheet(f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
                         "background: transparent;")
         kepala.addWidget(s)
-        luar.addLayout(kepala)
-        luar.addSpacing(34)
+        kisi.addLayout(kepala)
+        kisi.addSpacing(28)
 
         baris = QHBoxLayout()
-        baris.setSpacing(22)
+        baris.setSpacing(20)
 
         self.kartu_pemula = self._buat_kartu(
-            "", "Mode Pemula", "Untuk yang baru memulai pembukuan",
+            "Mode Pemula", "Untuk yang baru memulai pembukuan",
             [
-                "Setiap halaman menampilkan panel penjelasan konsep",
-                "Istilah akuntansi dijelaskan dengan bahasa sehari-hari",
-                "Langkah-langkah kerja dipandu berurutan",
-                "Contoh jurnal standar tersedia di setiap formulir",
-                "Dasar hukum ditampilkan pada fitur terkait",
+                "Panel penjelasan konsep di setiap halaman",
+                "Istilah akuntansi dijelaskan sehari-hari",
+                "Langkah kerja dipandu berurutan",
+                "Contoh jurnal standar di setiap formulir",
+                "Dasar hukum pada fitur terkait",
             ],
-            "Cocok bila Anda belum pernah menyusun pembukuan atau baru beralih dari catatan sederhana.",
-            pilihan="beginner",
+            pilihan="beginner", utama=True,
         )
         baris.addWidget(self.kartu_pemula, 1)
 
         self.kartu_ahli = self._buat_kartu(
-            "", "Mode Ahli", "Untuk akuntan atau yang sudah berpengalaman",
+            "Mode Ahli", "Untuk akuntan atau yang sudah berpengalaman",
             [
                 "Antarmuka ringkas tanpa panel penjelasan",
                 "Fokus pada kecepatan input dan analisis",
                 "Seluruh fitur tetap lengkap dan dapat diakses",
-                "Referensi aturan tetap tersedia di menu Bantuan",
-                "Pintasan papan tulis dan navigasi cepat",
+                "Referensi aturan di menu Bantuan",
+                "Pintasan dan navigasi cepat",
             ],
-            "Cocok bila Anda sudah memahami dasar akuntansi dan perpajakan Indonesia.",
-            pilihan="expert",
+            pilihan="expert", utama=False,
         )
         baris.addWidget(self.kartu_ahli, 1)
 
-        luar.addLayout(baris)
-        luar.addStretch()
+        kisi.addLayout(baris)
+        kisi.addSpacing(22)
 
-        catatan = w.LabelTinggiOtomatis(
-            "Anda tetap dapat mengubah mode ini nanti melalui "
-            "<b>Pengaturan -> Preferensi</b>. Data pembukuan tidak terpengaruh."
-        )
+        catatan = QLabel("Data pembukuan tidak terpengaruh oleh pilihan ini.")
         catatan.setAlignment(Qt.AlignCenter)
         catatan.setWordWrap(True)
-        catatan.setTextFormat(Qt.RichText)
-        catatan.setStyleSheet(f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
+        catatan.setStyleSheet(f"font-size: {theme.FS_TINY}px; color: {C.TEXT_FAINT}; "
                               "background: transparent;")
-        luar.addWidget(catatan)
+        kisi.addWidget(catatan)
+        kisi.addStretch(1)
+        luar.addWidget(isi, 1)
 
-    def _buat_kartu(self, ikon: str, judul: str, sub: str, daftar: list,
-                    catatan: str, pilihan: str) -> QFrame:
+    def _buat_kartu(self, judul: str, sub: str, daftar: list,
+                    pilihan: str, utama: bool) -> QFrame:
         kartu = QFrame()
-        kartu.setObjectName("Card")
-        kartu.setCursor(Qt.PointingHandCursor)
-        kartu.setMinimumHeight(400)
+        kartu.setObjectName("ModeOption")
+        kartu.setMinimumHeight(300)
+        kartu.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         lay = QVBoxLayout(kartu)
-        lay.setContentsMargins(26, 26, 26, 26)
-        lay.setSpacing(12)
+        lay.setContentsMargins(28, 24, 28, 24)
+        lay.setSpacing(0)
 
-        l_ikon = QLabel()
-        l_ikon.setPixmap(w.icons.pixmap(ikon, C.PRIMARY, 40))
-        l_ikon.setFixedSize(40, 40)
-        l_ikon.setStyleSheet("background: transparent;")
-        lay.addWidget(l_ikon)
-
+        baris_judul = QHBoxLayout()
+        baris_judul.setSpacing(10)
         l_judul = QLabel(judul)
-        l_judul.setStyleSheet("font-size: 20px; font-weight: 700; background: transparent;")
-        lay.addWidget(l_judul)
+        l_judul.setStyleSheet(
+            f"font-family: '{theme.FONT_SERIF}'; font-size: 23px; "
+            f"font-weight: 600; color: {C.TEXT}; background: transparent;")
+        baris_judul.addWidget(l_judul, 0, Qt.AlignVCenter)
+        baris_judul.addStretch(1)
+        if utama:
+            tag = _label("Disarankan", 11, C.ACCENT_DARK, 600)
+            baris_judul.addWidget(tag, 0, Qt.AlignVCenter)
+        lay.addLayout(baris_judul)
 
+        lay.addSpacing(3)
         l_sub = QLabel(sub)
-        l_sub.setStyleSheet(f"font-size: {theme.FS_SMALL}px; color: {C.PRIMARY}; "
-                            "font-weight: 600; background: transparent;")
+        l_sub.setWordWrap(True)
+        l_sub.setStyleSheet(f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
+                            "background: transparent;")
         lay.addWidget(l_sub)
-        lay.addSpacing(6)
 
+        lay.addSpacing(16)
         for teks in daftar:
-            b = QHBoxLayout()
-            b.setSpacing(9)
-            t = QLabel()
-            t.setPixmap(w.icons.pixmap("simpan", C.SUCCESS, 15))
-            t.setFixedSize(15, 15)
-            t.setStyleSheet("background: transparent;")
-            b.addWidget(t)
-            tt = QLabel(teks)
+            tt = QLabel(f"•   {teks}")
             tt.setWordWrap(True)
             tt.setStyleSheet(f"font-size: {theme.FS_SMALL}px; color: {C.TEXT}; "
-                             "background: transparent;")
-            b.addWidget(tt, 1)
-            lay.addLayout(b)
+                             f"background: transparent;")
+            lay.addWidget(tt)
+            lay.addSpacing(6)
 
-        lay.addStretch()
-
-        l_cat = QLabel(catatan)
-        l_cat.setWordWrap(True)
-        l_cat.setStyleSheet(f"font-size: {theme.FS_TINY}px; color: {C.TEXT_MUTED}; "
-                            "background: transparent; font-style: italic;")
-        lay.addWidget(l_cat)
-        lay.addSpacing(8)
-
-        btn = w.tombol(f"Pilih {judul}", gaya="primary")
+        lay.addStretch(1)
+        btn = w.tombol("Pilih mode ini", gaya="primary" if utama else "biasa")
         btn.setMinimumHeight(40)
         btn.clicked.connect(lambda: self._pilih(pilihan))
         lay.addWidget(btn)
-
-        kartu.enterEvent = lambda e, k=kartu: k.setStyleSheet(
-            f"QFrame#Card {{ background: {C.SURFACE}; border: 2px solid {C.PRIMARY}; "
-            "border-radius: 12px; }}")
-        kartu.leaveEvent = lambda e, k=kartu: k.setStyleSheet("")
         return kartu
 
     def _pilih(self, mode: str):

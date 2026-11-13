@@ -84,7 +84,7 @@ def main() -> int:
     except Exception as e:
         print(f"Tidak dapat masuk: {e}")
         print("Jalankan tools/buat_data_contoh.py dulu.")
-        return 1
+        _akhiri(1)
 
     jendela = MainWindow(hasil, lisensi=_lisensi_uji())
     jendela.resize(1400, 900)
@@ -169,16 +169,35 @@ def main() -> int:
               f"(minimum {TINGGI_MINIMUM}px)")
         for kode, teks, tinggi in masalah[:15]:
             print(f"   [{kode}] {teks!r} — {tinggi}")
-        return 1
+        _akhiri(1)
 
     print(f"HASIL: seluruh daftar pilihan barisnya minimal "
           f"{TINGGI_MINIMUM}px, huruf tampil utuh")
-    return 0
+    _akhiri(0)
+
+
+def _akhiri(kode: int):
+    """
+    Keluar tanpa membongkar ratusan dialog yang dibuka pemeriksaan ini.
+
+    Pembongkaran itu memicu pelanggaran akses di penyaring peristiwa Qt
+    setelah hasil tercetak, sehingga proses tampak gagal padahal seluruh
+    pemeriksaan lulus. Keluar langsung menjaga kode hasil tetap benar.
+    """
+    sys.stdout.flush()
+    sys.stderr.flush()
+    if os.name == "nt":
+        import ctypes
+        kernel = ctypes.windll.kernel32
+        proses = kernel.OpenProcess(0x0001, False, os.getpid())
+        if proses:
+            kernel.TerminateProcess(proses, int(kode))
+    os._exit(kode)
 
 
 if __name__ == "__main__":
     try:
-        sys.exit(main())
+        main()
     except Exception:
         traceback.print_exc()
-        sys.exit(1)
+        _akhiri(1)

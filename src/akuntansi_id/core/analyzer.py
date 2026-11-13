@@ -777,9 +777,14 @@ def analisis_kesehatan(company_id: int, tahun: int,
                 dasar_hukum="PMK 72/PMK.03/2023.",
             ))
 
-    # Piutang menua
+    # Piutang menua. Kelompoknya dibaca dari bagan akun, bukan dari kode,
+    # karena kode 1102 berarti piutang pada bagan PT tetapi persediaan pada
+    # bagan UMKM.
+    akun_piutang = {r["kode"] for r in db.q(
+        "SELECT kode FROM accounts WHERE company_id=? AND baris_neraca='Piutang Usaha'",
+        (company_id,))}
     piutang = sum(v for k, (_, v) in nr.aset_lancar.items()
-                  if k in ("1101", "1102"))
+                  if k in akun_piutang)
     if piutang > 0 and lr.pendapatan_usaha > 0:
         rasio_piutang = piutang / lr.pendapatan_usaha
         if rasio_piutang > 0.5:
@@ -803,8 +808,11 @@ def analisis_kesehatan(company_id: int, tahun: int,
             ))
 
     # Persediaan besar
-    persediaan = sum(v for k, (_, v) in nr.aset_lancar.items() if k.startswith("1104")
-                     or k in ("1105", "1106", "1107"))
+    akun_persediaan = {r["kode"] for r in db.q(
+        "SELECT kode FROM accounts WHERE company_id=? AND baris_neraca='Persediaan'",
+        (company_id,))}
+    persediaan = sum(v for k, (_, v) in nr.aset_lancar.items()
+                     if k in akun_persediaan)
     if persediaan > 0 and lr.hpp > 0 and persediaan > lr.hpp * 0.6:
         T.append(Temuan(
             tingkat="peringatan", kategori="Kas",

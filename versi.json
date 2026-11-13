@@ -1,6 +1,6 @@
 {
-  "versi": "1.2.9",
-  "build": "2026.09",
-  "tanggal": "2026-09-29",
-  "catatan": "Menu samping bisa disembunyikan dengan jalur sempit, lokasi penyimpanan data bisa dipindah, popup ditata ulang dengan huruf lebih besar, salinan regulasi resmi tampil utuh dan bisa disalin"
+  "versi": "1.4.6",
+  "build": "2026.11",
+  "tanggal": "2026-11-13",
+  "catatan": "Tampilan baru dengan latar putih bersih dan aksen cokelat logo. Public Sans dipakai untuk teks dan angka tabular, Source Serif 4 untuk judul, sehingga tabel nominal lebih mudah dibaca. Spasi, perataan, dan ukuran huruf diseragamkan di seluruh halaman."
 }

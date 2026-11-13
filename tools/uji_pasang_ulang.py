@@ -10,14 +10,16 @@ Pemakaian:  python tools/uji_pasang_ulang.py
 """
 
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 AKAR = Path(__file__).resolve().parent.parent
 PASANG = Path(r"C:\Users\ariel\AkunTuntas")
-SETUP = AKAR / "installer_output" / "AkunTuntas-1.2.9-Setup.exe"
+SETUP = AKAR / "installer_output" / "AkunTuntas-1.4.6-Setup.exe"
 DATA = Path(os.environ.get("LOCALAPPDATA", "")) / "AkunTuntas"
 
 
@@ -105,16 +107,36 @@ def main() -> int:
         masalah.append("data pembukuan hilang setelah pemasangan")
 
     # ---------------------------------------------------- jalankan
-    print("  Menjalankan aplikasi hasil pemasangan...")
-    proc = subprocess.Popen([str(exe)])
-    time.sleep(30)
-    hidup = proc.poll() is None
-    print(f"    berjalan: {hidup}")
-    if hidup:
-        proc.terminate()
-        time.sleep(2)
-    else:
-        masalah.append(f"aplikasi berhenti sendiri (kode {proc.returncode})")
+    # Aplikasi dijalankan pada salinan data, bukan folder data pengguna.
+    # Tanpa salinan ini, membuka aplikasi hasil pemasangan akan menjalankan
+    # pembaruan bagan akun dan menulis jejak lisensi pada data sungguhan.
+    print("  Menjalankan aplikasi hasil pemasangan pada salinan data...")
+    tmp = Path(tempfile.mkdtemp(prefix="akuntuntas_pasang_"))
+    data_uji = tmp / "data"
+    proc = None
+    try:
+        if DATA.exists():
+            shutil.copytree(DATA, data_uji, dirs_exist_ok=True)
+        else:
+            data_uji.mkdir(parents=True, exist_ok=True)
+        lokal = tmp / "local"
+        lokal.mkdir(parents=True, exist_ok=True)
+        env = dict(os.environ, AKUNTANSIID_DATA=str(data_uji),
+                   LOCALAPPDATA=str(lokal))
+        proc = subprocess.Popen([str(exe)], env=env)
+        time.sleep(30)
+        hidup = proc.poll() is None
+        print(f"    berjalan: {hidup}")
+        if hidup:
+            proc.terminate()
+            time.sleep(2)
+        else:
+            masalah.append(f"aplikasi berhenti sendiri (kode {proc.returncode})")
+    finally:
+        if proc is not None and proc.poll() is None:
+            proc.kill()
+            proc.wait(timeout=10)
+        shutil.rmtree(tmp, ignore_errors=True)
 
     print()
     print("=" * 70)

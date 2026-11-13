@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from . import config, db, services
+from . import coa, config, db, services
 from .core import accounting as acc
 from .core import tax_engine as tx
 from .modules import catat_riwayat, hari_ini, nomor_berikut
@@ -326,7 +326,7 @@ def pakai_uang_muka(um_id: int, tanggal: str, jumlah: int,
         ]
     else:
         baris = [
-            {"kode_akun": "2101", "debit": jumlah, "kredit": 0,
+            {"kode_akun": "2001", "debit": jumlah, "kredit": 0,
              "catatan": "Pelunasan utang dengan uang muka"},
             {"kode_akun": um2["akun_uang_muka"], "debit": 0, "kredit": jumlah,
              "catatan": "Uang muka dipakai"},
@@ -355,9 +355,11 @@ def hapus_uang_muka(um_id: int, oleh: str = "") -> None:
 # ==========================================================================
 def catat_meterai(company_id: int, tanggal: str, dokumen: str,
                   nilai_dokumen: int, jumlah_berkas: int = 1,
-                  akun_beban: str = "6023", keterangan: str = "",
+                  akun_beban: str = "", keterangan: str = "",
                   buat_jurnal: bool = True, user_id=None) -> int:
     """Catat bea meterai atas dokumen dan bebankan ke biaya."""
+    if not akun_beban:
+        akun_beban = coa.kode_akun_bawaan(company_id, "beban_umum")
     hasil = tx.hitung_meterai(nilai_dokumen, jumlah_berkas)
     if not hasil["kena"]:
         raise ValueError(hasil["keterangan"])
@@ -420,7 +422,8 @@ def catat_pajak_daerah(company_id: int, jenis: str, tanggal: str, dpp: int,
     baris = [
         {"kode_akun": "1001", "debit": hasil["pajak"], "kredit": 0,
          "catatan": f"Pungutan {hasil['nama']}"},
-        {"kode_akun": "2101", "debit": 0, "kredit": hasil["pajak"],
+        {"kode_akun": coa.kode_akun_bawaan(company_id, "utang_pajak_daerah"),
+         "debit": 0, "kredit": hasil["pajak"],
          "catatan": f"Utang {hasil['nama']}"},
     ]
     acc.simpan_jurnal(company_id, tanggal, f"PBJT-{pd_id}",
@@ -514,10 +517,12 @@ def catat_pph15(company_id: int, jenis: str, tanggal: str,
         pph_id = cur.lastrowid
 
     if buat_jurnal and hasil["pph_terutang"] > 0:
+        akun_beban = coa.kode_akun_bawaan(company_id, "beban_umum")
+        akun_utang = coa.kode_akun_bawaan(company_id, "utang_pph")
         baris = [
-            {"kode_akun": "6023", "debit": hasil["pph_terutang"], "kredit": 0,
+            {"kode_akun": akun_beban, "debit": hasil["pph_terutang"], "kredit": 0,
              "catatan": f"PPh 15 {hasil['nama']}"},
-            {"kode_akun": "2005", "debit": 0, "kredit": hasil["pph_terutang"],
+            {"kode_akun": akun_utang, "debit": 0, "kredit": hasil["pph_terutang"],
              "catatan": "Utang PPh 15"},
         ]
         acc.simpan_jurnal(company_id, tanggal, f"PPH15-{pph_id}",

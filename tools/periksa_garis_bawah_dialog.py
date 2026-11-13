@@ -27,6 +27,7 @@ from akuntansi_id import config, services  # noqa: E402
 from akuntansi_id.core import security as sec  # noqa: E402
 from akuntansi_id.ui import theme  # noqa: E402
 from akuntansi_id.ui.main_window import MainWindow, Sidebar  # noqa: E402
+from akuntansi_id.ui.popup import KotakPesan  # noqa: E402
 
 # Lisensi uji dipakai agar seluruh halaman ikut diperiksa, termasuk
 # halaman yang hanya tersedia pada paket Enterprise.
@@ -82,13 +83,18 @@ def main() -> int:
 
     def baca_lalu_tutup():
         """Baca teks setiap dialog yang muncul lalu tutup agar tidak memblokir."""
+        nonlocal dicek
         for w in app.topLevelWidgets():
             if not isinstance(w, QDialog) or not w.isVisible():
                 continue
             if w in ditutup:
                 continue
             ditutup.append(w)
-            if isinstance(w, QMessageBox):
+            dicek += 1
+            # Pesan dan popup menampilkan data apa adanya (token, lokasi
+            # berkas), jadi garis bawah di dalamnya bukan istilah teknis
+            # yang bocor ke antarmuka.
+            if isinstance(w, (QMessageBox, KotakPesan)):
                 w.close()
                 continue
             for tempat, teks in periksa(w):

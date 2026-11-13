@@ -42,6 +42,19 @@ def tinggi_dokumen(lbl: QLabel) -> int:
     return int(doc.size().height())
 
 
+def tutup(app, layar):
+    """Musnahkan jendela sebelum proses berakhir.
+
+    Tanpa penghancuran eksplisit, Qt kadang memusnahkan jendela top-level
+    pada urutan yang salah dan menimbulkan segfault, sehingga pemeriksaan
+    dinyatakan gagal padahal tidak ada teks yang terpotong.
+    """
+    layar.close()
+    layar.deleteLater()
+    for _ in range(3):
+        app.processEvents()
+
+
 def periksa(konteks: str, akar) -> list:
     temuan = []
     for lbl in akar.findChildren(QLabel):
@@ -88,6 +101,7 @@ def main() -> int:
             if lbl.isVisible() and lbl.text().strip() and "<" in lbl.text():
                 diperiksa += 1
         semua += periksa(nama, halaman)
+    tutup(app, jw)
 
     for nama, buat in (("login", lambda: LoginPage()),
                        ("ganti-password", lambda: GantiPasswordWajib(1)),
@@ -107,6 +121,7 @@ def main() -> int:
             if lbl.isVisible() and lbl.text().strip() and "<" in lbl.text():
                 diperiksa += 1
         semua += periksa(nama, w)
+        tutup(app, w)
 
     print(f"label berformat diperiksa : {diperiksa}")
     print(f"temuan terpotong          : {len(semua)}")

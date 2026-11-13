@@ -11,15 +11,17 @@ from PySide6.QtCore import Qt, Signal, QDate, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QLineEdit, QDateEdit,
-    QPushButton, QDialog, QMessageBox, QGridLayout, QCheckBox, QTabWidget,
+    QPushButton, QDialog, QGridLayout, QCheckBox,
     QTableWidgetItem, QFileDialog,
 )
 
-from ... import config, modules as M, modules_sales as S, modules_ops as O
+from ... import config, services, modules as M, modules_sales as S, modules_ops as O
 from ...core import tax_engine as tx
+from .. import ekspor_cetak as EC
 from .. import theme, widgets as w
 from .. import kalender
 from ..theme import C
+from .. import popup
 
 
 # ==========================================================================
@@ -31,8 +33,23 @@ def buat_pdf_invoice(company_id: int, invoice_id: int, path: str) -> str:
     if inv is None:
         raise ValueError("Invoice tidak ditemukan.")
 
-    comp = M.services.get_company(company_id)
+    comp = services.get_company(company_id)
     items = S.detail_invoice(invoice_id)
+    comp_nama = comp["nama"] if comp else ""
+
+    # Identitas dan kode verifikasi memakai jalur yang sama dengan laporan
+    # A4, sehingga tanda air, pengesahan, dan segel invoice ikut pengaturan
+    # dokumen di halaman Pengaturan.
+    baris_kode = [["Deskripsi", "Qty", "Satuan", "Harga", "Jumlah"]]
+    for it in items:
+        baris_kode.append([it["deskripsi"] or (it["produk_nama"] or ""),
+                           it["qty"], it["satuan"] or "", it["harga_satuan"],
+                           it["subtotal"]])
+    baris_kode.append(["TOTAL", "", "", "", inv["total"]])
+    identitas = EC.identitas_dokumen(
+        f"Invoice {inv['nomor']}",
+        " ".join(filter(None, [inv["pelanggan"], inv["tanggal"]])),
+        [("Rincian Invoice", baris_kode)], comp_nama)
 
     try:
         from reportlab.lib.pagesizes import A4
@@ -41,23 +58,155 @@ def buat_pdf_invoice(company_id: int, invoice_id: int, path: str) -> str:
         from reportlab.platypus import (SimpleDocTemplate, Table, TableStyle,
                                         Paragraph, Spacer, Image, KeepTogether)
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+        from reportlab.platypus.flowables import Flowable
+        from reportlab.pdfgen import canvas as pdfcanvas
+        from reportlab.lib.utils import ImageReader
+        from io import BytesIO
     except ImportError:
         raise RuntimeError("Modul reportlab belum terpasang.")
 
+    from ... import fonts as font_app
+    huruf = font_app.pasang_reportlab()
+    from xml.sax.saxutils import escape as _esc
+
+    # Palet dokumen sama dengan laporan A4: tinta hangat dan garis tipis.
+    # Seluruh teks memakai tinta atau abu redup; warna hanya dipakai segel
+    # verifikasi, agar dokumen terbaca sebagai surat resmi.
+    TINTA = "#1D2628"
+    MUTED = "#55605E"
+    GARIS = "#E3DCCF"
+    KEPALA = "#F3EDE4"
+    TOTAL_BG = "#F6F1E7"
+    BELANG = "#FCFAF5"
+
     styles = getSampleStyleSheet()
-    st_normal = ParagraphStyle("N", parent=styles["Normal"], fontSize=9,
-                               leading=13, textColor=colors.HexColor("#1A2733"))
-    st_kecil = ParagraphStyle("K", parent=styles["Normal"], fontSize=8,
-                              leading=11, textColor=colors.HexColor("#64748B"))
-    st_judul = ParagraphStyle("J", parent=styles["Title"], fontSize=22,
-                              textColor=colors.HexColor("#1B4F8A"), spaceAfter=0)
-    st_label = ParagraphStyle("L", parent=styles["Normal"], fontSize=8,
-                              textColor=colors.HexColor("#64748B"),
-                              spaceAfter=2)
+    st_normal = ParagraphStyle("N", parent=styles["Normal"],
+                               fontName=huruf["regular"], fontSize=9,
+                               leading=13, textColor=colors.HexColor(TINTA))
+    st_kecil = ParagraphStyle("K", parent=styles["Normal"],
+                              fontName=huruf["regular"], fontSize=7.8,
+                              leading=10.8, textColor=colors.HexColor(MUTED))
+    st_perusahaan = ParagraphStyle("P", parent=styles["Normal"],
+                                   fontName=huruf["serif_bold"], fontSize=14,
+                                   leading=17, textColor=colors.HexColor(TINTA))
+    st_judul = ParagraphStyle("J", parent=styles["Title"],
+                              fontName=huruf["serif_bold"], fontSize=28,
+                              leading=30, textColor=colors.HexColor(TINTA),
+                              spaceAfter=0)
+    st_label = ParagraphStyle("L", parent=styles["Normal"],
+                              fontName=huruf["semibold"], fontSize=8.6,
+                              leading=11.5, textColor=colors.HexColor(TINTA),
+                              spaceAfter=3)
+
+    # Sel tabel memakai Paragraph agar deskripsi panjang terlipat rapi
+    # dan tidak menimpa kolom sebelahnya.
+    gaya_sel = {}
+    for nama_gaya, ketebalan, warna, rata in (
+            ("kiri", "regular", TINTA, 0),
+            ("kanan", "regular", TINTA, TA_RIGHT),
+            ("tengah", "regular", TINTA, TA_CENTER),
+            ("tebal", "semibold", TINTA, 0),
+            ("kepala", "semibold", TINTA, 0),
+            ("kepala_kanan", "semibold", TINTA, TA_RIGHT),
+            ("kepala_tengah", "semibold", TINTA, TA_CENTER)):
+        gaya_sel[nama_gaya] = ParagraphStyle(
+            f"Sel-{nama_gaya}", parent=st_normal, fontSize=8, leading=10.6,
+            fontName=huruf[ketebalan], textColor=colors.HexColor(warna),
+            alignment=rata, spaceAfter=0)
+
+    def sel(nilai, gaya="kiri") -> Paragraph:
+        teks = _esc("" if nilai is None else str(nilai))
+        return Paragraph(teks.replace("\n", "<br/>"), gaya_sel[gaya])
+
+    def teks(nilai) -> str:
+        return _esc("" if nilai is None else str(nilai)).replace("\n", "<br/>")
+
+    # Kaki halaman baru dapat ditulis setelah seluruh halaman diketahui,
+    # sehingga nomor "dari" selalu tepat pada invoice berhalaman banyak.
+    class NumberedCanvas(pdfcanvas.Canvas):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._states = []
+
+        def showPage(self):
+            self._states.append(dict(self.__dict__))
+            self._startPage()
+
+        def save(self):
+            total = len(self._states)
+            for state in self._states:
+                self.__dict__.update(state)
+                self._air()
+                self._kepala()
+                self._kaki(total)
+                pdfcanvas.Canvas.showPage(self)
+            pdfcanvas.Canvas.save(self)
+
+        def _kepala(self):
+            """Kepala ringkas pada halaman lanjutan agar dokumen tetap jelas."""
+            if self._pageNumber <= 1:
+                return
+            self.saveState()
+            self.setFont(huruf["semibold"], 7.6)
+            self.setFillColor(colors.HexColor(MUTED))
+            self.drawString(18 * mm, A4[1] - 11 * mm, comp_nama)
+            self.drawRightString(A4[0] - 18 * mm, A4[1] - 11 * mm,
+                                 f"Invoice {inv['nomor']} · lanjutan")
+            self.setStrokeColor(colors.HexColor(GARIS))
+            self.setLineWidth(0.5)
+            self.line(18 * mm, A4[1] - 13 * mm,
+                      A4[0] - 18 * mm, A4[1] - 13 * mm)
+            self.restoreState()
+
+        def _air(self):
+            """Tanda air diagonal yang sama dengan laporan A4."""
+            if not identitas.get("air_aktif"):
+                return
+            teks_air = str(identitas.get("air") or "").strip().upper()
+            if not teks_air:
+                return
+            self.saveState()
+            self.setFillColor(colors.HexColor(TINTA))
+            self.setFillAlpha(min(0.22, max(0.02,
+                                 float(identitas.get("air_pekat") or 8)
+                                 / 100.0)))
+            ukuran = 80
+            from reportlab.pdfbase.pdfmetrics import stringWidth
+            while (ukuran > 16 and stringWidth(teks_air, huruf["serif_semibold"],
+                                               ukuran) > A4[0] * 0.84):
+                ukuran -= 2
+            self.setFont(huruf["serif_semibold"], ukuran)
+            jalur = self.beginPath()
+            jalur.rect(18 * mm, 18 * mm, A4[0] - 36 * mm, A4[1] - 40 * mm)
+            self.clipPath(jalur, stroke=0, fill=0)
+            self.translate(A4[0] / 2, A4[1] / 2 - 8 * mm)
+            self.rotate(32)
+            self.drawCentredString(0, 0, teks_air)
+            self.restoreState()
+
+        def _kaki(self, total):
+            self.saveState()
+            self.setStrokeColor(colors.HexColor(GARIS))
+            self.setLineWidth(0.6)
+            self.line(18 * mm, 13 * mm, A4[0] - 18 * mm, 13 * mm)
+            self.setFont(huruf["regular"], 7.4)
+            self.setFillColor(colors.HexColor(MUTED))
+            self.drawString(18 * mm, 8.8 * mm, inv["nomor"])
+            if identitas.get("kode"):
+                self.setFont(huruf["semibold"], 7.2)
+                self.setFillColor(colors.HexColor(TINTA))
+                self.drawCentredString(A4[0] / 2, 8.8 * mm,
+                                       f"Kode dokumen {identitas['kode']}")
+            self.setFont(huruf["regular"], 7.4)
+            self.setFillColor(colors.HexColor(MUTED))
+            self.drawRightString(A4[0] - 18 * mm, 8.8 * mm,
+                                 f"Halaman {self._pageNumber} dari {total}")
+            self.restoreState()
 
     doc = SimpleDocTemplate(path, pagesize=A4,
                             leftMargin=18 * mm, rightMargin=18 * mm,
-                            topMargin=16 * mm, bottomMargin=16 * mm,
+                            topMargin=16 * mm, bottomMargin=18 * mm,
                             title=f"Invoice {inv['nomor']}",
                             author=comp["nama"] if comp else "AkunTuntas")
 
@@ -74,24 +223,24 @@ def buat_pdf_invoice(company_id: int, invoice_id: int, path: str) -> str:
         except Exception:
             pass
 
-    kiri.append(Paragraph(f"<b>{comp['nama'] if comp else ''}</b>", st_normal))
+    kiri.append(Paragraph(teks(comp["nama"] if comp else ""), st_perusahaan))
     if comp:
         if comp["alamat"]:
-            kiri.append(Paragraph(comp["alamat"], st_kecil))
+            kiri.append(Paragraph(teks(comp["alamat"]), st_kecil))
         kota_line = " ".join(filter(None, [comp["kota"], comp["kode_pos"]]))
         if kota_line:
-            kiri.append(Paragraph(kota_line, st_kecil))
+            kiri.append(Paragraph(teks(kota_line), st_kecil))
         if comp["npwp"]:
-            kiri.append(Paragraph(f"NPWP: {comp['npwp']}", st_kecil))
+            kiri.append(Paragraph(f"NPWP: {teks(comp['npwp'])}", st_kecil))
         if comp["telepon"]:
-            kiri.append(Paragraph(f"Telp: {comp['telepon']}", st_kecil))
+            kiri.append(Paragraph(f"Telp: {teks(comp['telepon'])}", st_kecil))
         if comp["email"]:
-            kiri.append(Paragraph(comp["email"], st_kecil))
+            kiri.append(Paragraph(teks(comp["email"]), st_kecil))
 
     kanan = [
         Paragraph("INVOICE", st_judul),
-        Spacer(1, 4),
-        Paragraph(f"<b>{inv['nomor']}</b>", st_normal),
+        Spacer(1, 2),
+        Paragraph(f"<b>{teks(inv['nomor'])}</b>", st_normal),
         Spacer(1, 6),
         Paragraph(f"Tanggal: {theme.tanggal_id(inv['tanggal'])}", st_kecil),
         Paragraph(f"Jatuh Tempo: {theme.tanggal_id(inv['jatuh_tempo'] or '')}",
@@ -100,7 +249,7 @@ def buat_pdf_invoice(company_id: int, invoice_id: int, path: str) -> str:
     if inv["status"] == "lunas":
         kanan.append(Spacer(1, 4))
         kanan.append(Paragraph(
-            "<b><font color='#047857'>LUNAS</font></b>", st_normal))
+            "<b><font color='#2D6A4F'>LUNAS</font></b>", st_normal))
 
     kop = Table([[kiri, kanan]], colWidths=[doc.width * 0.55, doc.width * 0.45])
     kop.setStyle(TableStyle([
@@ -110,61 +259,80 @@ def buat_pdf_invoice(company_id: int, invoice_id: int, path: str) -> str:
         ("RIGHTPADDING", (0, 0), (-1, -1), 0),
     ]))
     elemen.append(kop)
-    elemen.append(Spacer(1, 10))
+    elemen.append(Spacer(1, 9))
 
-    garis = Table([[""]], colWidths=[doc.width], rowHeights=[1.5])
+    garis = Table([[""]], colWidths=[doc.width], rowHeights=[0.9])
     garis.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1),
-                                colors.HexColor("#1B4F8A"))]))
+                                colors.HexColor(TINTA))]))
     elemen.append(garis)
-    elemen.append(Spacer(1, 12))
-
-    # ---- tagihan kepada
-    elemen.append(Paragraph("DITAGIHKAN KEPADA", st_label))
-    pelanggan = [Paragraph(f"<b>{inv['pelanggan']}</b>", st_normal)]
-    if inv["npwp_nik"]:
-        pelanggan.append(Paragraph(f"NPWP/NIK: {inv['npwp_nik']}", st_kecil))
-    if inv["alamat"]:
-        pelanggan.append(Paragraph(inv["alamat"], st_kecil))
-    elemen.append(KeepTogether(pelanggan))
     elemen.append(Spacer(1, 14))
 
+    # ---- tagihan kepada
+    elemen.append(Paragraph("Ditagihkan kepada", st_label))
+    pelanggan = [Paragraph(f"<b>{teks(inv['pelanggan'])}</b>", st_normal)]
+    if inv["npwp_nik"]:
+        pelanggan.append(Paragraph(f"NPWP/NIK: {teks(inv['npwp_nik'])}",
+                                   st_kecil))
+    if inv["alamat"]:
+        pelanggan.append(Paragraph(teks(inv["alamat"]), st_kecil))
+    elemen.append(KeepTogether(pelanggan))
+    elemen.append(Spacer(1, 16))
+
     # ---- tabel item
-    data = [["No", "Deskripsi", "Qty", "Satuan", "Harga Satuan", "Diskon",
-             "Jumlah"]]
+    # Kolom diskon hanya ditampilkan bila memang ada baris yang berdiskon,
+    # supaya tabel tidak menyisakan kolom kosong.
+    ada_diskon = any(it["diskon_persen"] or it["diskon_nilai"] for it in items)
+
+    kepala = [
+        sel("No", "kepala_tengah"), sel("Deskripsi", "kepala"),
+        sel("Qty", "kepala_kanan"), sel("Satuan", "kepala"),
+        sel("Harga Satuan", "kepala_kanan"),
+    ]
+    if ada_diskon:
+        kepala.append(sel("Diskon", "kepala_kanan"))
+    kepala.append(sel("Jumlah", "kepala_kanan"))
+    data = [kepala]
+
     for n, it in enumerate(items, start=1):
         diskon_teks = ""
         if it["diskon_persen"]:
             diskon_teks = f"{it['diskon_persen']:g}%"
         elif it["diskon_nilai"]:
             diskon_teks = f"{it['diskon_nilai']:,}".replace(",", ".")
-        data.append([
-            str(n),
-            it["deskripsi"] or (it["produk_nama"] or ""),
-            f"{it['qty']:g}",
-            it["satuan"] or "",
-            f"{it['harga_satuan']:,}".replace(",", "."),
-            diskon_teks,
-            f"{it['subtotal']:,}".replace(",", "."),
-        ])
+        baris_item = [
+            sel(n, "tengah"),
+            sel(it["deskripsi"] or (it["produk_nama"] or "")),
+            sel(f"{it['qty']:g}", "kanan"),
+            sel(it["satuan"] or ""),
+            sel(f"{it['harga_satuan']:,}".replace(",", "."), "kanan"),
+        ]
+        if ada_diskon:
+            baris_item.append(sel(diskon_teks, "kanan"))
+        baris_item.append(sel(f"{it['subtotal']:,}".replace(",", "."), "kanan"))
+        data.append(baris_item)
 
-    lebar = [doc.width * x for x in (0.05, 0.36, 0.08, 0.09, 0.15, 0.10, 0.17)]
+    if ada_diskon:
+        lebar = [doc.width * x
+                 for x in (0.05, 0.36, 0.08, 0.09, 0.15, 0.10, 0.17)]
+    else:
+        lebar = [doc.width * x
+                 for x in (0.05, 0.44, 0.07, 0.08, 0.17, 0.19)]
     tabel_item = Table(data, colWidths=lebar, repeatRows=1)
     tabel_item.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1B4F8A")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("ALIGN", (2, 1), (-1, -1), "RIGHT"),
-        ("ALIGN", (0, 0), (0, -1), "CENTER"),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(KEPALA)),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#DFE4EA")),
+        ("LINEABOVE", (0, 0), (-1, 0), 0.9, colors.HexColor(TINTA)),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.7, colors.HexColor(TINTA)),
+        ("LINEBELOW", (0, 1), (-1, -1), 0.5, colors.HexColor(GARIS)),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-         [colors.white, colors.HexColor("#FAFBFC")]),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+         [colors.white, colors.HexColor(BELANG)]),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("LEFTPADDING", (0, 0), (-1, -1), 7),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 7),
     ]))
     elemen.append(tabel_item)
-    elemen.append(Spacer(1, 10))
+    elemen.append(Spacer(1, 12))
 
     # ---- ringkasan
     ringkas = [
@@ -186,31 +354,37 @@ def buat_pdf_invoice(company_id: int, invoice_id: int, path: str) -> str:
     tabel_ringkas = Table(ringkas, colWidths=[doc.width * 0.30, doc.width * 0.25],
                           hAlign="RIGHT")
     gaya = [
+        ("FONTNAME", (0, 0), (-1, -1), huruf["regular"]),
         ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor(MUTED)),
+        ("TEXTCOLOR", (1, 0), (1, -1), colors.HexColor(TINTA)),
         ("ALIGN", (1, 0), (1, -1), "RIGHT"),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("TOPPADDING", (0, 0), (-1, -1), 4),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ("LINEABOVE", (0, -1), (-1, -1), 0.8, colors.HexColor("#1B4F8A")),
+        ("LINEBELOW", (0, 0), (-1, -2), 0.4, colors.HexColor(GARIS)),
     ]
     for i, baris in enumerate(ringkas):
         if baris[0] in ("TOTAL", "SISA TAGIHAN"):
-            gaya.append(("FONTNAME", (0, i), (-1, i), "Helvetica-Bold"))
+            gaya.append(("FONTNAME", (0, i), (-1, i), huruf["bold"]))
             gaya.append(("TEXTCOLOR", (0, i), (-1, i),
-                         colors.HexColor("#1B4F8A")))
+                         colors.HexColor(TINTA)))
             gaya.append(("BACKGROUND", (0, i), (-1, i),
-                         colors.HexColor("#E8F0F9")))
+                         colors.HexColor(TOTAL_BG)))
+        if baris[0] == "TOTAL":
+            gaya.append(("LINEABOVE", (0, i), (-1, i), 0.9,
+                         colors.HexColor(TINTA)))
     tabel_ringkas.setStyle(TableStyle(gaya))
     elemen.append(tabel_ringkas)
-    elemen.append(Spacer(1, 18))
+    elemen.append(Spacer(1, 22))
 
     # ---- catatan & instruksi pembayaran
     if inv["catatan"]:
-        elemen.append(Paragraph("CATATAN", st_label))
-        elemen.append(Paragraph(inv["catatan"], st_kecil))
+        elemen.append(Paragraph("Catatan", st_label))
+        elemen.append(Paragraph(teks(inv["catatan"]), st_kecil))
         elemen.append(Spacer(1, 12))
 
-    elemen.append(Paragraph("INSTRUKSI PEMBAYARAN", st_label))
+    elemen.append(Paragraph("Instruksi pembayaran", st_label))
     bank_info = []
     for kb in O.daftar_kas_bank(company_id):
         if kb["tipe"] == "bank" and kb["nomor_rekening"]:
@@ -218,18 +392,100 @@ def buat_pdf_invoice(company_id: int, invoice_id: int, path: str) -> str:
                              f"{kb['nomor_rekening']} a/n {comp['nama']}")
     if bank_info:
         for b in bank_info:
-            elemen.append(Paragraph(f"• {b}", st_kecil))
+            elemen.append(Paragraph(f"• {teks(b)}", st_kecil))
     else:
         elemen.append(Paragraph(
             "Pembayaran dapat dilakukan melalui transfer bank. "
             "Mohon cantumkan nomor invoice pada berita transfer.", st_kecil))
 
-    elemen.append(Spacer(1, 16))
-    elemen.append(Paragraph(
-        f"Dokumen ini dihasilkan otomatis oleh {config.APP_NAME} "
-        f"pada {datetime.now():%d/%m/%Y %H:%M}.", st_kecil))
+    # ---- pengesahan di dasar halaman terakhir
+    class BlokPengesahan(Flowable):
+        """
+        Blok tanda tangan dan segel yang menempel di dasar halaman.
 
-    doc.build(elemen)
+        Flowable biasa akan berhenti tepat di bawah isi tabel, sehingga
+        pengesahan bisa menggantung di tengah halaman. Blok ini digambar
+        pada ketinggian tetap dari dasar kertas; bila ruang tersisa tidak
+        cukup, reportlab memindahkannya ke halaman baru.
+        """
+        tinggi = 44 * mm
+
+        def __init__(self):
+            super().__init__()
+            self.width = doc.width
+            self.height = self.tinggi
+
+        def wrap(self, lebar, tinggi):
+            return (self.width, self.height)
+
+        def draw(self):
+            c = self.canv
+            _, y_sekarang = c.absolutePosition(0, 0)
+            c.saveState()
+            c.translate(0, 30 * mm - y_sekarang)
+            kanan = doc.width
+            lebar_tanda = 62 * mm
+
+            kota = str(identitas.get("kota") or "").strip()
+            tanggal = theme.tanggal_id(datetime.now().strftime("%Y-%m-%d"))
+            c.setFont(huruf["regular"], 8)
+            c.setFillColor(colors.HexColor(MUTED))
+            c.drawRightString(
+                kanan, 38 * mm,
+                f"{kota + ', ' if kota else ''}{tanggal}")
+
+            gambar = str(identitas.get("gambar") or "")
+            if gambar and os.path.isfile(gambar):
+                try:
+                    iw, ih = ImageReader(gambar).getSize()
+                    lebar_g = 38 * mm
+                    tinggi_g = lebar_g * ih / iw
+                    if tinggi_g > 15 * mm:
+                        tinggi_g = 15 * mm
+                        lebar_g = tinggi_g * iw / ih
+                    c.drawImage(ImageReader(gambar),
+                                kanan - lebar_g, 24 * mm,
+                                width=lebar_g, height=tinggi_g, mask="auto")
+                except Exception:
+                    pass
+
+            c.setStrokeColor(colors.HexColor(TINTA))
+            c.setLineWidth(0.7)
+            c.line(kanan - lebar_tanda, 21 * mm, kanan, 21 * mm)
+
+            nama = str(identitas.get("nama") or "").strip()
+            jabatan = str(identitas.get("jabatan") or "").strip()
+            c.setFillColor(colors.HexColor(TINTA))
+            if nama:
+                c.setFont(huruf["bold"], 9.5)
+                c.drawRightString(kanan, 15 * mm, nama)
+            if jabatan:
+                c.setFont(huruf["regular"], 8)
+                c.setFillColor(colors.HexColor(MUTED))
+                c.drawRightString(kanan, 10.5 * mm, jabatan)
+            c.setFont(huruf["regular"], 7.2)
+            c.setFillColor(colors.HexColor(MUTED))
+            c.drawRightString(kanan, 6.5 * mm,
+                              "Ditandatangani secara elektronik")
+            if identitas.get("kode"):
+                c.setFont(huruf["semibold"], 6.8)
+                c.setFillColor(colors.HexColor(MUTED))
+                c.drawRightString(kanan, 3.2 * mm,
+                                  f"Kode verifikasi {identitas['kode']}")
+
+            try:
+                segel = ImageReader(BytesIO(EC.segel_png(identitas)))
+                c.drawImage(segel, kanan - lebar_tanda - 29 * mm, 6 * mm,
+                            width=28 * mm, height=28 * mm, mask="auto")
+            except Exception:
+                pass
+            c.restoreState()
+
+    if identitas.get("ttd_aktif"):
+        elemen.append(Spacer(1, 18))
+        elemen.append(BlokPengesahan())
+
+    doc.build(elemen, canvasmaker=NumberedCanvas)
     return path
 
 
@@ -239,7 +495,8 @@ def buat_pdf_invoice(company_id: int, invoice_id: int, path: str) -> str:
 class PanelItem(QWidget):
     """Panel input baris item yang dapat dipakai di SO dan Invoice."""
 
-    total_berubah = Signal(int)
+    # object, bukan int: subtotal barang bisa melewati batas int 32-bit Qt.
+    total_berubah = Signal(object)
 
     def __init__(self, ctx, jenis_ppn_default: str = "Non-PKP/Tidak Dipungut",
                  parent=None):
@@ -259,10 +516,13 @@ class PanelItem(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel.set_pesan_kosong(
-            "Belum ada transaksi penjualan."
+            "Belum ada barang pada nota ini."
             "\n\n"
-            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
-            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+            "Tekan tombol Tambah Baris untuk memilih produk atau menulis "
+            "deskripsi barang.")
+        for kolom in (2, 4, 5, 6):
+            self.tabel.horizontalHeaderItem(kolom).setTextAlignment(
+                Qt.AlignRight | Qt.AlignVCenter)
 
         self.tabel.setMinimumHeight(220)
         lay.addWidget(self.tabel)
@@ -272,12 +532,6 @@ class PanelItem(QWidget):
         b_tambah.clicked.connect(lambda: self._tambah_baris())
         baris.addWidget(b_tambah)
         baris.addStretch()
-
-        self.lbl_total = QLabel("Subtotal: Rp0")
-        self.lbl_total.setStyleSheet(
-            f"font-family: {theme.FONT_ANGKA}; font-size: 15px; font-weight: 700; "
-            f"color: {C.PRIMARY}; background: transparent;")
-        baris.addWidget(self.lbl_total)
         lay.addLayout(baris)
 
         self.baris_data: list[dict] = []
@@ -421,7 +675,6 @@ class PanelItem(QWidget):
 
     def _update_total(self):
         total = sum(self._subtotal_baris(b) for b in self.baris_data)
-        self.lbl_total.setText(f"Subtotal: {tx.rupiah(total)}")
         self.total_berubah.emit(total)
 
     def items(self) -> list[dict]:
@@ -521,8 +774,11 @@ class DialogSalesOrder(QDialog):
         self.lbl_ringkas = QLabel("")
         self.lbl_ringkas.setWordWrap(True)
         self.lbl_ringkas.setTextFormat(Qt.RichText)
-        theme.latar(self.lbl_ringkas, f"background: {C.PRIMARY_SOFT}; border: 1px solid #CFE0F0; "
-            f"border-radius: 8px; padding: 12px 14px; font-size: {theme.FS_BODY}px;")
+        theme.latar(self.lbl_ringkas,
+                    f"color: {C.TEXT}; background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px; "
+                    f"padding: 10px 12px; font-size: {theme.FS_BODY}px;")
         lay.addWidget(self.lbl_ringkas)
 
         aksi = QHBoxLayout()
@@ -560,8 +816,9 @@ class DialogSalesOrder(QDialog):
         try:
             items = self.panel.items()
             if not items:
-                QMessageBox.warning(self, "Belum ada item",
-                                    "Tambahkan minimal satu baris produk atau jasa.")
+                popup.peringatkan(self,
+                                  "Belum ada item",
+                                  "Tambahkan minimal satu baris produk atau jasa.")
                 return
             so = S.buat_sales_order(
                 self.ctx.company_id,
@@ -577,7 +834,7 @@ class DialogSalesOrder(QDialog):
             self.so_id = so
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 # ==========================================================================
@@ -663,8 +920,11 @@ class DialogInvoice(QDialog):
         self.lbl_ringkas = QLabel("")
         self.lbl_ringkas.setWordWrap(True)
         self.lbl_ringkas.setTextFormat(Qt.RichText)
-        theme.latar(self.lbl_ringkas, f"background: {C.PRIMARY_SOFT}; border: 1px solid #CFE0F0; "
-            f"border-radius: 8px; padding: 12px 14px; font-size: {theme.FS_BODY}px;")
+        theme.latar(self.lbl_ringkas,
+                    f"color: {C.TEXT}; background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px; "
+                    f"padding: 10px 12px; font-size: {theme.FS_BODY}px;")
         lay.addWidget(self.lbl_ringkas)
 
         aksi = QHBoxLayout()
@@ -672,7 +932,7 @@ class DialogInvoice(QDialog):
         b = w.tombol("Batal")
         b.clicked.connect(self.reject)
         aksi.addWidget(b)
-        bs = w.tombol("Simpan & Buat Jurnal", gaya="primary")
+        bs = w.tombol("Simpan && Buat Jurnal", gaya="primary")
         bs.clicked.connect(self._simpan)
         aksi.addWidget(bs)
         lay.addLayout(aksi)
@@ -739,8 +999,9 @@ class DialogInvoice(QDialog):
         try:
             items = self.panel.items()
             if not items:
-                QMessageBox.warning(self, "Belum ada item",
-                                    "Tambahkan minimal satu baris produk atau jasa.")
+                popup.peringatkan(self,
+                                  "Belum ada item",
+                                  "Tambahkan minimal satu baris produk atau jasa.")
                 return
             self.invoice_id = S.buat_invoice(
                 self.ctx.company_id,
@@ -755,7 +1016,7 @@ class DialogInvoice(QDialog):
                 user_id=self.ctx.user_id, username=self.ctx.username)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 # ==========================================================================
@@ -829,16 +1090,17 @@ class DialogPenerimaan(QDialog):
         lay.addWidget(w.label("Pilih Invoice yang Dibayar", objek="SectionTitle"))
 
         self.tabel = w.Tabel([
-            ("", 40), ("Invoice", 175), ("Tanggal", 110), ("Jatuh Tempo", 115),
-            ("Total", 155), ("Sudah Bayar", 145), ("Sisa", 155), ("Alokasi", 165),
+            ("", 34), ("Invoice", 160), ("Jatuh Tempo", 105),
+            ("Total", 140), ("Sisa", 140), ("Alokasi", 165),
         ])
-        # Keterangan ini tampil saat tabel masih kosong, supaya
-        # pengguna tahu langkah berikutnya.
         self.tabel.set_pesan_kosong(
-            "Belum ada transaksi penjualan."
+            "Tidak ada invoice yang belum lunas."
             "\n\n"
-            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
-            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+            "Seluruh tagihan pelanggan sudah dibayar penuh, atau belum ada "
+            "invoice yang diterbitkan.")
+        for kolom in (3, 4, 5):
+            self.tabel.horizontalHeaderItem(kolom).setTextAlignment(
+                Qt.AlignRight | Qt.AlignVCenter)
 
         lay.addWidget(self.tabel, 1)
 
@@ -850,6 +1112,7 @@ class DialogPenerimaan(QDialog):
         self.lbl_status.setStyleSheet(f"font-size: {theme.FS_BODY}px; "
                                       "font-weight: 600; background: transparent;")
         lay.addWidget(self.lbl_status)
+        self._cek_alokasi()
 
         aksi = QHBoxLayout()
         aksi.addStretch()
@@ -877,11 +1140,9 @@ class DialogPenerimaan(QDialog):
             self.tabel.setCellWidget(i, 0, chk)
 
             self.tabel.setItem(i, 1, QTableWidgetItem(inv["nomor"]))
-            self.tabel.setItem(i, 2, QTableWidgetItem(theme.tanggal_id(inv["tanggal"])))
-            self.tabel.setItem(i, 3, QTableWidgetItem(
+            self.tabel.setItem(i, 2, QTableWidgetItem(
                 theme.tanggal_id(inv["jatuh_tempo"] or "")))
-            for kolom, nilai in [(4, inv["total"]), (5, inv["dibayar"]),
-                                 (6, inv["sisa"])]:
+            for kolom, nilai in [(3, inv["total"]), (4, inv["sisa"])]:
                 item = QTableWidgetItem(tx.rupiah(nilai))
                 item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
                 self.tabel.setItem(i, kolom, item)
@@ -891,7 +1152,7 @@ class DialogPenerimaan(QDialog):
                 inp.set_nilai(inv["sisa"])
             inp.valueChanged.connect(self._cek_alokasi)
             self.inputs[inv["id"]] = inp
-            self.tabel.setCellWidget(i, 7, inp)
+            self.tabel.setCellWidget(i, 5, inp)
 
         if self.invoice_id and self.invoice_id in self.inputs:
             inv = S.get_invoice(self.invoice_id)
@@ -935,8 +1196,9 @@ class DialogPenerimaan(QDialog):
         try:
             jumlah = self.inp_jumlah.nilai()
             if jumlah <= 0:
-                QMessageBox.warning(self, "Jumlah kosong",
-                                    "Isi jumlah pembayaran yang diterima.")
+                popup.peringatkan(self,
+                                  "Jumlah kosong",
+                                  "Isi jumlah pembayaran yang diterima.")
                 return
 
             alokasi = []
@@ -945,14 +1207,15 @@ class DialogPenerimaan(QDialog):
                     alokasi.append({"invoice_id": iid, "jumlah": inp.nilai()})
 
             if not alokasi:
-                QMessageBox.warning(self, "Belum ada alokasi",
-                                    "Pilih minimal satu invoice untuk dibayar.")
+                popup.peringatkan(self,
+                                  "Belum ada alokasi",
+                                  "Pilih minimal satu invoice untuk dibayar.")
                 return
 
             if self._total_alokasi() > jumlah:
-                QMessageBox.warning(
-                    self, "Alokasi berlebih",
-                    "Total alokasi melebihi jumlah yang diterima.")
+                popup.peringatkan(self,
+                                  "Alokasi berlebih",
+                                  "Total alokasi melebihi jumlah yang diterima.")
                 return
 
             partner_id = self.partner_id
@@ -972,7 +1235,7 @@ class DialogPenerimaan(QDialog):
                 user_id=self.ctx.user_id, username=self.ctx.username)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 # ==========================================================================
@@ -994,14 +1257,17 @@ class DialogNotaKredit(QDialog):
         j.setObjectName("SectionTitle")
         lay.addWidget(j)
 
-        lay.addWidget(w.HelpPanel(
-            "Kapan memakai nota kredit",
-            "• RETUR - pelanggan mengembalikan barang karena rusak atau tidak sesuai.\n"
-            "• DISKON - Anda memberi potongan setelah invoice diterbitkan.\n"
-            "• REFUND - Anda mengembalikan uang yang sudah diterima.\n\n"
-            "Nota kredit mengurangi piutang pelanggan dan pendapatan usaha.",
-            "PSAK 72 - pengurangan harga transaksi. Pasal 4 UU PPh "
-            "pengurangan penghasilan bruto."))
+        petunjuk = QLabel(
+            "Retur mengembalikan barang, diskon memotong harga setelah "
+            "invoice terbit, refund mengembalikan dana. Nota kredit "
+            "mengurangi piutang pelanggan dan pendapatan usaha.")
+        petunjuk.setWordWrap(True)
+        theme.latar(petunjuk,
+                    f"color: {C.TEXT_MUTED}; background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px; "
+                    f"padding: 8px 11px; font-size: {theme.FS_SMALL}px;")
+        lay.addWidget(petunjuk)
 
         g = QGridLayout()
         g.setSpacing(12)
@@ -1044,8 +1310,12 @@ class DialogNotaKredit(QDialog):
 
         self.lbl_info = QLabel("")
         self.lbl_info.setWordWrap(True)
-        theme.latar(self.lbl_info, f"background: {C.PRIMARY_SOFT}; border: 1px solid #CFE0F0; "
-            f"border-radius: 8px; padding: 11px 13px; font-size: {theme.FS_SMALL}px;")
+        self.lbl_info.setTextFormat(Qt.RichText)
+        theme.latar(self.lbl_info,
+                    f"color: {C.TEXT}; background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px; "
+                    f"padding: 9px 11px; font-size: {theme.FS_SMALL}px;")
         lay.addWidget(self.lbl_info)
         self.cmb_invoice.currentIndexChanged.connect(self._update_info)
         self._update_info()
@@ -1068,27 +1338,34 @@ class DialogNotaKredit(QDialog):
         inv = S.get_invoice(iid)
         if inv:
             self.lbl_info.setText(
-                f"Invoice <b>{inv['nomor']}</b> · Total {tx.rupiah(inv['total'])} · "
-                f"Sudah dibayar {tx.rupiah(inv['dibayar'])} · "
-                f"Sisa {tx.rupiah(inv['sisa'])}")
-            self.lbl_info.setTextFormat(Qt.RichText)
+                f"Invoice <b>{inv['nomor']}</b> · total "
+                f"{tx.rupiah(inv['total'])} · sudah dibayar "
+                f"{tx.rupiah(inv['dibayar'])} · sisa "
+                f"{tx.rupiah(inv['sisa'])}")
+            self.lbl_info.setToolTip(
+                "Sisa piutang adalah batas wajar nota kredit. Jumlah yang "
+                "melebihi sisa berarti uang pelanggan perlu dikembalikan.")
 
     def _simpan(self):
         try:
             jumlah = self.inp_jumlah.nilai()
             if jumlah <= 0:
-                QMessageBox.warning(self, "Jumlah kosong", "Isi jumlah nota kredit.")
+                popup.peringatkan(self,
+                                  "Jumlah kosong",
+                                  "Isi jumlah nota kredit.")
                 return
             iid = self.cmb_invoice.currentData()
             if not iid:
-                QMessageBox.warning(self, "Invoice kosong", "Pilih invoice terkait.")
+                popup.peringatkan(self,
+                                  "Invoice kosong",
+                                  "Pilih invoice terkait.")
                 return
             inv = S.get_invoice(iid)
             if jumlah > inv["total"]:
-                QMessageBox.warning(
-                    self, "Jumlah berlebih",
-                    f"Jumlah nota kredit tidak boleh melebihi total invoice "
-                    f"({tx.rupiah(inv['total'])}).")
+                popup.peringatkan(self,
+                                  "Jumlah berlebih",
+                                  f"Jumlah nota kredit tidak boleh melebihi total invoice "
+                                  f"({tx.rupiah(inv['total'])}).")
                 return
             S.buat_nota_kredit(
                 self.ctx.company_id,
@@ -1098,7 +1375,7 @@ class DialogNotaKredit(QDialog):
                 user_id=self.ctx.user_id, username=self.ctx.username)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 # ==========================================================================
@@ -1146,8 +1423,7 @@ class PenjualanLengkapPage(QWidget):
         self.lay.setSpacing(13)
         luar.addWidget(isi, 1)
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         self.tab_invoice = QWidget()
         self.tab_so = QWidget()
         self.tab_penerimaan = QWidget()
@@ -1176,7 +1452,7 @@ class PenjualanLengkapPage(QWidget):
         baris.setSpacing(10)
         self.inp_cari_inv = QLineEdit()
         self.inp_cari_inv.setPlaceholderText("Cari nomor invoice atau pelanggan…")
-        self.inp_cari_inv.setMinimumWidth(280)
+        self.inp_cari_inv.setMinimumWidth(340)
         self.inp_cari_inv.textChanged.connect(self.muat)
         baris.addWidget(self.inp_cari_inv)
 
@@ -1188,24 +1464,22 @@ class PenjualanLengkapPage(QWidget):
         self.cmb_status_inv.addItem("Lunas", "lunas")
         self.cmb_status_inv.currentIndexChanged.connect(self.muat)
         baris.addWidget(self.cmb_status_inv)
-        baris.addStretch()
-        self.lbl_inv = QLabel("")
-        self.lbl_inv.setObjectName("Muted")
-        baris.addWidget(self.lbl_inv)
+        self.lbl_inv = w.label_ringkas()
+        baris.addWidget(self.lbl_inv, 1)
         lay.addLayout(baris)
 
         self.tabel_inv = w.Tabel([
-            ("Nomor", 175), ("Tanggal", 105), ("Pelanggan", 130),
+            ("Nomor", 175), ("Tanggal", 105), ("Pelanggan", -1),
             ("Jatuh Tempo", 110), ("Total", 150), ("Dibayar", 140),
             ("Sisa", 140), ("Status", 110),
         ])
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_inv.set_pesan_kosong(
-            "Belum ada transaksi penjualan."
+            "Belum ada invoice."
             "\n\n"
-            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
-            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+            "Tekan tombol Invoice Baru di atas untuk mencatat penjualan "
+            "pertama. Jurnal dan pajaknya dihitung otomatis.")
 
         self.tabel_inv.doubleClicked.connect(self._detail_invoice)
         lay.addWidget(self.tabel_inv, 1)
@@ -1236,17 +1510,17 @@ class PenjualanLengkapPage(QWidget):
         lay.setSpacing(12)
 
         self.tabel_so = w.Tabel([
-            ("Nomor", 175), ("Tanggal", 105), ("Pelanggan", 130),
+            ("Nomor", 175), ("Tanggal", 105), ("Pelanggan", -1),
             ("Tgl Kirim", 110), ("Subtotal", 150), ("PPN", 140),
             ("Total", 150), ("Status", 115),
         ])
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_so.set_pesan_kosong(
-            "Belum ada transaksi penjualan."
+            "Belum ada sales order."
             "\n\n"
-            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
-            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+            "Tekan tombol Sales Order di atas untuk membuat surat pesanan. "
+            "Invoice dapat dibuat dari SO yang sudah dikonfirmasi.")
 
         lay.addWidget(self.tabel_so, 1)
 
@@ -1261,10 +1535,8 @@ class PenjualanLengkapPage(QWidget):
         b3 = w.tombol("Batalkan SO", gaya="danger", ikon="nonaktif")
         b3.clicked.connect(lambda: self._ubah_status_so("batal"))
         baris.addWidget(b3)
-        baris.addStretch()
-        self.lbl_so = QLabel("")
-        self.lbl_so.setObjectName("Muted")
-        baris.addWidget(self.lbl_so)
+        self.lbl_so = w.label_ringkas()
+        baris.addWidget(self.lbl_so, 1)
         lay.addLayout(baris)
 
     def _bangun_penerimaan(self):
@@ -1273,16 +1545,16 @@ class PenjualanLengkapPage(QWidget):
         lay.setSpacing(12)
 
         self.tabel_rcv = w.Tabel([
-            ("Nomor", 175), ("Tanggal", 110), ("Pelanggan", 130),
-            ("Metode", 130), ("Jumlah", 165), ("Referensi", 175), ("Status", 105),
+            ("Nomor", 175), ("Tanggal", 110), ("Pelanggan", -1),
+            ("Metode", 130), ("Jumlah", 165), ("Referensi", -1), ("Status", 105),
         ])
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_rcv.set_pesan_kosong(
-            "Belum ada transaksi penjualan."
+            "Belum ada penerimaan pembayaran."
             "\n\n"
-            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
-            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+            "Buka tab Invoice, pilih invoice, lalu tekan Terima Pembayaran "
+            "untuk mencatat uang masuk.")
 
         self.tabel_rcv.doubleClicked.connect(self._detail_penerimaan)
         lay.addWidget(self.tabel_rcv, 1)
@@ -1295,10 +1567,8 @@ class PenjualanLengkapPage(QWidget):
         b2 = w.tombol("Void Penerimaan", gaya="danger", ikon="nonaktif")
         b2.clicked.connect(self._void_penerimaan)
         baris.addWidget(b2)
-        baris.addStretch()
-        self.lbl_rcv = QLabel("")
-        self.lbl_rcv.setObjectName("Muted")
-        baris.addWidget(self.lbl_rcv)
+        self.lbl_rcv = w.label_ringkas()
+        baris.addWidget(self.lbl_rcv, 1)
         lay.addLayout(baris)
 
     def _bangun_nota(self):
@@ -1307,16 +1577,16 @@ class PenjualanLengkapPage(QWidget):
         lay.setSpacing(12)
 
         self.tabel_nota = w.Tabel([
-            ("Nomor", 175), ("Tanggal", 110), ("Pelanggan", 130),
-            ("Tipe", 120), ("Jumlah", 165), ("Alasan", 280), ("Status", 105),
+            ("Nomor", 175), ("Tanggal", 110), ("Pelanggan", -1),
+            ("Tipe", 120), ("Jumlah", 165), ("Alasan", -1), ("Status", 105),
         ])
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_nota.set_pesan_kosong(
-            "Belum ada transaksi penjualan."
+            "Belum ada nota kredit."
             "\n\n"
-            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
-            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+            "Tekan tombol Buat Nota Kredit untuk mencatat retur atau "
+            "potongan atas invoice pelanggan.")
 
         lay.addWidget(self.tabel_nota, 1)
 
@@ -1324,10 +1594,8 @@ class PenjualanLengkapPage(QWidget):
         b = w.tombol("Buat Nota Kredit", gaya="primary", ikon="tambah")
         b.clicked.connect(self._buat_nota)
         baris.addWidget(b)
-        baris.addStretch()
-        self.lbl_nota = QLabel("")
-        self.lbl_nota.setObjectName("Muted")
-        baris.addWidget(self.lbl_nota)
+        self.lbl_nota = w.label_ringkas()
+        baris.addWidget(self.lbl_nota, 1)
         lay.addLayout(baris)
 
     def _bangun_aging(self):
@@ -1341,17 +1609,17 @@ class PenjualanLengkapPage(QWidget):
         lay.addWidget(self.panel_aging)
 
         self.tabel_aging = w.Tabel([
-            ("Pelanggan", 130), ("Jumlah Invoice", 130),
+            ("Pelanggan", -1), ("Jumlah Invoice", 130),
             ("Belum JT", 145), ("1-30 hari", 140), ("31-60 hari", 140),
             ("61-90 hari", 140), ("di atas 90", 145), ("Total", 155),
         ])
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_aging.set_pesan_kosong(
-            "Belum ada transaksi penjualan."
+            "Belum ada piutang yang perlu ditagih."
             "\n\n"
-            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
-            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+            "Seluruh tagihan pelanggan sudah lunas, atau belum ada invoice "
+            "yang jatuh tempo.")
 
         lay.addWidget(self.tabel_aging, 1)
 
@@ -1362,10 +1630,8 @@ class PenjualanLengkapPage(QWidget):
         b2 = w.tombol("Ekspor Daftar", ikon="laporan")
         b2.clicked.connect(self._ekspor_aging)
         baris.addWidget(b2)
-        baris.addStretch()
-        self.lbl_aging = QLabel("")
-        self.lbl_aging.setObjectName("Muted")
-        baris.addWidget(self.lbl_aging)
+        self.lbl_aging = w.label_ringkas()
+        baris.addWidget(self.lbl_aging, 1)
         lay.addLayout(baris)
 
     # ------------------------------------------------------------------
@@ -1390,7 +1656,7 @@ class PenjualanLengkapPage(QWidget):
         data = S.daftar_invoice(cid, self.ctx.tahun,
                                 self.cmb_status_inv.currentData(),
                                 cari=self.inp_cari_inv.text().strip())
-        baris, warna = [], {}
+        baris, warna, warna_jt = [], {}, {}
         total_sisa = 0
         hari_ini = datetime.now().date()
         for i, inv in enumerate(data):
@@ -1404,21 +1670,23 @@ class PenjualanLengkapPage(QWidget):
                 {"terkirim": "Terkirim", "sebagian": "Sebagian",
                  "lunas": "Lunas", "batal": "Batal"}.get(inv["status"], inv["status"]),
             ])
-            if inv["status"] == "lunas":
-                warna[idx] = C.SUCCESS
-            elif inv["status"] == "batal":
-                warna[idx] = C.TEXT_FAINT
-            else:
+            # Lencana menyatakan status dokumen; warna tanggal jatuh tempo
+            # menyatakan urgensinya, sehingga keduanya tidak saling mengaburkan.
+            warna[idx] = {"terkirim": C.INFO, "sebagian": C.WARNING,
+                          "lunas": C.SUCCESS, "batal": C.TEXT_FAINT}.get(
+                inv["status"], C.TEXT_MUTED)
+            if inv["status"] in ("terkirim", "sebagian"):
                 try:
                     jt = datetime.fromisoformat(
                         (inv["jatuh_tempo"] or inv["tanggal"])[:10]).date()
                     if jt < hari_ini:
-                        warna[idx] = C.DANGER
+                        warna_jt[(idx, 3)] = C.DANGER
                     elif (jt - hari_ini).days <= 7:
-                        warna[idx] = C.WARNING
+                        warna_jt[(idx, 3)] = C.WARNING
                 except ValueError:
                     pass
-        self.tabel_inv.isi(baris, warna_baris=warna, align_kanan={4, 5, 6})
+        self.tabel_inv.isi(baris, warna_baris=warna, align_kanan={4, 5, 6},
+                           warna_sel=warna_jt, tebal_kolom={6})
         self.lbl_inv.setText(f"{len(data)} invoice · total piutang "
                              f"{tx.rupiah(total_sisa)}")
 
@@ -1441,6 +1709,10 @@ class PenjualanLengkapPage(QWidget):
                 warna[idx] = C.SUCCESS
             elif so["status"] == "batal":
                 warna[idx] = C.TEXT_FAINT
+            elif so["status"] == "dikonfirmasi":
+                warna[idx] = C.INFO
+            else:
+                warna[idx] = C.TEXT_MUTED
         self.tabel_so.isi(baris, warna_baris=warna, align_kanan={4, 5, 6})
         self.lbl_so.setText(f"{len(data)} sales order")
 
@@ -1459,6 +1731,8 @@ class PenjualanLengkapPage(QWidget):
             ])
             if r["status"] == "void":
                 warna[idx] = C.TEXT_FAINT
+            else:
+                warna[idx] = C.SUCCESS
         self.tabel_rcv.isi(baris, warna_baris=warna, align_kanan={4})
         self.lbl_rcv.setText(f"{len(data)} penerimaan · total "
                              f"{tx.rupiah(total)}")
@@ -1478,6 +1752,8 @@ class PenjualanLengkapPage(QWidget):
             ])
             if n["status"] == "void":
                 warna[idx] = C.TEXT_FAINT
+            else:
+                warna[idx] = C.INFO
         self.tabel_nota.isi(baris, warna_baris=warna, align_kanan={4})
         self.lbl_nota.setText(f"{len(data)} nota kredit")
 
@@ -1538,8 +1814,9 @@ class PenjualanLengkapPage(QWidget):
     # ------------------------------------------------------------------
     def _buat_so(self):
         if not self.ctx.company_id:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         d = DialogSalesOrder(self.ctx, self)
         if d.exec():
@@ -1548,16 +1825,16 @@ class PenjualanLengkapPage(QWidget):
 
     def _buat_invoice(self):
         if not self.ctx.company_id:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         if not M.daftar_produk(self.ctx.company_id):
-            if QMessageBox.question(
-                    self, "Belum ada produk",
-                    "Belum ada produk atau jasa terdaftar.\n\n"
-                    "Anda tetap dapat membuat invoice dengan deskripsi manual.\n"
-                    "Ingin mendaftarkan produk terlebih dahulu?",
-                    QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            if popup.tanya(self,
+                           "Belum ada produk",
+                           "Belum ada produk atau jasa terdaftar.\n\n"
+                           "Anda tetap dapat membuat invoice dengan deskripsi manual.\n"
+                           "Ingin mendaftarkan produk terlebih dahulu?"):
                 self.pindah_halaman.emit("produk")
                 return
         d = DialogInvoice(self.ctx, self)
@@ -1595,7 +1872,7 @@ class PenjualanLengkapPage(QWidget):
     def _pdf_invoice(self):
         inv = self._invoice_terpilih()
         if inv is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu invoice.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu invoice.")
             return
         config.ensure_dirs()
         saran = os.path.join(config.EXPORT_DIR,
@@ -1606,21 +1883,20 @@ class PenjualanLengkapPage(QWidget):
             return
         try:
             buat_pdf_invoice(self.ctx.company_id, inv["id"], path)
-            if QMessageBox.question(
-                    self, "PDF dibuat",
-                    f"Invoice berhasil disimpan:\n{path}\n\nBuka berkasnya?",
-                    QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            if popup.tanya(self,
+                           "PDF dibuat",
+                           f"Invoice berhasil disimpan:\n{path}\n\nBuka berkasnya?"):
                 QDesktopServices.openUrl(QUrl.fromLocalFile(path))
         except Exception as e:
-            QMessageBox.critical(self, "Gagal membuat PDF", str(e))
+            popup.galat(self, "Gagal membuat PDF", str(e))
 
     def _bayar_invoice_terpilih(self):
         inv = self._invoice_terpilih()
         if inv is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu invoice.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu invoice.")
             return
         if inv["status"] == "lunas":
-            QMessageBox.information(self, "Sudah lunas", "Invoice ini sudah lunas.")
+            popup.beri_tahu(self, "Sudah lunas", "Invoice ini sudah lunas.")
             return
         d = DialogPenerimaan(self.ctx, self, inv["id"], inv["partner_id"])
         if d.exec():
@@ -1629,7 +1905,7 @@ class PenjualanLengkapPage(QWidget):
     def _nota_dari_invoice(self):
         inv = self._invoice_terpilih()
         if inv is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu invoice.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu invoice.")
             return
         d = DialogNotaKredit(self.ctx, self, inv["id"])
         if d.exec():
@@ -1638,30 +1914,28 @@ class PenjualanLengkapPage(QWidget):
     def _void_invoice(self):
         inv = self._invoice_terpilih()
         if inv is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu invoice.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu invoice.")
             return
         if inv["dibayar"] > 0:
-            QMessageBox.warning(
-                self, "Tidak dapat di-void",
-                "Invoice ini sudah memiliki pembayaran. Batalkan pembayarannya "
-                "terlebih dahulu.")
+            popup.peringatkan(self,
+                              "Tidak dapat di-void",
+                              "Invoice ini sudah memiliki pembayaran. Batalkan pembayarannya "
+                              "terlebih dahulu.")
             return
-        if QMessageBox.question(
-                self, "Konfirmasi Void",
-                f"Void invoice {inv['nomor']}?\n\n"
-                "Tindakan ini akan:\n"
-                "• Membatalkan jurnal invoice\n"
-                "• Mengembalikan stok barang\n"
-                "• Memindahkan data ke keranjang sampah\n\n"
-                "Lanjutkan?",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Konfirmasi Void",
+                           f"Void invoice {inv['nomor']}?\n\n"
+                           "Tindakan ini akan:\n"
+                           "• Membatalkan jurnal invoice\n"
+                           "• Mengembalikan stok barang\n"
+                           "• Memindahkan data ke keranjang sampah\n\n"
+                           "Lanjutkan?"):
             return
         try:
             S.hapus_invoice(inv["id"], self.ctx.username, self.ctx.user_id)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal void", str(e))
+            popup.galat(self, "Gagal void", str(e))
 
     def _so_terpilih(self):
         r = self.tabel_so.baris_terpilih()
@@ -1673,22 +1947,23 @@ class PenjualanLengkapPage(QWidget):
     def _ubah_status_so(self, status: str):
         so = self._so_terpilih()
         if so is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu sales order.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu sales order.")
             return
         try:
             S.ubah_status_so(so["id"], status)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
     def _invoice_dari_so(self):
         so = self._so_terpilih()
         if so is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu sales order.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu sales order.")
             return
         if so["status"] == "batal":
-            QMessageBox.warning(self, "SO dibatalkan",
-                                "Sales order yang dibatalkan tidak dapat diinvoice.")
+            popup.peringatkan(self,
+                              "SO dibatalkan",
+                              "Sales order yang dibatalkan tidak dapat diinvoice.")
             return
         d = DialogInvoice(self.ctx, self, so_id=so["id"])
         if d.exec():
@@ -1736,10 +2011,10 @@ class PenjualanLengkapPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         t.set_pesan_kosong(
-            "Belum ada transaksi penjualan."
+            "Belum ada invoice yang dialokasikan pada penerimaan ini."
             "\n\n"
-            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
-            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+            "Alokasi dibuat saat penerimaan dicatat. Periksa kembali invoice "
+            "yang dipilih.")
 
         t.isi([[a["invoice_nomor"], theme.tanggal_id(a["jatuh_tempo"] or ""),
                 tx.rupiah(a["total"]), tx.rupiah(a["jumlah"])] for a in alokasi],
@@ -1758,40 +2033,39 @@ class PenjualanLengkapPage(QWidget):
     def _void_penerimaan(self):
         rcv = self._penerimaan_terpilih()
         if rcv is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu penerimaan.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu penerimaan.")
             return
         if rcv["status"] == "void":
-            QMessageBox.information(self, "Sudah void",
-                                    "Penerimaan ini sudah dibatalkan.")
+            popup.beri_tahu(self,
+                            "Sudah void",
+                            "Penerimaan ini sudah dibatalkan.")
             return
-        if QMessageBox.question(
-                self, "Konfirmasi Void",
-                f"Void penerimaan {rcv['nomor']}?\n\n"
-                "Status invoice terkait akan dikembalikan ke belum lunas.",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Konfirmasi Void",
+                           f"Void penerimaan {rcv['nomor']}?\n\n"
+                           "Status invoice terkait akan dikembalikan ke belum lunas."):
             return
         try:
             S.void_penerimaan(rcv["id"], self.ctx.username, self.ctx.user_id)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal void", str(e))
+            popup.galat(self, "Gagal void", str(e))
 
     def _buat_pengingat(self):
         try:
             jumlah = O.buat_reminder_dari_piutang(self.ctx.company_id, 30)
             if jumlah:
-                QMessageBox.information(
-                    self, "Pengingat dibuat",
-                    f"{jumlah} pengingat penagihan dibuat untuk invoice yang "
-                    "jatuh tempo dalam 30 hari ke depan.\n\n"
-                    "Lihat di menu Pengaturan -> Pengingat.")
+                popup.beri_tahu(self,
+                                "Pengingat dibuat",
+                                f"{jumlah} pengingat penagihan dibuat untuk invoice yang "
+                                "jatuh tempo dalam 30 hari ke depan.\n\n"
+                                "Lihat di menu Pengaturan -> Pengingat.")
             else:
-                QMessageBox.information(
-                    self, "Tidak ada pengingat baru",
-                    "Semua invoice yang jatuh tempo sudah memiliki pengingat.")
+                popup.beri_tahu(self,
+                                "Tidak ada pengingat baru",
+                                "Semua invoice yang jatuh tempo sudah memiliki pengingat.")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal membuat pengingat", str(e))
+            popup.galat(self, "Gagal membuat pengingat", str(e))
 
     def _ekspor_aging(self):
         cid = self.ctx.company_id
@@ -1804,7 +2078,7 @@ class PenjualanLengkapPage(QWidget):
         if not path:
             return
         try:
-            from .laporan import ekspor_excel
+            from ..ekspor_cetak import ekspor_excel
             data = [
                 ("Ringkasan Umur", [["Kelompok", "Jumlah (Rp)"]] +
                  [[k, v] for k, v in ag["kelompok"].items()] +
@@ -1822,15 +2096,17 @@ class PenjualanLengkapPage(QWidget):
                    r["total"], r["dibayar"], r["sisa"], r["umur_hari"],
                    r["kelompok"]] for r in ag["rincian"]]),
             ]
-            comp = M.services.get_company(cid)
-            ekspor_excel(comp["nama"], data, path)
-            if QMessageBox.question(
-                    self, "Ekspor selesai",
-                    f"Data disimpan:\n{path}\n\nBuka foldernya?",
-                    QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            comp = services.get_company(cid)
+            ekspor_excel(
+                "Aging Piutang", data, path,
+                subjudul=f"Per {datetime.now():%d/%m/%Y}",
+                nama_perusahaan=comp["nama"])
+            if popup.tanya(self,
+                           "Ekspor selesai",
+                           f"Data disimpan:\n{path}\n\nBuka foldernya?"):
                 QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.dirname(path)))
         except Exception as e:
-            QMessageBox.critical(self, "Gagal mengekspor", str(e))
+            popup.galat(self, "Gagal mengekspor", str(e))
 
 
 # ==========================================================================
@@ -1891,10 +2167,9 @@ class DialogDetailInvoice(QDialog):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         t.set_pesan_kosong(
-            "Belum ada transaksi penjualan."
+            "Invoice ini belum memiliki baris barang."
             "\n\n"
-            "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
-            "Anda. Jurnal dan pajaknya dihitung otomatis.")
+            "Ubah invoice untuk menambahkan produk atau jasa.")
 
         t.isi([[it["deskripsi"] or it["produk_nama"] or "", f"{it['qty']:g}",
                 it["satuan"] or "", tx.rupiah(it["harga_satuan"]),
@@ -1932,10 +2207,10 @@ class DialogDetailInvoice(QDialog):
             # Keterangan ini tampil saat tabel masih kosong, supaya
             # pengguna tahu langkah berikutnya.
             t2.set_pesan_kosong(
-                "Belum ada transaksi penjualan."
+                "Belum ada lampiran pada invoice ini."
                 "\n\n"
-                "Tekan tombol Tambah Penjualan untuk mencatat penjualan pertama "
-                "Anda. Jurnal dan pajaknya dihitung otomatis.")
+                "Tekan tombol Lampirkan Dokumen untuk menambahkan berkas "
+                "pendukung.")
 
             t2.isi([[d["nama_berkas"], d["tipe"] or "", str(d["versi"]),
                      d["created_at"][:16]] for d in docs])
@@ -1965,10 +2240,10 @@ class DialogDetailInvoice(QDialog):
         try:
             O.lampirkan_dokumen(self.ctx.company_id, "invoices", self.invoice_id,
                                 path, "invoice", "", self.ctx.username)
-            QMessageBox.information(self, "Berhasil", "Dokumen dilampirkan.")
+            popup.beri_tahu(self, "Berhasil", "Dokumen dilampirkan.")
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal melampirkan", str(e))
+            popup.galat(self, "Gagal melampirkan", str(e))
 
     def _pdf(self):
         config.ensure_dirs()
@@ -1983,4 +2258,4 @@ class DialogDetailInvoice(QDialog):
             buat_pdf_invoice(self.ctx.company_id, self.invoice_id, path)
             QDesktopServices.openUrl(QUrl.fromLocalFile(path))
         except Exception as e:
-            QMessageBox.critical(self, "Gagal membuat PDF", str(e))
+            popup.galat(self, "Gagal membuat PDF", str(e))

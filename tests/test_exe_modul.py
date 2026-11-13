@@ -8,6 +8,10 @@ skema kontrak, dan tabel serta view-nya tidak terbuat.
 
 Uji ini menjalankan EXE terpasang pada basis data kosong, lalu memeriksa
 bahwa seluruh tabel dan view dari semua modul skema benar-benar ada.
+Pemeriksaan yang sama pentingnya: pustaka verifikasi tanda tangan lisensi
+(cryptography) harus ikut terbundel. Tanpa pustaka itu aplikasi tetap bisa
+dibuka, tetapi setiap aktivasi lisensi gagal karena jawaban server tidak
+dapat diperiksa.
 
 Cara pakai:
     python tests/test_exe_modul.py
@@ -60,6 +64,12 @@ def main() -> int:
         print("          Pasang dulu dengan: python tools/pasang_ulang.py")
         return 0
 
+    print("\n[Pustaka verifikasi lisensi]")
+    pustaka = (EXE.parent / "_internal" / "cryptography" / "hazmat"
+               / "bindings" / "_rust.pyd")
+    cek("Pustaka verifikasi lisensi ikut terbundel", pustaka.exists(),
+        f"tidak ada: {pustaka}")
+
     folder = Path(tempfile.mkdtemp(prefix="akuntuntas_exe_"))
     try:
         print("\n[Menjalankan EXE pada basis data kosong]")
@@ -67,19 +77,32 @@ def main() -> int:
         proc = subprocess.Popen([str(EXE)], env=env,
                                 stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL)
-        # beri waktu membuat basis data dan memuat seluruh skema
-        for _ in range(40):
+        # Tunggu sampai seluruh skema benar-benar selesai dimuat, bukan
+        # memakai jeda tetap. Peluncuran pertama setelah pemasangan dapat
+        # lebih lambat karena pemindai antivirus memeriksa berkas baru;
+        # jeda tetap membuat uji ini gagal padahal aplikasinya benar.
+        basis = folder / "akuntuntas.db"
+        batas = time.time() + 60
+        while time.time() < batas:
             time.sleep(1)
-            if (folder / "akuntuntas.db").exists():
+            if not basis.exists():
+                continue
+            try:
+                conn = sqlite3.connect(basis, timeout=1)
+                nama = {r[0] for r in conn.execute(
+                    "SELECT name FROM sqlite_master "
+                    "WHERE type IN ('table','view')")}
+                conn.close()
+            except sqlite3.Error:
+                continue
+            if set(TABEL_WAJIB) <= nama and set(VIEW_WAJIB) <= nama:
                 break
-        time.sleep(6)
+
         proc.terminate()
         try:
             proc.wait(timeout=15)
         except subprocess.TimeoutExpired:
             proc.kill()
-
-        basis = folder / "akuntuntas.db"
         cek("EXE membuat basis data", basis.exists(), f"di {basis}")
         if not basis.exists():
             return 1

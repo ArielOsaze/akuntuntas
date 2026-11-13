@@ -25,7 +25,8 @@ sys.path.insert(0, str(AKAR / "src"))
 os.environ.setdefault("AKUNTANSIID_DATA", str(AKAR / "_contoh"))
 os.environ.pop("QT_QPA_PLATFORM", None)
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QPoint
+from PySide6.QtWidgets import QApplication, QWidget
 
 from akuntansi_id import config, db
 from akuntansi_id.core import security as sec
@@ -176,6 +177,24 @@ def main() -> int:
     cek("Peringatan mengikuti keadaan Caps Lock",
         p.lbl_caps.isVisibleTo(p) == nyala,
         f"capslock={nyala}, label={p.lbl_caps.isVisibleTo(p)}")
+
+    # ------------------------------------------------ ukuran minimum
+    print("\n[Tata letak 920x620]")
+    p5 = LoginPage()
+    p5.resize(920, 620)
+    p5.show()
+    jeda(app, 40)
+    p5.resize(920, 620)
+    jeda(app, 20)
+    luar = []
+    for w in p5.findChildren(QWidget):
+        if not w.isVisibleTo(p5):
+            continue
+        kiri = w.mapTo(p5, QPoint(0, 0)).x()
+        if kiri < 0 or kiri + w.width() > p5.width() + 1:
+            luar.append((type(w).__name__, kiri, w.width()))
+    cek("Tidak ada isi login melewati tepi jendela 920x620",
+        not luar, f"{luar[:3]}")
 
     print()
     print("=" * 66)

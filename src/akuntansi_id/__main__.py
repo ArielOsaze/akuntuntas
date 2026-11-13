@@ -52,9 +52,9 @@ def main() -> int:
             pass
 
     # ---------------------------------------------------------------- Qt
-    from PySide6.QtWidgets import QApplication, QMessageBox
+    from PySide6.QtWidgets import QApplication
+    from akuntansi_id.ui import popup
     from PySide6.QtCore import Qt, QTimer
-    from PySide6.QtGui import QFont
 
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
@@ -75,9 +75,6 @@ def main() -> int:
 
     from akuntansi_id.ui import widgets as w
     app.setWindowIcon(w.ikon_aplikasi())
-
-    font = QFont("Segoe UI", 10)
-    app.setFont(font)
 
     # ---------------------------------------------------------------- DB
     try:
@@ -113,15 +110,15 @@ def main() -> int:
     except Exception as e:
         detail = traceback.format_exc()
         catat(f"GAGAL INISIALISASI BASIS DATA: {e}\n{detail}")
-        QMessageBox.critical(
-            None, "Gagal memulai aplikasi",
-            f"Basis data tidak dapat dibuka.\n\n"
-            f"Lokasi: {config.DB_PATH}\n\n"
-            f"Kesalahan: {e}\n\n"
-            "Kemungkinan penyebab:\n"
-            "• Berkas sedang dipakai proses lain - tutup aplikasi lain lalu coba lagi.\n"
-            "• Folder tidak dapat ditulis - periksa izin akses folder.\n"
-            "• Berkas rusak - pulihkan dari cadangan.")
+        popup.galat(None,
+                    "Gagal memulai aplikasi",
+                    f"Basis data tidak dapat dibuka.\n\n"
+                    f"Lokasi: {config.DB_PATH}\n\n"
+                    f"Kesalahan: {e}\n\n"
+                    "Kemungkinan penyebab:\n"
+                    "• Berkas sedang dipakai proses lain - tutup aplikasi lain lalu coba lagi.\n"
+                    "• Folder tidak dapat ditulis - periksa izin akses folder.\n"
+                    "• Berkas rusak - pulihkan dari cadangan.")
         return 1
 
     # ---------------------------------------------------------------- tema
@@ -139,10 +136,10 @@ def main() -> int:
     except Exception as e:
         detail = traceback.format_exc()
         catat(f"GAGAL MEMBUKA ANTARMUKA: {e}\n{detail}")
-        QMessageBox.critical(
-            None, "Gagal membuka antarmuka",
-            f"Antarmuka tidak dapat dimuat.\n\n{e}\n\n"
-            f"Detail lengkap tersimpan di:\n{log_file}")
+        popup.galat(None,
+                    "Gagal membuka antarmuka",
+                    f"Antarmuka tidak dapat dimuat.\n\n{e}\n\n"
+                    f"Detail lengkap tersimpan di:\n{log_file}")
         return 1
 
     # ---------------------------------------------------------------- pengecualian tak tertangani
@@ -167,13 +164,13 @@ def main() -> int:
             dlg.exec()
         except Exception:
             try:
-                QMessageBox.critical(
-                    None, "Terjadi kesalahan",
-                    f"Aplikasi mengalami kesalahan teknis:\n\n"
-                    f"{tipe.__name__}: {nilai}\n\n"
-                    f"Data Anda tetap aman. Detail tersimpan di:\n{log_file}\n\n"
-                    "Anda dapat melanjutkan bekerja, namun sebaiknya simpan "
-                    "pekerjaan dan mulai ulang aplikasi.")
+                popup.galat(None,
+                            "Terjadi kesalahan",
+                            f"Aplikasi mengalami kesalahan teknis:\n\n"
+                            f"{tipe.__name__}: {nilai}\n\n"
+                            f"Data Anda tetap aman. Detail tersimpan di:\n{log_file}\n\n"
+                            "Anda dapat melanjutkan bekerja, namun sebaiknya simpan "
+                            "pekerjaan dan mulai ulang aplikasi.")
             except Exception:
                 pass
 

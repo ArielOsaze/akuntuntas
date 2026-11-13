@@ -647,9 +647,12 @@ h2 {
     margin-bottom: 36px;
 }
 
-.qris-head h1 {
-    font-size: clamp(38px, 5vw, 62px);
+.qris-head .judul-qris {
     margin: 14px 0 12px;
+    font-size: clamp(38px, 5vw, 62px);
+    font-weight: 600;
+    line-height: 0.98;
+    letter-spacing: -0.025em;
 }
 
 .qris-head p {
@@ -1139,7 +1142,7 @@ dialog.qr-modal::backdrop {
 
     .total-row strong { font-size: 27px; }
 
-    .qris-head h1 { font-size: 42px; }
+    .qris-head .judul-qris { font-size: 42px; }
 
     .qr-sheet { padding: 20px 16px 22px; }
     .qr-top .qris-logo { width: 158px; }

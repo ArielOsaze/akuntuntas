@@ -65,6 +65,8 @@ COA_UMKM_OP: list[Row] = [
        "PPN keluaran yang belum disetor ke negara. Hanya untuk pengusaha berstatus PKP."),
     _a("2102", "Utang PPh Potong/Pungut", "Liabilitas", "", "Utang Pajak", "Kredit", "Deductible/Taxable",
        "PPh yang sudah dipotong dari pihak lain tetapi belum disetor ke kas negara."),
+    _a("2103", "Utang Pajak Daerah", "Liabilitas", "", "Utang Pajak", "Kredit", "Deductible/Taxable",
+       "Pajak daerah (PBJT) yang dipungut dari pelanggan dan belum disetor."),
     _a("2201", "Utang Bank / Pinjaman", "Liabilitas", "", "Pinjaman Jangka Pendek", "Kredit", "Deductible/Taxable",
        "Pinjaman dari bank, koperasi, atau pihak lain yang harus dikembalikan."),
     # ---- EKUITAS
@@ -252,6 +254,8 @@ COA_FULL: list[Row] = [
        "tagihan listrik akhir bulan. Dipakai bersama fitur jurnal balik pada "
        "halaman Pajak Lanjutan, agar beban tidak dihitung dua kali pada "
        "periode berikutnya."),
+    _a("2014", "Utang Pajak Daerah", "Liabilitas", "", "Utang Pajak", "Kredit", "Deductible/Taxable",
+       "Pajak daerah (PBJT) yang dipungut dari pelanggan dan belum disetor."),
     _a("2101", "Utang Bank Jangka Pendek", "Liabilitas", "", "Pinjaman Jangka Pendek", "Kredit", "Deductible/Taxable",
        "Kredit modal kerja dengan jatuh tempo ≤ 1 tahun."),
     _a("2102", "Utang Leasing Jangka Pendek", "Liabilitas", "", "Pinjaman Jangka Pendek", "Kredit", "Deductible/Taxable",
@@ -462,6 +466,79 @@ def lengkapi_semua_perusahaan() -> int:
     return jumlah
 
 
+# Peran akun yang dipakai dialog dan jurnal otomatis. Urutan kandidat
+# mengikuti bagan akun PT lengkap; pada UMKM dan perseroan perorangan dua
+# kandidat pertama ditukar karena penomoran dan arti akunnya berbeda.
+_KANDIDAT_AKUN = {
+    "persediaan": ("1104", "1102"),
+    "aset_peralatan": ("1208", "1201"),
+    "akum_penyusutan": ("1209", "1202"),
+    "beban_penyusutan": ("6019", "6007"),
+    "sewa": ("6006", "6002"),
+    "beban_umum": ("6023", "6011", "6008"),
+    "beban_gaji": ("6001",),
+    "beban_jasa": ("6012", "6006"),
+    "biaya_bank": ("6013", "6009"),
+    "ppn_masukan": ("1108", "1104", "1103"),
+    "utang_pph": ("2005", "2102"),
+    "utang_ppn_keluaran": ("2003", "2101"),
+    "utang_pph21": ("2004", "2102"),
+    "utang_pph23": ("2005", "2102"),
+    "utang_pph4": ("2006", "2102"),
+    "utang_pph_badan": ("2007", "2301", "2102"),
+    "utang_pph_final": ("2008", "2102"),
+    "pajak_dibayar_dimuka": ("1109", "1104", "1103"),
+    "utang_pajak_daerah": ("2014", "2103"),
+    "bank": ("1003", "1002"),
+    "utilitas": ("6007", "6003"),
+    "marketing": ("6009", "6004"),
+    "transportasi": ("6011", "6005"),
+    "perlengkapan": ("6014", "6008"),
+    "saldo_laba": ("3004", "3101"),
+}
+
+
+def kandidat_akun_bawaan(peran: str, bentuk: str = "pt") -> tuple[str, ...]:
+    """Urutan kandidat kode akun untuk satu peran pada bentuk badan tertentu."""
+    kandidat = _KANDIDAT_AKUN.get(peran, ())
+    if bentuk not in ("pt", "cv", "koperasi") and len(kandidat) > 1:
+        # UMKM dan perseroan perorangan memakai dua kode pertama yang
+        # penomoran serta artinya berbeda dari bagan akun PT lengkap.
+        kandidat = (kandidat[1], kandidat[0]) + kandidat[2:]
+    return kandidat
+
+
+def kode_akun_template(bentuk: str, peran: str) -> str:
+    """Kode akun bawaan yang pasti ada pada template bagan akun bentuk itu."""
+    tersedia = {baris[0] for baris in get_coa_template(bentuk)}
+    for kode in kandidat_akun_bawaan(peran, bentuk):
+        if kode in tersedia:
+            return kode
+    return ""
+
+
+def kode_akun_bawaan(company_id: int, peran: str) -> str:
+    """
+    Kode akun bawaan untuk satu peran, sesuai bentuk badan usaha.
+
+    Contoh: akun persediaan bernomor 1104 pada PT lengkap, tetapi 1102 pada
+    UMKM dan perseroan perorangan. Memakai satu kode tetap membuat jurnal
+    otomatis menunjuk akun yang tidak ada atau akun dengan arti berbeda.
+    """
+    kandidat = _KANDIDAT_AKUN.get(peran)
+    if not kandidat:
+        return ""
+
+    row = db.q1("SELECT bentuk FROM companies WHERE id=?", (company_id,))
+    bentuk = (row["bentuk"] if row else "") or "pt"
+    kandidat = kandidat_akun_bawaan(peran, bentuk)
+    for kode in kandidat:
+        if db.q1("SELECT 1 FROM accounts WHERE company_id=? AND kode=?",
+                 (company_id, kode)):
+            return kode
+    return kandidat[0]
+
+
 # ==========================================================================
 # PANDUAN KONTEKSTUAL — ditampilkan di UI sebagai panel "Penjelasan"
 # ==========================================================================
@@ -606,8 +683,10 @@ HELP_TOPICS: dict[str, dict[str, str]] = {
         "isi": (
             "PPN = PPN Keluaran − PPN Masukan yang dapat dikreditkan.\n\n"
             "Tarif: 12% x DPP Nilai Lain (11/12) = efektif 11% untuk non-mewah.\n\n"
-            "Jika hasilnya positif -> kurang bayar, setor dengan kode billing MP.\n"
-            "Jika negatif -> lebih bayar, dapat dikompensasikan ke masa berikutnya\n"
+            "Jika hasilnya positif, PPN kurang bayar dan disetor dengan kode "
+            "billing MP.\n"
+            "Jika negatif, PPN lebih bayar dan dapat dikompensasikan ke masa "
+            "berikutnya\n"
             "atau direstitusi.\n\n"
             "Tenggat: setor & lapor paling lambat AKHIR BULAN BERIKUTNYA.\n"
             "Denda terlambat lapor SPT Masa PPN: Rp100.000."

@@ -9,16 +9,17 @@ from datetime import datetime
 from PySide6.QtCore import Qt, Signal, QDate
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QLineEdit, QDateEdit,
-    QDialog, QMessageBox, QGridLayout, QCheckBox, QTabWidget, QTableWidgetItem,
+    QDialog, QGridLayout, QCheckBox, QTableWidgetItem,
 )
 
-from ... import config, modules as M, modules_sales as S, modules_ops as O
+from ... import coa, config, modules as M, modules_sales as S, modules_ops as O
 from ...core import tax_engine as tx
 from ... import istilah
 from .. import theme, widgets as w
 from .. import kalender
 from ..theme import C
 from .penjualan import PanelItem
+from .. import popup
 
 
 class DialogPurchaseOrder(QDialog):
@@ -88,8 +89,11 @@ class DialogPurchaseOrder(QDialog):
         self.lbl_ringkas = QLabel("")
         self.lbl_ringkas.setWordWrap(True)
         self.lbl_ringkas.setTextFormat(Qt.RichText)
-        theme.latar(self.lbl_ringkas, f"background: {C.PRIMARY_SOFT}; border: 1px solid #CFE0F0; "
-            f"border-radius: 8px; padding: 12px 14px; font-size: {theme.FS_BODY}px;")
+        theme.latar(self.lbl_ringkas,
+                    f"color: {C.TEXT}; background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px; "
+                    f"padding: 10px 12px; font-size: {theme.FS_BODY}px;")
         lay.addWidget(self.lbl_ringkas)
 
         aksi = QHBoxLayout()
@@ -120,8 +124,9 @@ class DialogPurchaseOrder(QDialog):
         try:
             items = self.panel.items()
             if not items:
-                QMessageBox.warning(self, "Belum ada item",
-                                    "Tambahkan minimal satu baris produk.")
+                popup.peringatkan(self,
+                                  "Belum ada item",
+                                  "Tambahkan minimal satu baris produk.")
                 return
             po = S.buat_purchase_order(
                 self.ctx.company_id,
@@ -133,7 +138,7 @@ class DialogPurchaseOrder(QDialog):
             self.po_id = po
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogBill(QDialog):
@@ -204,7 +209,6 @@ class DialogBill(QDialog):
 
         baris2.addWidget(w.label("Akun Beban/Aset", objek="FormLabel"))
         self.cmb_akun = w.combo_akun(ctx.company_id)
-        w.set_combo_by_data(self.cmb_akun, "6008")
         baris2.addWidget(self.cmb_akun, 1)
 
         baris2.addWidget(w.label("Jenis PPN", objek="FormLabel"))
@@ -249,8 +253,11 @@ class DialogBill(QDialog):
         self.lbl_ringkas = QLabel("")
         self.lbl_ringkas.setWordWrap(True)
         self.lbl_ringkas.setTextFormat(Qt.RichText)
-        theme.latar(self.lbl_ringkas, f"background: {C.PRIMARY_SOFT}; border: 1px solid #CFE0F0; "
-            f"border-radius: 8px; padding: 12px 14px; font-size: {theme.FS_BODY}px;")
+        theme.latar(self.lbl_ringkas,
+                    f"color: {C.TEXT}; background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px; "
+                    f"padding: 10px 12px; font-size: {theme.FS_BODY}px;")
         lay.addWidget(self.lbl_ringkas)
 
         aksi = QHBoxLayout()
@@ -258,21 +265,24 @@ class DialogBill(QDialog):
         b = w.tombol("Batal")
         b.clicked.connect(self.reject)
         aksi.addWidget(b)
-        bs = w.tombol("Simpan & Buat Jurnal", gaya="primary")
+        bs = w.tombol("Simpan && Buat Jurnal", gaya="primary")
         bs.clicked.connect(self._simpan)
         aksi.addWidget(bs)
         lay.addLayout(aksi)
 
+        self._update_akun()
         self._update_ringkas()
         if po_id:
             self._muat_dari_po(po_id)
 
     def _update_akun(self):
         jenis = self.cmb_jenis.currentData()
-        if jenis == "Persediaan":
-            w.set_combo_by_data(self.cmb_akun, "1104")
-        elif jenis == "Aset Tetap":
-            w.set_combo_by_data(self.cmb_akun, "1201")
+        peran = {"Persediaan": "persediaan", "Beban": "beban_umum",
+                 "Aset Tetap": "aset_peralatan"}.get(jenis)
+        if peran:
+            w.set_combo_by_data(
+                self.cmb_akun,
+                coa.kode_akun_bawaan(self.ctx.company_id, peran))
 
     def _update_ringkas(self):
         subtotal = self.panel.subtotal()
@@ -316,8 +326,9 @@ class DialogBill(QDialog):
         try:
             items = self.panel.items()
             if not items:
-                QMessageBox.warning(self, "Belum ada item",
-                                    "Tambahkan minimal satu baris.")
+                popup.peringatkan(self,
+                                  "Belum ada item",
+                                  "Tambahkan minimal satu baris.")
                 return
             S.buat_bill(
                 self.ctx.company_id,
@@ -330,13 +341,14 @@ class DialogBill(QDialog):
                 jenis_ppn=self.cmb_ppn.currentData(),
                 dapat_dikreditkan=self.chk_kredit.isChecked(),
                 po_id=self.po_id,
-                akun_beban=self.cmb_akun.currentData() or "6008",
+                akun_beban=(self.cmb_akun.currentData()
+                            or coa.kode_akun_bawaan(self.ctx.company_id, "beban_umum")),
                 catatan=self.inp_catatan.text().strip(),
                 user_id=self.ctx.user_id, username=self.ctx.username,
                 tambah_stok=self.chk_stok.isChecked())
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogBayarVendor(QDialog):
@@ -396,16 +408,17 @@ class DialogBayarVendor(QDialog):
         lay.addWidget(w.label("Pilih Bill yang Dibayar", objek="SectionTitle"))
 
         self.tabel = w.Tabel([
-            ("", 40), ("Bill", 175), ("No. Vendor", 145), ("Tanggal", 110),
-            ("Jatuh Tempo", 115), ("Total", 150), ("Sisa", 150), ("Alokasi", 165),
+            ("", 34), ("Bill", 180), ("Jatuh Tempo", 110),
+            ("Total", 145), ("Sisa", 145), ("Alokasi", 160),
         ])
-        # Keterangan ini tampil saat tabel masih kosong, supaya
-        # pengguna tahu langkah berikutnya.
         self.tabel.set_pesan_kosong(
-            "Belum ada transaksi pembelian."
+            "Tidak ada bill yang belum lunas."
             "\n\n"
-            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
-            "atau jasa dari pemasok.")
+            "Seluruh tagihan pemasok sudah dibayar penuh, atau belum ada "
+            "bill yang dicatat.")
+        for kolom in (3, 4, 5):
+            self.tabel.horizontalHeaderItem(kolom).setTextAlignment(
+                Qt.AlignRight | Qt.AlignVCenter)
 
         lay.addWidget(self.tabel, 1)
 
@@ -417,6 +430,7 @@ class DialogBayarVendor(QDialog):
         self.lbl_status.setStyleSheet(f"font-size: {theme.FS_BODY}px; "
                                       "font-weight: 600; background: transparent;")
         lay.addWidget(self.lbl_status)
+        self._cek_alokasi()
 
         aksi = QHBoxLayout()
         aksi.addStretch()
@@ -443,11 +457,9 @@ class DialogBayarVendor(QDialog):
             self.tabel.setCellWidget(i, 0, chk)
 
             self.tabel.setItem(i, 1, QTableWidgetItem(b["nomor"]))
-            self.tabel.setItem(i, 2, QTableWidgetItem(b["nomor_vendor"] or ""))
-            self.tabel.setItem(i, 3, QTableWidgetItem(theme.tanggal_id(b["tanggal"])))
-            self.tabel.setItem(i, 4, QTableWidgetItem(
+            self.tabel.setItem(i, 2, QTableWidgetItem(
                 theme.tanggal_id(b["jatuh_tempo"] or "")))
-            for kolom, nilai in [(5, b["total"]), (6, b["sisa"])]:
+            for kolom, nilai in [(3, b["total"]), (4, b["sisa"])]:
                 item = QTableWidgetItem(tx.rupiah(nilai))
                 item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
                 self.tabel.setItem(i, kolom, item)
@@ -457,7 +469,7 @@ class DialogBayarVendor(QDialog):
                 inp.set_nilai(b["sisa"])
             inp.valueChanged.connect(self._cek_alokasi)
             self.inputs[b["id"]] = inp
-            self.tabel.setCellWidget(i, 7, inp)
+            self.tabel.setCellWidget(i, 5, inp)
 
         if self.bill_id and self.bill_id in self.inputs:
             b = S.get_bill(self.bill_id)
@@ -497,18 +509,21 @@ class DialogBayarVendor(QDialog):
         try:
             jumlah = self.inp_jumlah.nilai()
             if jumlah <= 0:
-                QMessageBox.warning(self, "Jumlah kosong", "Isi jumlah pembayaran.")
+                popup.peringatkan(self,
+                                  "Jumlah kosong",
+                                  "Isi jumlah pembayaran.")
                 return
             alokasi = [{"bill_id": bid, "jumlah": inp.nilai()}
                        for bid, inp in self.inputs.items()
                        if self.checks.get(bid) and self.checks[bid].isChecked()
                        and inp.nilai() > 0]
             if not alokasi:
-                QMessageBox.warning(self, "Belum ada alokasi", "Pilih bill.")
+                popup.peringatkan(self, "Belum ada alokasi", "Pilih bill.")
                 return
             if self._total_alokasi() > jumlah:
-                QMessageBox.warning(self, "Alokasi berlebih",
-                                    "Total alokasi melebihi jumlah pembayaran.")
+                popup.peringatkan(self,
+                                  "Alokasi berlebih",
+                                  "Total alokasi melebihi jumlah pembayaran.")
                 return
 
             partner_id = self.partner_id
@@ -528,7 +543,7 @@ class DialogBayarVendor(QDialog):
                 user_id=self.ctx.user_id, username=self.ctx.username)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogReturPembelian(QDialog):
@@ -586,13 +601,13 @@ class DialogReturPembelian(QDialog):
         lay.addWidget(w.label("Barang yang Diretur", objek="SectionTitle"))
         self.tabel = w.Tabel([("Produk", -1), ("Qty Beli", 110), ("Harga", 150),
                               ("Qty Retur", 165)])
-        # Keterangan ini tampil saat tabel masih kosong, supaya
-        # pengguna tahu langkah berikutnya.
+        for kolom in (1, 2, 3):
+            self.tabel.horizontalHeaderItem(kolom).setTextAlignment(
+                Qt.AlignRight | Qt.AlignVCenter)
         self.tabel.set_pesan_kosong(
-            "Belum ada transaksi pembelian."
+            "Bill ini belum memiliki barang yang dapat diretur."
             "\n\n"
-            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
-            "atau jasa dari pemasok.")
+            "Pilih bill lain, atau catat pembelian terlebih dahulu.")
 
         lay.addWidget(self.tabel, 1)
 
@@ -620,9 +635,13 @@ class DialogReturPembelian(QDialog):
         for i, it in enumerate(items):
             self.tabel.setItem(i, 0, QTableWidgetItem(
                 it["deskripsi"] or it["produk_nama"] or ""))
-            self.tabel.setItem(i, 1, QTableWidgetItem(f"{it['qty']:g}"))
-            self.tabel.setItem(i, 2, QTableWidgetItem(tx.rupiah(it["harga_satuan"])))
-            inp = w.InputRupiah()
+            qty_beli = QTableWidgetItem(f"{it['qty']:g}".replace(".", ","))
+            qty_beli.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            self.tabel.setItem(i, 1, qty_beli)
+            harga = QTableWidgetItem(tx.rupiah(it["harga_satuan"]))
+            harga.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            self.tabel.setItem(i, 2, harga)
+            inp = w.InputQty()
             self.inputs[i] = (inp, it)
             self.tabel.setCellWidget(i, 3, inp)
 
@@ -630,20 +649,30 @@ class DialogReturPembelian(QDialog):
         try:
             bid = self.cmb_bill.currentData()
             if not bid:
-                QMessageBox.warning(self, "Bill kosong", "Pilih bill terlebih dahulu.")
+                popup.peringatkan(self,
+                                  "Bill kosong",
+                                  "Pilih bill terlebih dahulu.")
                 return
             items = []
             for i, (inp, it) in self.inputs.items():
                 qty = inp.nilai()
-                if qty > 0:
-                    items.append({
-                        "product_id": it["product_id"],
-                        "qty": qty,
-                        "harga_satuan": it["harga_satuan"],
-                    })
+                if qty <= 0:
+                    continue
+                if qty > float(it["qty"]) + 1e-9:
+                    popup.peringatkan(self,
+                                      "Jumlah berlebih",
+                                      f"Jumlah retur untuk {it['produk_nama'] or it['deskripsi']} "
+                                      f"melebihi jumlah yang dibeli ({it['qty']:g}).")
+                    return
+                items.append({
+                    "product_id": it["product_id"],
+                    "qty": qty,
+                    "harga_satuan": it["harga_satuan"],
+                })
             if not items:
-                QMessageBox.warning(self, "Belum ada item",
-                                    "Isi jumlah barang yang diretur.")
+                popup.peringatkan(self,
+                                  "Belum ada item",
+                                  "Isi jumlah barang yang diretur.")
                 return
             S.retur_pembelian(self.ctx.company_id,
                               self.inp_tanggal.date().toString("yyyy-MM-dd"),
@@ -651,7 +680,7 @@ class DialogReturPembelian(QDialog):
                               self.ctx.user_id, self.ctx.username)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class PembelianLengkapPage(QWidget):
@@ -696,8 +725,7 @@ class PembelianLengkapPage(QWidget):
         self.lay.setSpacing(13)
         luar.addWidget(isi, 1)
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         self.tab_bill = QWidget()
         self.tab_po = QWidget()
         self.tab_bayar = QWidget()
@@ -723,7 +751,7 @@ class PembelianLengkapPage(QWidget):
         baris.setSpacing(10)
         self.inp_cari_bill = QLineEdit()
         self.inp_cari_bill.setPlaceholderText("Cari nomor bill, vendor, atau nomor invoice…")
-        self.inp_cari_bill.setMinimumWidth(300)
+        self.inp_cari_bill.setMinimumWidth(340)
         self.inp_cari_bill.textChanged.connect(self.muat)
         baris.addWidget(self.inp_cari_bill)
 
@@ -735,10 +763,8 @@ class PembelianLengkapPage(QWidget):
         self.cmb_status_bill.addItem("Lunas", "lunas")
         self.cmb_status_bill.currentIndexChanged.connect(self.muat)
         baris.addWidget(self.cmb_status_bill)
-        baris.addStretch()
-        self.lbl_bill = QLabel("")
-        self.lbl_bill.setObjectName("Muted")
-        baris.addWidget(self.lbl_bill)
+        self.lbl_bill = w.label_ringkas()
+        baris.addWidget(self.lbl_bill, 1)
         lay.addLayout(baris)
 
         self.tabel_bill = w.Tabel([
@@ -749,10 +775,10 @@ class PembelianLengkapPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_bill.set_pesan_kosong(
-            "Belum ada transaksi pembelian."
+            "Belum ada bill pembelian."
             "\n\n"
-            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
-            "atau jasa dari pemasok.")
+            "Tekan tombol Bill Baru di atas untuk mencatat tagihan dari "
+            "pemasok.")
 
         self.tabel_bill.doubleClicked.connect(self._detail_bill)
         lay.addWidget(self.tabel_bill, 1)
@@ -784,10 +810,10 @@ class PembelianLengkapPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_po.set_pesan_kosong(
-            "Belum ada transaksi pembelian."
+            "Belum ada purchase order."
             "\n\n"
-            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
-            "atau jasa dari pemasok.")
+            "Tekan tombol Purchase Order di atas untuk membuat pesanan "
+            "pembelian.")
 
         lay.addWidget(self.tabel_po, 1)
 
@@ -802,10 +828,8 @@ class PembelianLengkapPage(QWidget):
         b3 = w.tombol("Batalkan PO", gaya="danger", ikon="nonaktif")
         b3.clicked.connect(lambda: self._ubah_status_po("batal"))
         baris.addWidget(b3)
-        baris.addStretch()
-        self.lbl_po = QLabel("")
-        self.lbl_po.setObjectName("Muted")
-        baris.addWidget(self.lbl_po)
+        self.lbl_po = w.label_ringkas()
+        baris.addWidget(self.lbl_po, 1)
         lay.addLayout(baris)
 
     def _bangun_bayar(self):
@@ -820,10 +844,10 @@ class PembelianLengkapPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_bayar.set_pesan_kosong(
-            "Belum ada transaksi pembelian."
+            "Belum ada pembayaran ke pemasok."
             "\n\n"
-            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
-            "atau jasa dari pemasok.")
+            "Tekan tombol Bayar Pemasok di atas untuk mencatat pembayaran "
+            "ke pemasok.")
 
         lay.addWidget(self.tabel_bayar, 1)
 
@@ -831,10 +855,8 @@ class PembelianLengkapPage(QWidget):
         b = w.tombol("Void Pembayaran", gaya="danger", ikon="nonaktif")
         b.clicked.connect(self._void_bayar)
         baris.addWidget(b)
-        baris.addStretch()
-        self.lbl_bayar = QLabel("")
-        self.lbl_bayar.setObjectName("Muted")
-        baris.addWidget(self.lbl_bayar)
+        self.lbl_bayar = w.label_ringkas()
+        baris.addWidget(self.lbl_bayar, 1)
         lay.addLayout(baris)
 
     def _bangun_aging(self):
@@ -855,10 +877,10 @@ class PembelianLengkapPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_aging_ap.set_pesan_kosong(
-            "Belum ada transaksi pembelian."
+            "Belum ada utang yang perlu dibayar."
             "\n\n"
-            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
-            "atau jasa dari pemasok.")
+            "Seluruh tagihan pemasok sudah lunas, atau belum ada bill yang "
+            "jatuh tempo.")
 
         lay.addWidget(self.tabel_aging_ap, 1)
 
@@ -866,10 +888,8 @@ class PembelianLengkapPage(QWidget):
         b = w.tombol("Buat Pengingat Pembayaran", gaya="primary", ikon="peringatan")
         b.clicked.connect(self._buat_pengingat)
         baris.addWidget(b)
-        baris.addStretch()
-        self.lbl_aging_ap = QLabel("")
-        self.lbl_aging_ap.setObjectName("Muted")
-        baris.addWidget(self.lbl_aging_ap)
+        self.lbl_aging_ap = w.label_ringkas()
+        baris.addWidget(self.lbl_aging_ap, 1)
         lay.addLayout(baris)
 
     def muat(self):
@@ -891,7 +911,7 @@ class PembelianLengkapPage(QWidget):
         data = S.daftar_bill(cid, self.ctx.tahun,
                              self.cmb_status_bill.currentData(),
                              cari=self.inp_cari_bill.text().strip())
-        baris, warna = [], {}
+        baris, warna, warna_jt = [], {}, {}
         total_sisa = 0
         hari_ini = datetime.now().date()
         for i, b in enumerate(data):
@@ -905,21 +925,25 @@ class PembelianLengkapPage(QWidget):
                 {"terbuka": "Terbuka", "sebagian": "Sebagian",
                  "lunas": "Lunas", "batal": "Batal"}.get(b["status"], b["status"]),
             ])
-            if b["status"] == "lunas":
-                warna[idx] = C.SUCCESS
-            elif b["status"] == "batal":
-                warna[idx] = C.TEXT_FAINT
-            else:
+            warna[idx] = {"terbuka": C.INFO, "sebagian": C.WARNING,
+                          "lunas": C.SUCCESS, "batal": C.TEXT_FAINT}.get(
+                b["status"], C.TEXT_MUTED)
+            if b["status"] in ("terbuka", "sebagian"):
                 try:
                     jt = datetime.fromisoformat(
                         (b["jatuh_tempo"] or b["tanggal"])[:10]).date()
                     if jt < hari_ini:
-                        warna[idx] = C.DANGER
+                        warna_jt[(idx, 4)] = C.DANGER
                     elif (jt - hari_ini).days <= 7:
-                        warna[idx] = C.WARNING
+                        warna_jt[(idx, 4)] = C.WARNING
                 except ValueError:
                     pass
-        self.tabel_bill.isi(baris, warna_baris=warna, align_kanan={5, 6})
+        # Kolom nomor vendor hanya berguna bila memang diisi; tanpa isi,
+        # kolom kosong selebar 145 piksel hanya memakan ruang pemasok.
+        self.tabel_bill.setColumnHidden(
+            1, not any((b["nomor_vendor"] or "").strip() for b in data))
+        self.tabel_bill.isi(baris, warna_baris=warna, align_kanan={5, 6},
+                            warna_sel=warna_jt, tebal_kolom={6})
         self.lbl_bill.setText(f"{len(data)} bill · total utang {tx.rupiah(total_sisa)}")
 
     def _muat_po(self):
@@ -940,6 +964,10 @@ class PembelianLengkapPage(QWidget):
                 warna[idx] = C.SUCCESS
             elif po["status"] == "batal":
                 warna[idx] = C.TEXT_FAINT
+            elif po["status"] == "dikonfirmasi":
+                warna[idx] = C.INFO
+            else:
+                warna[idx] = C.TEXT_MUTED
         self.tabel_po.isi(baris, warna_baris=warna, align_kanan={4, 5, 6})
         self.lbl_po.setText(f"{len(data)} purchase order")
 
@@ -957,6 +985,8 @@ class PembelianLengkapPage(QWidget):
             ])
             if p["status"] == "void":
                 warna[idx] = C.TEXT_FAINT
+            else:
+                warna[idx] = C.SUCCESS
         self.tabel_bayar.isi(baris, warna_baris=warna, align_kanan={4})
         self.lbl_bayar.setText(f"{len(data)} pembayaran · total {tx.rupiah(total)}")
 
@@ -1006,8 +1036,9 @@ class PembelianLengkapPage(QWidget):
 
     def _buat_po(self):
         if not self.ctx.company_id:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         d = DialogPurchaseOrder(self.ctx, self)
         if d.exec():
@@ -1016,8 +1047,9 @@ class PembelianLengkapPage(QWidget):
 
     def _buat_bill(self):
         if not self.ctx.company_id:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         d = DialogBill(self.ctx, self)
         if d.exec():
@@ -1086,10 +1118,9 @@ class PembelianLengkapPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         t.set_pesan_kosong(
-            "Belum ada transaksi pembelian."
+            "Bill ini belum memiliki baris barang."
             "\n\n"
-            "Tekan tombol Tambah Pembelian untuk mencatat pembelian barang "
-            "atau jasa dari pemasok.")
+            "Ubah bill untuk menambahkan produk atau jasa.")
 
         t.isi([[it["deskripsi"] or it["produk_nama"] or "", f"{it['qty']:g}",
                 it["satuan"] or "", tx.rupiah(it["harga_satuan"]),
@@ -1125,10 +1156,10 @@ class PembelianLengkapPage(QWidget):
     def _bayar_bill_terpilih(self):
         b = self._bill_terpilih()
         if b is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu bill.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu bill.")
             return
         if b["status"] == "lunas":
-            QMessageBox.information(self, "Sudah lunas", "Bill ini sudah lunas.")
+            popup.beri_tahu(self, "Sudah lunas", "Bill ini sudah lunas.")
             return
         d = DialogBayarVendor(self.ctx, self, b["id"], b["partner_id"])
         if d.exec():
@@ -1137,7 +1168,7 @@ class PembelianLengkapPage(QWidget):
     def _retur_bill(self):
         b = self._bill_terpilih()
         if b is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu bill.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu bill.")
             return
         d = DialogReturPembelian(self.ctx, self, b["id"])
         if d.exec():
@@ -1153,22 +1184,27 @@ class PembelianLengkapPage(QWidget):
     def _ubah_status_po(self, status: str):
         po = self._po_terpilih()
         if po is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu purchase order.")
+            popup.beri_tahu(self,
+                            "Belum dipilih",
+                            "Pilih satu purchase order.")
             return
         try:
             S.ubah_status_po(po["id"], status)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
     def _bill_dari_po(self):
         po = self._po_terpilih()
         if po is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu purchase order.")
+            popup.beri_tahu(self,
+                            "Belum dipilih",
+                            "Pilih satu purchase order.")
             return
         if po["status"] == "batal":
-            QMessageBox.warning(self, "PO dibatalkan",
-                                "PO yang dibatalkan tidak dapat dibuatkan bill.")
+            popup.peringatkan(self,
+                              "PO dibatalkan",
+                              "PO yang dibatalkan tidak dapat dibuatkan bill.")
             return
         d = DialogBill(self.ctx, self, po_id=po["id"])
         if d.exec():
@@ -1185,35 +1221,35 @@ class PembelianLengkapPage(QWidget):
     def _void_bayar(self):
         p = self._bayar_terpilih()
         if p is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu pembayaran.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu pembayaran.")
             return
         if p["status"] == "void":
-            QMessageBox.information(self, "Sudah void",
-                                    "Pembayaran ini sudah dibatalkan.")
+            popup.beri_tahu(self,
+                            "Sudah void",
+                            "Pembayaran ini sudah dibatalkan.")
             return
-        if QMessageBox.question(
-                self, "Konfirmasi Void",
-                f"Void pembayaran {p['nomor']}?\n\n"
-                "Status bill terkait akan dikembalikan.",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Konfirmasi Void",
+                           f"Void pembayaran {p['nomor']}?\n\n"
+                           "Status bill terkait akan dikembalikan."):
             return
         try:
             S.void_pembayaran_vendor(p["id"], self.ctx.username, self.ctx.user_id)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal void", str(e))
+            popup.galat(self, "Gagal void", str(e))
 
     def _buat_pengingat(self):
         try:
             jumlah = O.buat_reminder_dari_utang(self.ctx.company_id, 30)
             if jumlah:
-                QMessageBox.information(
-                    self, "Pengingat dibuat",
-                    f"{jumlah} pengingat pembayaran dibuat untuk bill yang jatuh "
-                    "tempo dalam 30 hari ke depan.")
+                popup.beri_tahu(self,
+                                "Pengingat dibuat",
+                                f"{jumlah} pengingat pembayaran dibuat untuk bill yang jatuh "
+                                "tempo dalam 30 hari ke depan.")
             else:
-                QMessageBox.information(self, "Tidak ada pengingat baru",
-                                        "Semua bill sudah memiliki pengingat.")
+                popup.beri_tahu(self,
+                                "Tidak ada pengingat baru",
+                                "Semua bill sudah memiliki pengingat.")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))

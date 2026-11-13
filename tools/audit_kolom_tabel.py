@@ -39,17 +39,19 @@ _LISENSI_UJI = _LisensiUji(kunci='ATNTUJI', paket='enterprise', fitur={})
 
 def periksa_tabel(tabel: Tabel, konteks: str) -> list:
     """
-    Periksa judul kolom dan isi barisnya.
+    Periksa lebar kolom terhadap judul dan isinya.
 
-    Memeriksa judul saja tidak cukup: kolom bisa muat judulnya tetapi isinya
-    terpotong, misalnya nomor kontrak yang panjang. Isi baris ikut diukur
-    memakai teks terpanjang pada kolom itu.
+    Kolom tetap harus memuat judul dan isinya. Kolom fleksibel (mis. nama
+    aset) boleh memakai elipsis: isi panjang tetap dapat dibaca lewat
+    tooltip, sedangkan judulnya wajib utuh agar arti kolom jelas.
     """
     temuan = []
     if tabel.columnCount() == 0:
         return temuan
     metrik = QFontMetrics(tabel.font())
     for c in range(tabel.columnCount()):
+        if tabel.isColumnHidden(c):
+            continue
         judul_item = tabel.horizontalHeaderItem(c)
         if judul_item is None:
             continue
@@ -60,14 +62,18 @@ def periksa_tabel(tabel: Tabel, konteks: str) -> list:
 
         # Kebutuhan judul
         perlu = metrik.horizontalAdvance(judul) + 22
-        # Kebutuhan isi terpanjang pada kolom ini
-        for r in range(tabel.rowCount()):
-            it = tabel.item(r, c)
-            if it is None or not it.text().strip():
-                continue
-            perlu_isi = metrik.horizontalAdvance(it.text()) + 18
-            if perlu_isi > perlu:
-                perlu = perlu_isi
+        # Kolom fleksibel menyusut lebih dulu dan memakai tooltip; yang
+        # wajib muat hanya judulnya.
+        rancangan = getattr(tabel, "_kolom", [])
+        fleksibel = (c < len(rancangan) and rancangan[c][1] < 0)
+        if not fleksibel:
+            for r in range(tabel.rowCount()):
+                it = tabel.item(r, c)
+                if it is None or not it.text().strip():
+                    continue
+                perlu_isi = metrik.horizontalAdvance(it.text()) + 18
+                if perlu_isi > perlu:
+                    perlu = perlu_isi
 
         if lebar + 2 < perlu:
             temuan.append((konteks, judul, lebar, perlu))

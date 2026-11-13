@@ -11,7 +11,7 @@ from datetime import datetime
 from PySide6.QtCore import Qt, Signal, QDate
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QLineEdit, QDateEdit,
-    QDialog, QMessageBox, QFrame, QGridLayout, QCheckBox, QTextEdit,
+    QDialog, QFrame, QGridLayout, QCheckBox, QTextEdit,
     QTableWidgetItem,
 )
 
@@ -22,6 +22,7 @@ from .. import theme
 from .. import kalender
 from ..theme import C
 from .. import widgets as w
+from .. import popup
 
 
 # ==========================================================================
@@ -107,6 +108,7 @@ class CoaPage(QWidget):
         self.lbl_info = QLabel("")
         self.lbl_info.setObjectName("Muted")
         self.lay.addWidget(self.lbl_info)
+        self.header.pasang_ekspor_cetak(self, "Bagan Akun", "tabel")
 
     def muat(self):
         while self.banner_lay.count():
@@ -179,7 +181,7 @@ class CoaPage(QWidget):
     def _ubah(self):
         r = self.tabel.baris_terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu akun.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu akun.")
             return
         kode = self.tabel.item(r, 0).text()
         akun = services.get_account(self.ctx.company_id, kode)
@@ -344,8 +346,9 @@ class DialogAkun(QDialog):
     def _simpan(self):
         try:
             if not self.inp_kode.text().strip() or not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Data kurang",
-                                    "Kode dan nama akun wajib diisi.")
+                popup.peringatkan(self,
+                                  "Data kurang",
+                                  "Kode dan nama akun wajib diisi.")
                 return
             data = dict(
                 nama=self.inp_nama.text().strip(),
@@ -364,7 +367,7 @@ class DialogAkun(QDialog):
                                         self.inp_kode.text().strip(), **data)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogSaldoAwal(QDialog):
@@ -500,19 +503,18 @@ class DialogSaldoAwal(QDialog):
                 else:
                     total_k += inp.nilai()
             if total_d != total_k:
-                if QMessageBox.question(
-                        self, "Saldo awal tidak seimbang",
-                        f"Total debit {theme.money(total_d)} ≠ total kredit "
-                        f"{theme.money(total_k)} (selisih "
-                        f"{theme.money(abs(total_d - total_k))}).\n\n"
-                        "Neraca akan pincang bila disimpan. Tetap simpan?",
-                        QMessageBox.Yes | QMessageBox.No) != QMessageBox.Yes:
+                if not popup.tanya(self,
+                                   "Saldo awal tidak seimbang",
+                                   f"Total debit {theme.money(total_d)} ≠ total kredit "
+                                   f"{theme.money(total_k)} (selisih "
+                                   f"{theme.money(abs(total_d - total_k))}).\n\n"
+                                   "Neraca akan pincang bila disimpan. Tetap simpan?"):
                     return
             saldo = {kode: inp.nilai() for kode, inp in self.inputs.items()}
             services.set_saldo_awal(self.ctx.company_id, saldo)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 # ==========================================================================
@@ -644,9 +646,11 @@ class PerusahaanPage(QWidget):
 
         self.lbl_bentuk = QLabel("")
         self.lbl_bentuk.setWordWrap(True)
-        theme.latar(self.lbl_bentuk, f"background: {C.PRIMARY_SOFT}; border: 1px solid #CFE0F0; "
-            f"border-radius: 8px; padding: 13px 15px; font-size: {theme.FS_SMALL}px; "
-            f"color: {C.TEXT};")
+        theme.latar(self.lbl_bentuk,
+                    f"color: {C.TEXT}; background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px; "
+                    f"padding: 10px 12px; font-size: {theme.FS_SMALL}px;")
         l.addWidget(self.lbl_bentuk)
 
         b = w.tombol("Buat Perusahaan", gaya="primary")
@@ -688,7 +692,7 @@ class PerusahaanPage(QWidget):
     def _buat(self):
         try:
             if not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Nama kosong", "Isi nama perusahaan.")
+                popup.peringatkan(self, "Nama kosong", "Isi nama perusahaan.")
                 return
             cid = services.create_company(
                 self.inp_nama.text().strip(),
@@ -702,17 +706,17 @@ class PerusahaanPage(QWidget):
             )
             self.ctx.company_id = cid
             self.ctx.company = services.get_company(cid)
-            QMessageBox.information(
-                self, "Perusahaan dibuat",
-                f"Profil '{self.inp_nama.text().strip()}' berhasil dibuat.\n\n"
-                "Bagan akun telah disiapkan otomatis. Langkah berikutnya:\n"
-                "1. Isi saldo awal pada menu Bagan Akun\n"
-                "2. Lengkapi pengaturan pajak di halaman ini\n"
-                "3. Mulai catat transaksi")
+            popup.beri_tahu(self,
+                            "Perusahaan dibuat",
+                            f"Profil '{self.inp_nama.text().strip()}' berhasil dibuat.\n\n"
+                            "Bagan akun telah disiapkan otomatis. Langkah berikutnya:\n"
+                            "1. Isi saldo awal pada menu Bagan Akun\n"
+                            "2. Lengkapi pengaturan pajak di halaman ini\n"
+                            "3. Mulai catat transaksi")
             self.muat()
             self.pindah_halaman.emit("coa")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal membuat perusahaan", str(e))
+            popup.galat(self, "Gagal membuat perusahaan", str(e))
 
     # ------------------------------------------------------------------
     def _kartu_identitas(self, comp) -> QWidget:
@@ -923,7 +927,7 @@ class DialogIdentitas(QDialog):
             self.ctx.company = services.get_company(self.ctx.company_id)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogPengaturanPajak(QDialog):
@@ -1024,12 +1028,12 @@ class DialogPengaturanPajak(QDialog):
         try:
             skema = self.cmb_skema.currentData()
             if skema == "final_umkm" and not self.chk_final.isChecked():
-                QMessageBox.warning(
-                    self, "Konfirmasi diperlukan",
-                    "Untuk memakai skema PPh Final 0,5%, Anda harus mencentang "
-                    "konfirmasi bahwa perusahaan memenuhi syarat.\n\n"
-                    "Bila belum yakin, pilih skema Ketentuan Umum / Pasal 31E "
-                    "ini pilihan yang aman.")
+                popup.peringatkan(self,
+                                  "Konfirmasi diperlukan",
+                                  "Untuk memakai skema PPh Final 0,5%, Anda harus mencentang "
+                                  "konfirmasi bahwa perusahaan memenuhi syarat.\n\n"
+                                  "Bila belum yakin, pilih skema Ketentuan Umum / Pasal 31E "
+                                  "ini pilihan yang aman.")
                 return
             services.update_company(
                 self.ctx.company_id,
@@ -1042,4 +1046,4 @@ class DialogPengaturanPajak(QDialog):
             self.ctx.company = services.get_company(self.ctx.company_id)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))

@@ -12,9 +12,327 @@ sama.
 
 ---
 
-## Versi 1.2.9 - 29 September 2026
+## Versi 1.4.6 - 13 November 2026
 
 Versi terbaru.
+
+### Penyempurnaan
+
+- **Tampilan baru yang lebih tenang.** Seluruh halaman memakai latar putih
+  bersih dengan garis tipis dan aksen cokelat dari logo. Warna-warna yang
+  mengganggu pandangan dihilangkan, sehingga isi pembukuan menjadi fokus
+  utama.
+- **Huruf lebih mudah dibaca.** Teks dan angka memakai Public Sans, huruf
+  yang dibuat untuk formulir dan data. Judul memakai Source Serif 4 agar
+  hierarki halaman jelas. Angka rupiah memakai lebar tetap, sehingga digit
+  pada tabel nominal selalu sejajar.
+- **Tabel dan kartu lebih lega.** Tinggi baris, jarak antarkolom, dan
+  perataan tombol diseragamkan di semua halaman. Nominal rata kanan dan
+  label status tidak lagi berdesakan.
+- **Menu dan dialog ikut dirapikan.** Menu samping, baris tab, kotak pesan,
+  pratinjau cetak, halaman masuk, dan pengaturan memakai ukuran serta jarak
+  yang sama dengan halaman utama.
+
+### Catatan
+
+- Pembaruan ini hanya menyentuh tampilan. Cara hitung, format berkas, dan
+  seluruh data pembukuan tidak berubah, sehingga versi 1.4.5 dapat
+  diperbarui langsung tanpa memindahkan data.
+
+---
+
+## Versi 1.4.5 - 27 Oktober 2026
+
+Versi terbaru.
+
+### Fitur baru
+
+- **Bekerja dengan dua halaman sekaligus.** Halaman kedua dapat dibuka di
+  samping halaman yang sedang dikerjakan, misalnya Penjualan di kiri dan
+  Biaya di kanan. Setiap sisi memiliki pemilih halaman, tombol muat ulang,
+  dan tombol tutup sendiri, sehingga Anda dapat membandingkan atau mencatat
+  dua bagian pembukuan tanpa berpindah menu. Panel dibuka lewat tombol
+  **Dua halaman** di baris status, menu **Tampilan**, atau pintasan
+  **Ctrl+Shift+D**. Setelah data disimpan, kedua sisi ikut diperbarui agar
+  angkanya tidak saling bertentangan.
+
+### Penyempurnaan
+
+- **Seluruh kotak pesan seragam.** Pemberitahuan, pertanyaan, peringatan,
+  dan pesan kesalahan kini memakai satu gaya jendela yang sama dengan
+  aplikasi: judul yang jelas, teks yang terbaca, dan tombol yang rapi.
+  Kotak pesan bawaan yang tampil berbeda gaya tidak dipakai lagi.
+- **Pratinjau cetak lebih jelas.** Jendela pratinjau A4 memakai tampilan
+  aplikasi dengan tombol ikon untuk memperbesar, memperkecil, dan
+  berpindah halaman. Bidang kertas tampil di atas latar hangat, dan kolom
+  zoom tidak lagi terpotong. Menekan **Cetak** langsung memberi tanggapan.
+
+### Perbaikan
+
+- **Garis tab aktif kembali sejajar.** Garis bawah tab yang dipilih
+  menempel tepat pada baris tab, tidak lagi menggantung di bawahnya.
+- **Nilai zoom tampil utuh.** Angka perbesaran pada pratinjau cetak tidak
+  terpotong lagi.
+
+---
+
+## Versi 1.4.4 - 27 Oktober 2026
+
+### Perbaikan
+
+- **Keluar akun berjalan normal.** Tombol Keluar Akun sebelumnya dapat
+  membuat aplikasi berhenti merespons, sehingga halaman tidak termuat lagi
+  dan pembukuan tampak kosong. Jendela utama sekarang dilepas dan dibongkar
+  dengan urutan yang benar, lalu halaman masuk dibuat ulang dari awal.
+- **Pembukuan tetap utuh.** Setelah laporan data tampak hilang, seluruh
+  catatan diperiksa dan ternyata tetap tersimpan lengkap. Yang gagal adalah
+  pemuatan halaman setelah keluar akun, bukan datanya. Pemeriksaan otomatis
+  baru memastikan perusahaan aktif dan bagan akun tetap termuat walau
+  pengguna keluar dan masuk akun berkali-kali dalam satu sesi.
+
+### Penyempurnaan
+
+- **Halaman masuk yang formal.** Halaman masuk ditata seperti formulir
+  resmi: keterangan di atas kertas hangat, kolom isian di atas permukaan
+  terang, dan satu garis pemisah tipis. Strip warna, nomor hias, dan
+  label kapital bersusun dihilangkan.
+- **Dokumen cetak lebih resmi.** Kop surat memakai satu garis tipis
+  sepanjang lebar kertas, judul bagian ditulis dengan huruf biasa, dan
+  seluruh teks memakai tinta hitam hangat atau abu redup. Warna hanya
+  dipakai pada segel verifikasi. Invoice PDF mengikuti aturan yang sama.
+- **Panel keterangan tanpa strip warna.** Kotak informasi, peringatan,
+  dan kesalahan memakai bingkai tipis dengan latar yang sesuai maknanya,
+  sehingga pesannya tetap jelas tanpa hiasan.
+
+---
+
+## Versi 1.4.3 - 27 Oktober 2026
+
+### Penyempurnaan
+
+- **Tampilan baru yang tenang dan mudah dibaca.** Seluruh halaman memakai
+  tata letak editorial: palet kertas hangat, garis tipis, sudut halus,
+  dan jarak yang lega. Huruf Source Sans 3 dipakai untuk isi, sedangkan
+  Source Serif 4 untuk judul dan angka penting. Keduanya dipilih karena
+  bentuk hurufnya tetap jelas pada ukuran kecil maupun besar.
+- **Dasbor lebih jernih.** Ringkasan keuangan, grafik kinerja, dan panel
+  kesehatan usaha ditata ulang agar angka utama langsung terlihat,
+  grafik menyatu dengan kartunya, dan warna tetap nyaman dipandang.
+- **Cetak A4 dan PDF dengan pengaman dokumen.** Setiap dokumen cetak
+  dapat diberi tanda air yang Anda atur sendiri (5%, 8%, atau 12%),
+  blok tanda tangan elektronik dengan nama, jabatan, dan gambar tanda
+  tangan, segel verifikasi, serta kode dokumen di kaki halaman. Kop
+  perusahaan, nomor halaman, dan baris judul berulang tetap ada, dan
+  tabel lebar otomatis dicetak mendatar.
+- **Invoice seragam dengan dokumen resmi.** Invoice kini memakai desain,
+  tanda air, tanda tangan, segel, dan kode verifikasi yang sama. Halaman
+  lanjutan memuat kepala invoice dan nomor halaman, sedangkan blok
+  pengesahan hanya muncul sekali di akhir dokumen.
+- **Halaman masuk dan formulir lebih rapi.** Kartu masuk menyesuaikan
+  ukuran jendela, langkah lupa kata sandi ditulis jelas, tinggi seluruh
+  kotak isian seragam, tanggal tampil lengkap, dan tabel tetap terbaca
+  pada jendela sempit.
+- **Daftar pilihan lebih bersih dan nyaman.** Saat dibuka, daftar tidak
+  lagi menampilkan bingkai abu-abu; baris terpilih disorot beige lembut
+  dengan teks gelap dan tinggi baris yang lega. Daftar yang panjang
+  dibatasi sepuluh baris dan dapat digulir, sehingga tidak memenuhi
+  layar.
+
+### Perbaikan
+
+- **Dialog kontrak lebih mudah diisi.** Tanggal memakai format
+  dd/mm/yyyy dan pilihan "Tanpa batas waktu" berupa kotak centang yang
+  jelas. Label yang memuat tanda & tampil benar.
+- **Dialog lapor bug tidak terpotong.** Kotak langkah dan catatan kini
+  berukuran tetap, sehingga seluruh isi dialog muat di layar.
+- **Panduan lupa kata sandi tampil sebagai kalimat biasa.** Karakter
+  panah yang sempat terbaca sebagai teks aneh sudah diganti.
+- **Pesan tabel kosong sesuai konteks.** Setiap tab pada Pembelian,
+  Biaya & Bank, Produk & Stok, Penjualan, dan Payroll kini menampilkan
+  langkah berikutnya yang tepat, sehingga tidak lagi muncul panduan dari
+  halaman lain.
+- **Teks sekunder lebih nyaman dibaca.** Warna teks samar diperkuat agar
+  kontrasnya memenuhi standar aksesibilitas AA, baik di halaman maupun
+  dialog.
+
+### Teks untuk kolom What's new di Partner Center
+
+Batas 1500 huruf. Salin yang berikut.
+
+```
+Tampilan AkunTuntas dirombak dengan tata letak editorial yang tenang:
+palet kertas hangat, garis tipis, dan huruf Source Sans 3 untuk isi
+serta Source Serif 4 untuk judul dan angka. Seluruh halaman, dasbor,
+dan halaman masuk ditata ulang agar mudah dibaca dan nyaman dipandang.
+
+Dokumen cetak dan invoice kini punya pengaman: tanda air yang dapat
+diatur sendiri, blok tanda tangan elektronik, segel verifikasi, dan
+kode dokumen di kaki halaman. Kop perusahaan, nomor halaman, dan
+judul kolom berulang tetap ada, dan tabel lebar otomatis dicetak
+mendatar.
+
+Dialog kontrak memakai tanggal dd/mm/yyyy dengan pilihan tanpa batas
+waktu yang jelas; dialog lapor bug tidak lagi terpotong. Pesan pada
+tabel kosong kini sesuai tabnya, dan warna teks sekunder diperkuat
+agar tetap nyaman dibaca. Daftar pilihan juga lebih bersih: tanpa
+bingkai abu-abu, dengan sorotan lembut dan daftar panjang yang
+dibatasi sepuluh baris agar tidak memenuhi layar.
+```
+
+---
+
+## Versi 1.4.2 - 26 Oktober 2026
+
+### Penyempurnaan
+
+- **Cetak A4 dan simpan PDF dari halaman data.** Tombol Ekspor dan Cetak
+  kini tersedia pada halaman data utama (produk, mitra, pembelian, jurnal,
+  biaya, aset tetap, bagan akun, laporan, analisis, dan dasbor). Hasil
+  cetak memakai kertas A4, kop perusahaan, baris judul yang diulang di
+  setiap halaman, dan nomor halaman. Tabel lebar otomatis dicetak
+  mendatar, dan pratinjau tampil sebelum kertas terpakai.
+- **Berkas Excel siap dibagikan.** Angka tetap tersimpan sebagai angka
+  sehingga dapat dijumlahkan, lebar kolom mengikuti isi, baris judul
+  dibekukan, saringan otomatis terpasang, dan halaman disiapkan untuk A4
+  dengan judul kolom berulang.
+- **Invoice rapi pada semua keadaan.** Deskripsi panjang terbungkus tanpa
+  menimpa kolom lain, kolom Diskon hanya muncul bila ada diskon, nomor
+  halaman tampil pada invoice lebih dari satu halaman, dan karakter khusus
+  seperti & atau < tampil benar.
+- **Huruf dan ikon konsisten.** Dokumen cetak dan invoice memakai huruf
+  Inter yang sama dengan aplikasi, sedangkan ikon tampil seragam di semua
+  halaman.
+
+### Perbaikan
+
+- **Kartu dasbor tampil bersih.** Latar kartu, kotak ringkasan, dan panel
+  grafik kini putih penuh. Grafik batang menyatu dengan kartunya, tidak
+  lagi tampak sebagai kotak putih terpisah di atas latar halaman.
+- **Grafik kinerja lebih tenang.** Batang pendapatan dan beban memakai
+  warna merek, garis laba mudah diikuti, dan label sumbu tetap terbaca
+  pada jendela lebar maupun sempit.
+- **Halaman masuk rapi di semua ukuran.** Kartu formulir menyesuaikan
+  ruang yang tersedia, sehingga kolom isian dan tombol Masuk utuh bahkan
+  pada jendela kecil. Panel merek tampil polos tanpa garis pengganggu,
+  dengan jarak teks yang seimbang.
+- **Isian tanggal dan angka lebih nyaman.** Tinggi seluruh kotak isian
+  seragam, tanggal tampil lengkap, dan sorotan pilihan mengikuti warna
+  aplikasi, bukan warna bawaan Windows.
+
+### Teks untuk kolom What's new di Partner Center
+
+Batas 1500 huruf. Salin yang berikut.
+
+```
+Setiap halaman data utama kini punya tombol Ekspor dan Cetak. Laporan
+dapat dicetak ke kertas A4 atau disimpan sebagai PDF dengan kop
+perusahaan, judul kolom yang berulang, dan nomor halaman. Tabel lebar
+otomatis dicetak mendatar, dan pratinjau tampil sebelum kertas terpakai.
+
+Berkas Excel siap dibagikan: angka tetap dapat dijumlahkan, lebar kolom
+mengikuti isi, baris judul dibekukan, dan halaman disiapkan untuk A4.
+
+Invoice lebih rapi: deskripsi panjang terbungkus, kolom diskon muncul
+saat diperlukan, nomor halaman tampil pada invoice panjang, dan karakter
+khusus tampil benar. Dokumen memakai huruf Inter yang sama dengan
+aplikasi.
+
+Dasbor, grafik, halaman masuk, serta isian tanggal dan angka juga
+disempurnakan agar lebih tenang dan mudah dibaca.
+```
+
+---
+
+## Versi 1.4.1 - 25 Oktober 2026
+
+### Perbaikan
+
+- **Jurnal otomatis memakai akun yang tepat pada setiap bentuk usaha.**
+  Sebelumnya sebagian jurnal dapat menunjuk akun yang tidak ada atau akun
+  dengan arti berbeda. Kini PPN penjualan, pajak daerah, pembelian,
+  persediaan, aset tetap, penyusutan, sewa, biaya bank, dan pemotongan
+  pajak mengikuti bagan akun perusahaan.
+- **Formulir langsung memilih akun yang tersedia.** Dialog aset tetap,
+  pembelian, produk, biaya, dan template berulang tidak lagi memilih akun
+  bawaan dari bentuk usaha lain.
+- **Rincian beban pada Laba Rugi konsisten.** Nilai beban operasional
+  kini bertanda negatif seperti baris totalnya, sehingga laporan lebih
+  mudah dibaca dan dijumlahkan.
+- **Dasbor menyesuaikan ukuran jendela.** Pada jendela sempit, panel
+  kesehatan keuangan dan grafik kinerja ditumpuk agar teksnya tidak
+  berdesakan.
+- **Nominal pada tabel tetap terbaca utuh.** Kolom saldo yang dicetak
+  tebal kini diukur dengan huruf tebal, sehingga angka besar tidak
+  terpotong pada jendela sempit.
+
+### Teks untuk kolom What's new di Partner Center
+
+Batas 1500 huruf. Salin yang berikut.
+
+```
+Jurnal otomatis kini memakai akun yang sesuai bagan akun setiap bentuk
+usaha. PPN penjualan, pajak daerah, pembelian, persediaan, aset tetap,
+penyusutan, sewa, biaya bank, dan pemotongan pajak tidak lagi menunjuk
+akun yang tidak ada atau akun dengan arti berbeda.
+
+Dialog aset tetap, pembelian, produk, biaya, dan template berulang
+langsung memilih akun yang tersedia pada perusahaan Anda.
+
+Rincian beban pada laporan Laba Rugi kini bertanda negatif seperti baris
+totalnya, sehingga laporan lebih mudah dibaca.
+
+Dasbor menyesuaikan ukuran jendela, dan nominal pada tabel tetap terbaca
+utuh meski jendela dipersempit.
+```
+
+---
+
+## Versi 1.4.0 - 25 Oktober 2026
+
+### Penyempurnaan
+
+- **Tampilan baru selaras logo.** Warna arang dan tembaga dipadukan
+  dengan latar kertas hangat. Tombol, judul, dan sorotan menu aktif
+  memakai satu bahasa warna yang tenang dan konsisten.
+- **Halaman masuk ditata ulang.** Panel merek menampilkan contoh jurnal
+  yang seimbang, sedangkan formulir dibuat lebih lapang dengan kolom
+  isian yang jelas, pilihan mengingat nama pengguna, dan tombol lihat
+  kata sandi.
+- **Tabel dan laporan lebih mudah dibaca.** Angka rata kanan, baris
+  berselang warna, status berwarna, dan baris total ditebalkan. Laporan
+  panjang dapat digulir sampai totalnya terlihat tanpa terpotong.
+- **Menu samping lebih mudah ditelusuri.** Kelompok menu dapat dilipat,
+  tersedia pencarian menu, dan menu yang sedang dibuka otomatis
+  terlihat.
+- **Ikon baru yang konsisten.** Seluruh ikon garis digambar ulang agar
+  ukuran dan ketebalannya seragam di semua halaman.
+
+### Perbaikan
+
+- **Kontras teks memenuhi WCAG AA.** Teks bantuan dan keterangan kecil
+  dipergelap secukupnya agar tetap terbaca di latar kertas hangat.
+- **Kolom tabel tidak lagi menyisakan ruang kosong.** Kolom yang tidak
+  terpakai disembunyikan, sehingga kolom lain mendapat ruang lebih lega.
+- **Bagian laporan yang kosong tidak lagi mengganggu.** Neraca hanya
+  menampilkan kelompok yang berisi angka, dengan judul bagian yang lebih
+  ringkas.
+
+### Teks untuk kolom What's new di Partner Center
+
+Batas 1500 huruf. Salin yang berikut.
+
+```
+Tampilan AkunTuntas dibangun ulang mengikuti warna logo: arang dan
+tembaga di atas latar kertas hangat. Halaman masuk kini lebih lapang,
+tabel dan laporan lebih mudah dibaca, serta menu samping dapat dilipat
+dan dicari. Ikon garis digambar ulang agar seragam, dan kontras teks
+dinaikkan agar memenuhi WCAG AA. Laporan panjang dapat digulir sampai
+totalnya terlihat tanpa terpotong.
+```
+
+---
+
+## Versi 1.2.9 - 29 September 2026
 
 ### Penyempurnaan
 

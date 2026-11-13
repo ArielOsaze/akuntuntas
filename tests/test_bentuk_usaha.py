@@ -120,10 +120,132 @@ def uji_menu_per_bentuk():
         jw.close()
 
 
+def uji_akun_bawaan_per_bentuk():
+    """Akun bawaan setiap formulir harus ada dan benar pada bagan akun."""
+    print()
+    print("2. AKUN BAWAAN SESUAI BAGAN AKUN PER BENTUK BADAN")
+    from PySide6.QtWidgets import QApplication
+    from akuntansi_id import coa, db, services
+    from akuntansi_id.core import license as lisensi_mod
+    from akuntansi_id.ui.main_window import AppContext
+    from akuntansi_id.ui.pages.aset import DialogAset
+    from akuntansi_id.ui.pages.entitas import DialogTemplateBerulang
+    from akuntansi_id.ui.pages.pembelian import DialogBill
+
+    app = QApplication.instance() or QApplication([])
+    lisensi = lisensi_mod.Lisensi(kunci="ATNTUJI", paket="enterprise", fitur={})
+
+    # Peran -> kode yang benar pada masing-masing bagan akun. Kode yang
+    # berbeda antar-template pernah tertukar: 1201 berarti Peralatan pada
+    # UMKM tetapi Tanah pada PT, sedangkan 1104 berarti Pajak Dibayar
+    # Dimuka pada PT Perorangan.
+    harapan = {
+        "umkm_op": {
+            "persediaan": "1102", "aset_peralatan": "1201",
+            "akum_penyusutan": "1202", "beban_penyusutan": "6007",
+            "sewa": "6002", "beban_umum": "6011",
+            "beban_gaji": "6001", "beban_jasa": "6006",
+            "biaya_bank": "6009", "saldo_laba": "3101",
+            "utang_ppn_keluaran": "2101", "utang_pph": "2102",
+            "utang_pajak_daerah": "2103",
+        },
+        "pt_perorangan": {
+            "persediaan": "1102", "aset_peralatan": "1201",
+            "akum_penyusutan": "1202", "beban_penyusutan": "6007",
+            "sewa": "6002", "beban_umum": "6011",
+            "beban_gaji": "6001", "beban_jasa": "6006",
+            "biaya_bank": "6009", "saldo_laba": "3101",
+            "utang_ppn_keluaran": "2101", "utang_pph": "2102",
+            "utang_pajak_daerah": "2103", "utang_pph_badan": "2301",
+        },
+        "pt": {
+            "persediaan": "1104", "aset_peralatan": "1208",
+            "akum_penyusutan": "1209", "beban_penyusutan": "6019",
+            "sewa": "6006", "beban_umum": "6023",
+            "beban_gaji": "6001", "beban_jasa": "6012",
+            "biaya_bank": "6013", "saldo_laba": "3004",
+            "utang_ppn_keluaran": "2003", "utang_pph": "2005",
+            "utang_pajak_daerah": "2014", "utang_pph_badan": "2007",
+        },
+    }
+    for bentuk, peran_harapan in harapan.items():
+        cid = services.create_company(f"Uji Akun {bentuk}", bentuk,
+                                      lisensi=lisensi)
+        nama = bentuk
+        for peran, kode_benar in peran_harapan.items():
+            kode = coa.kode_akun_bawaan(cid, peran)
+            cek(f"{nama}: akun peran {peran} = {kode_benar}", kode == kode_benar,
+                f"dapat {kode}")
+
+        # Formulir harus langsung memilih akun yang ada pada bagan akun
+        # perusahaan, bukan kode bawaan template lain.
+        ctx = AppContext(company_id=cid,
+                         company=services.get_company(cid),
+                         beginner=False, lisensi=lisensi)
+        d_aset = DialogAset(ctx)
+        d_bill = DialogBill(ctx)
+        d_template = DialogTemplateBerulang(ctx)
+        cek(f"{nama}: dialog aset memakai akun yang benar",
+            (d_aset.cmb_akun_aset.currentData(),
+             d_aset.cmb_akun_akum.currentData(),
+             d_aset.cmb_akun_beban.currentData())
+            == (peran_harapan["aset_peralatan"],
+                peran_harapan["akum_penyusutan"],
+                peran_harapan["beban_penyusutan"]),
+            f"dapat {d_aset.cmb_akun_aset.currentData()}, "
+            f"{d_aset.cmb_akun_akum.currentData()}, "
+            f"{d_aset.cmb_akun_beban.currentData()}")
+        cek(f"{nama}: dialog pembelian persediaan memakai akun yang benar",
+            d_bill.cmb_akun.currentData() == peran_harapan["persediaan"],
+            f"dapat {d_bill.cmb_akun.currentData()}")
+        cek(f"{nama}: template berulang memakai akun yang benar",
+            (d_template.cmb_debit.currentData(),
+             d_template.cmb_kredit.currentData())
+            == (peran_harapan["sewa"], "1001"),
+            f"dapat {d_template.cmb_debit.currentData()}, "
+            f"{d_template.cmb_kredit.currentData()}")
+        d_aset.deleteLater()
+        d_bill.deleteLater()
+        d_template.deleteLater()
+
+        for peran in peran_harapan.values():
+            ada = db.q1("SELECT 1 FROM accounts WHERE company_id=? AND kode=?",
+                        (cid, peran))
+            cek(f"{nama}: akun {peran} ada di bagan akun", bool(ada))
+        for _ in range(3):
+            app.processEvents()
+
+        # Jurnal penutup harus memindahkan laba ke akun Saldo Laba milik
+        # template bentuk usaha itu, bukan ke kode tetap milik template lain.
+        services.simpan_jurnal_manual(
+            cid, "2026-06-30", f"UJI-PENDAPATAN-{bentuk}", "Uji pendapatan",
+            [{"kode_akun": "1001", "debit": 100_000, "kredit": 0},
+             {"kode_akun": "4001", "debit": 0, "kredit": 100_000}])
+        services.simpan_jurnal_manual(
+            cid, "2026-06-30", f"UJI-BEBAN-{bentuk}", "Uji beban",
+            [{"kode_akun": peran_harapan["beban_umum"], "debit": 40_000,
+              "kredit": 0},
+             {"kode_akun": "1001", "debit": 0, "kredit": 40_000}])
+        jp = services.buat_jurnal_penutup(cid, 2026)
+        isi_jp = db.q("SELECT kode_akun, debit, kredit FROM journal_lines "
+                      "WHERE entry_id=?", (jp,))
+        total_debit = sum(int(b["debit"] or 0) for b in isi_jp)
+        total_kredit = sum(int(b["kredit"] or 0) for b in isi_jp)
+        cek(f"{nama}: jurnal penutup seimbang",
+            total_debit == total_kredit == 100_000,
+            f"debit={total_debit}, kredit={total_kredit}")
+        baris_laba = [b for b in isi_jp
+                      if b["kode_akun"] == peran_harapan["saldo_laba"]]
+        cek(f"{nama}: laba ditutup ke akun {peran_harapan['saldo_laba']}",
+            len(baris_laba) == 1
+            and int(baris_laba[0]["kredit"] or 0) == 60_000,
+            f"dapat {[(b['kode_akun'], b['debit'], b['kredit']) for b in isi_jp]}")
+
+
 def uji_pajak_per_bentuk():
     """Pajak menyesuaikan bentuk badan usaha."""
     print()
-    print("2. PAJAK MENYESUAIKAN BENTUK BADAN")
+    print("3. PAJAK MENYESUAIKAN BENTUK BADAN")
     from akuntansi_id import config
     from akuntansi_id.core import tax_engine as tx
 
@@ -162,7 +284,7 @@ def uji_pajak_per_bentuk():
 def uji_halaman_per_bentuk():
     """Halaman yang tersedia dapat dibuka pada setiap bentuk badan."""
     print()
-    print("3. HALAMAN DAPAT DIBUKA PADA SETIAP BENTUK BADAN")
+    print("4. HALAMAN DAPAT DIBUKA PADA SETIAP BENTUK BADAN")
     from PySide6.QtWidgets import QApplication
     from akuntansi_id import config
     from akuntansi_id.core import license as lisensi_mod
@@ -214,6 +336,7 @@ def main() -> int:
     folder = siapkan_data()
     try:
         uji_menu_per_bentuk()
+        uji_akun_bawaan_per_bentuk()
         uji_pajak_per_bentuk()
         uji_halaman_per_bentuk()
     finally:

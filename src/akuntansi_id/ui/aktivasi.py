@@ -194,7 +194,7 @@ class HalamanAktivasi(QWidget):
         self.lbl_bantuan = QLabel(
             'Belum punya lisensi? '
             '<a href="https://akuntuntas.xinet.id/beli" '
-            'style="color: #1B4F8A; text-decoration: none;">'
+            'style="color: #8A5225; text-decoration: none;">'
             'Beli lisensi di akuntuntas.xinet.id</a>')
         self.lbl_bantuan.setWordWrap(True)
         self.lbl_bantuan.setOpenExternalLinks(True)

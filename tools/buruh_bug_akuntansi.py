@@ -22,7 +22,8 @@ shutil.rmtree(DATA, ignore_errors=True)
 DATA.mkdir(parents=True, exist_ok=True)
 os.environ["AKUNTANSIID_DATA"] = str(DATA)
 
-from akuntansi_id import db, services as SV, modules as M, modules_sales as S  # noqa: E402
+from akuntansi_id import (  # noqa: E402
+    coa, db, services as SV, modules as M, modules_sales as S)
 
 # Alat ini membuat beberapa perusahaan uji sekaligus, jadi dipakai
 # lisensi uji paket Enterprise agar batas multi badan usaha tidak
@@ -108,9 +109,13 @@ def main() -> int:
 
     # PPN keluaran memakai mekanisme umum 2025+: PPN = 12% x (11/12 x nilai).
     # Faktor 11/12 menghasilkan beban efektif 11%, sesuai PMK 131/2024.
+    # Akunnya dicari lewat peran: pada PT lengkap PPN keluaran ada di 2003,
+    # sedangkan 2101 justru Utang Bank Jangka Pendek.
+    akun_ppn = coa.kode_akun_bawaan(cid, "utang_ppn_keluaran")
     ppn = db.scalar("""SELECT COALESCE(SUM(jl.kredit),0) FROM journal_lines jl
                        JOIN journal_entries je ON je.id = jl.entry_id
-                       WHERE je.company_id=? AND jl.kode_akun='2101'""", (cid,))
+                       WHERE je.company_id=? AND jl.kode_akun=?""",
+                    (cid, akun_ppn))
     cek(saldo(cid, "1101"), 800_000 + ppn,
         f"Piutang Rp{800_000 + ppn:,} (pendapatan + PPN)")
     cek(ppn, int(round(800_000 * 11 / 12 * 0.12)),

@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Optional
 
-from .. import config, db
+from .. import coa, config, db
 from . import tax_engine as tx
 
 
@@ -886,15 +886,15 @@ def buat_jurnal_penutup(company_id: int, tahun: int,
     laba = laba_rugi(company_id, tahun, beban_pajak=0).laba_sebelum_pajak
     akun_laba = db.q1("SELECT kode FROM accounts WHERE company_id=? "
                       "AND baris_neraca='Saldo Laba' LIMIT 1", (company_id,))
-    # Bila akun Saldo Laba tidak ditemukan, dipakai akun Laba Tahun Berjalan
-    # yang selalu ada pada bagan akun bawaan. Sebelumnya di sini tertulis
-    # kode 3101 yang tidak ada pada bagan akun, sehingga jurnal penutup
-    # gagal disimpan tepat pada keadaan yang paling membutuhkannya.
-    kode_laba = akun_laba["kode"] if akun_laba else "3007"
-    if laba >= 0:
+    # Bila baris Saldo Laba tidak ada, kode cadangan harus mengikuti bentuk
+    # badan usaha: 3004 pada PT lengkap, 3101 pada UMKM dan perseroan
+    # perorangan. Kode 3007 tidak ada pada bagan akun UMKM.
+    kode_laba = akun_laba["kode"] if akun_laba else \
+        coa.kode_akun_bawaan(company_id, "saldo_laba")
+    if laba > 0:
         baris.append({"kode_akun": kode_laba, "debit": 0, "kredit": laba,
                       "catatan": "Laba periode berjalan dipindahkan ke Saldo Laba"})
-    else:
+    elif laba < 0:
         baris.append({"kode_akun": kode_laba, "debit": -laba, "kredit": 0,
                       "catatan": "Rugi periode berjalan dipindahkan ke Saldo Laba"})
 

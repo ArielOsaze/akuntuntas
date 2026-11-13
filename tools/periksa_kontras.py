@@ -157,7 +157,23 @@ def warna_latar(bitmap, widget) -> QColor:
             contoh[warna.rgb()] += 1
     if not contoh:
         return None
-    return QColor(contoh.most_common(1)[0][0])
+    dominan = QColor(contoh.most_common(1)[0][0])
+
+    # Teks besar dan tebal dapat menutupi sebagian besar kotak labelnya,
+    # sehingga warna huruf menjadi warna terbanyak dan latar gelap di
+    # belakangnya tidak terukur. Bila warna terbanyak sama dengan warna teks,
+    # latar dibaca dari jalur tipis di tepi dalam kotak yang tidak tertutup
+    # huruf.
+    if rasio(dominan, warna_teks(widget)) < 1.35:
+        pinggir = Counter()
+        for x in range(asal.x() + 1, asal.x() + lebar - 1, langkah_x):
+            for y in (asal.y() + 1, asal.y() + tinggi - 2):
+                warna = bitmap.pixelColor(x, y)
+                if warna.alpha() >= 200:
+                    pinggir[warna.rgb()] += 1
+        if pinggir:
+            dominan = QColor(pinggir.most_common(1)[0][0])
+    return dominan
 
 
 def ukuran_dan_tebal(widget) -> tuple:

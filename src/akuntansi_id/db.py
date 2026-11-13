@@ -12,6 +12,7 @@ Prinsip desain:
 """
 from __future__ import annotations
 
+import secrets
 import sqlite3
 import threading
 import logging
@@ -1043,6 +1044,68 @@ def simpan_setelan_backup(aktif: bool = None, interval_jam: int = None,
     if simpan_maks is not None:
         _set_setelan("backup_simpan_maks", max(2, int(simpan_maks)))
     return setelan_backup_otomatis()
+
+
+# ==========================================================================
+# IDENTITAS DOKUMEN CETAK
+# ==========================================================================
+def setelan_cetak() -> dict:
+    """
+    Baca pengaturan tanda air dan tanda tangan dokumen.
+
+    Tanda air memakai teks yang boleh memuat {perusahaan}, {tanggal}, dan
+    {tahun}; penggantian dilakukan saat mencetak agar nama perusahaan pada
+    dokumen ikut berubah tanpa menyunting pengaturan. Pekat disimpan dalam
+    persen dan dibatasi 3–18 agar dokumen tetap terbaca.
+    """
+    return {
+        "air_aktif": _setelan_teks("cetak_air_aktif", "1") == "1",
+        "air_teks": _setelan_teks("cetak_air_teks", "{perusahaan}"),
+        "air_pekat": min(18, max(3, _setelan_angka("cetak_air_pekat", 8))),
+        "ttd_aktif": _setelan_teks("cetak_ttd_aktif", "1") == "1",
+        "ttd_nama": _setelan_teks("cetak_ttd_nama", ""),
+        "ttd_jabatan": _setelan_teks("cetak_ttd_jabatan", ""),
+        "ttd_kota": _setelan_teks("cetak_ttd_kota", ""),
+        "ttd_gambar": _setelan_teks("cetak_ttd_gambar", ""),
+    }
+
+
+def simpan_setelan_cetak(air_aktif: bool = None, air_teks: str = None,
+                         air_pekat: int = None, ttd_aktif: bool = None,
+                         ttd_nama: str = None, ttd_jabatan: str = None,
+                         ttd_kota: str = None, ttd_gambar: str = None) -> dict:
+    if air_aktif is not None:
+        _set_setelan("cetak_air_aktif", "1" if air_aktif else "0")
+    if air_teks is not None:
+        _set_setelan("cetak_air_teks", str(air_teks)[:120])
+    if air_pekat is not None:
+        _set_setelan("cetak_air_pekat", min(18, max(3, int(air_pekat))))
+    if ttd_aktif is not None:
+        _set_setelan("cetak_ttd_aktif", "1" if ttd_aktif else "0")
+    if ttd_nama is not None:
+        _set_setelan("cetak_ttd_nama", str(ttd_nama)[:80])
+    if ttd_jabatan is not None:
+        _set_setelan("cetak_ttd_jabatan", str(ttd_jabatan)[:80])
+    if ttd_kota is not None:
+        _set_setelan("cetak_ttd_kota", str(ttd_kota)[:60])
+    if ttd_gambar is not None:
+        _set_setelan("cetak_ttd_gambar", str(ttd_gambar)[:500])
+    return setelan_cetak()
+
+
+def kunci_verifikasi_cetak() -> str:
+    """
+    Kunci rahasia pemasangan untuk menghitung kode verifikasi dokumen.
+
+    Kunci dibuat sekali saat dokumen pertama kali dicetak dan tidak pernah
+    ditampilkan. Karena kunci terikat pada pemasangan aplikasi ini, kode
+    dokumen tidak dapat dibuat ulang di komputer lain tanpa kunci yang sama.
+    """
+    kunci = _setelan_teks("cetak_kunci", "")
+    if not kunci:
+        kunci = secrets.token_hex(32)
+        _set_setelan("cetak_kunci", kunci)
+    return kunci
 
 
 def cadangan_terakhir() -> Optional[dict]:

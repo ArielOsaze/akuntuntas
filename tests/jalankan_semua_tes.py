@@ -9,11 +9,17 @@ Berkas hasil lengkap disimpan di tests/hasil_<nama>.txt
 """
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 AKAR = Path(__file__).resolve().parent.parent
+
+# Anak proses menulis tanda panah dan karakter Unicode lain. Tanpa paksaan
+# UTF-8, Windows memakai code page lama dan anak proses berhenti dengan
+# UnicodeEncodeError sebelum sempat melaporkan hasil.
+ENV_UJI = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
 
 RANGKAIAN = [
     ("backend", "test_semua_fitur.py",
@@ -22,6 +28,8 @@ RANGKAIAN = [
      "Pemuatan seluruh halaman antarmuka (mode pemula & ahli)"),
     ("ui_mendalam", "test_ui_mendalam.py",
      "Dialog, formulir, dan penyimpanan data lewat antarmuka"),
+    ("nominal_besar", "test_nominal_besar.py",
+     "Input nominal besar tidak menjatuhkan aplikasi"),
     ("pajak", "test_kepatuhan_pajak.py",
      "Kesesuaian angka pajak dengan salinan regulasi resmi"),
     ("pajak_baru", "test_pajak_baru.py",
@@ -40,10 +48,20 @@ RANGKAIAN = [
      "Sub-kategori sidebar: pengelompokan dan buka-tutup"),
     ("sidebar_cari", "test_sidebar_cari.py",
      "Sidebar tetap lengkap setelah pencarian menu; laporan masalah"),
+    ("dua_halaman", "test_dua_halaman.py",
+     "Dua halaman berdampingan: buka-tutup, ganti halaman, dan penyegaran"),
     ("log_terpisah", "test_log_terpisah.py",
      "Jejak audit terpisah dari log keamanan"),
     ("login_fitur", "test_login_fitur.py",
      "Halaman login: lihat password, ingat pengguna, caps lock"),
+    ("logout_alur", "test_logout_alur.py",
+     "Keluar dan masuk akun berulang tanpa memakai stack yang sudah dihapus"),
+    ("urut_tabel", "test_urut_tabel.py",
+     "Pengurutan tabel mengikuti nominal, persen, kuantitas, dan tanggal"),
+    ("pencarian_global", "test_pencarian_global.py",
+     "Pencarian Global: keadaan kosong, pilihan hasil, dan tombol buka"),
+    ("tata_letak_tabel", "test_tata_letak_tabel.py",
+     "Kolom tabel menyesuaikan lebar; data penting tetap utuh"),
     ("migrasi_lama", "test_migrasi_lama.py",
      "Basis data versi lama dapat dibuka dan dimigrasi"),
     ("exe_modul", "test_exe_modul.py",
@@ -56,6 +74,8 @@ RANGKAIAN = [
      "Lisensi: aktivasi, pemalsuan ditolak, pembatasan paket"),
     ("kontrak", "test_kontrak.py",
      "Kontrak, MoU, barter, termin, pajak, dan pembacaan dokumen"),
+    ("regresi_akhir", "test_regresi_akhir.py",
+     "Regresi input nominal, opname, retur, dialog lapor bug, dan kontrak"),
 ]
 
 # pemeriksaan tambahan (dijalankan dari folder tools)
@@ -91,7 +111,10 @@ PEMERIKSAAN = [
     ("audit_rich_text.py", "Teks berformat tidak terpotong"),
     ("audit_grafik.py", "Elemen grafik tidak saling menimpa"),
     ("audit_kolom_tabel.py", "Lebar kolom tabel cukup untuk judulnya"),
-    ("audit_elipsis_sel.py", "Tidak ada teks sel tabel yang terpotong"),
+    ("uji_ekspor_cetak.py", "Ekspor Excel dan cetak A4: isi, kertas, dan halaman"),
+    ("uji_tombol_ekspor_cetak.py", "Tombol Ekspor dan Cetak pada halaman data"),
+    ("periksa_kolom_sempit.py", "Kolom tabel cukup lebar untuk data pendek"),
+    ("audit_elipsis_sel.py", "Data pendek tabel utuh; teks fleksibel memakai tooltip"),
     ("audit_bingkai_gelap.py", "Bingkai popup terang walau Windows bermode gelap"),
     ("audit_daftar_pilihan.py", "Tidak ada baris pilihan tertutup warna tua"),
     ("audit_tinggi_baris_pilihan.py", "Baris daftar pilihan cukup tinggi untuk hurufnya"),
@@ -190,7 +213,8 @@ def main() -> int:
         print("-" * 74)
         hasil = subprocess.run(
             [sys.executable, str(AKAR / "tests" / berkas)],
-            cwd=str(AKAR), capture_output=True, text=True, timeout=1800)
+            cwd=str(AKAR), capture_output=True, text=True, timeout=1800,
+            encoding="utf-8", errors="replace", env=ENV_UJI)
         keluaran = hasil.stdout + hasil.stderr
 
         berkas_hasil = AKAR / "tests" / f"hasil_{nama}.txt"
@@ -224,6 +248,12 @@ def main() -> int:
 
         jumlah_lulus += hitung_lulus(keluaran)
         jumlah_gagal += hitung_gagal(keluaran)
+        # Sebagian pemeriksaan menuliskan sebab kegagalan dengan kalimat
+        # sendiri tanpa angka "N GAGAL". Kode keluar tetap menandainya,
+        # jadi kegagalan seperti itu dihitung satu agar total tidak
+        # melaporkan nol padahal rangkaiannya gagal.
+        if hasil.returncode != 0 and hitung_gagal(keluaran) == 0:
+            jumlah_gagal += 1
         ringkasan.append((nama, ringkas, lulus))
 
     print("\n" + "=" * 74)
@@ -237,7 +267,9 @@ def main() -> int:
     print("\n[verifikasi] Tabel TER vs PMK 168/2023")
     print("-" * 74)
     hasil = subprocess.run([sys.executable, str(AKAR / "tools" / "verifikasi_ter.py")],
-                           cwd=str(AKAR), capture_output=True, text=True, timeout=600)
+                           cwd=str(AKAR), capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", env=ENV_UJI,
+                           timeout=600)
     keluaran = hasil.stdout + hasil.stderr
     for baris in keluaran.splitlines():
         if "HASIL" in baris.upper() or "COCOK" in baris.upper():
@@ -259,10 +291,13 @@ def main() -> int:
             continue
         hasil = subprocess.run(
             [sys.executable, str(path)], cwd=str(AKAR),
-            capture_output=True, text=True, timeout=1800)
+            capture_output=True, text=True, timeout=1800,
+            encoding="utf-8", errors="replace", env=ENV_UJI)
         keluaran = hasil.stdout + hasil.stderr
         jumlah_lulus += hitung_lulus(keluaran)
         jumlah_gagal += hitung_gagal(keluaran)
+        if hasil.returncode != 0 and hitung_gagal(keluaran) == 0:
+            jumlah_gagal += 1
         ringkas = baris_hasil(keluaran)
         tanda = "LULUS" if hasil.returncode == 0 else "GAGAL"
         print(f"  [{tanda:5s}] {keterangan}")

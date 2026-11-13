@@ -172,6 +172,19 @@ def main() -> int:
         umur_komersial=8, residu_komersial=0, akun_aset="1204",
         akun_akum="1205")
 
+    # Karyawan dan riwayat payroll tiga bulan pertama, supaya halaman
+    # Payroll & PPh 21 menampilkan data nyata saat diperiksa atau dipotret.
+    for nama, jabatan, ptkp, gaji, tunjangan in (
+            ("Andi Wijaya", "Sales Manager", "K/1", 12_000_000, 2_000_000),
+            ("Siti Rahayu", "Finance Supervisor", "K/0", 9_500_000, 1_000_000),
+            ("Rudi Hartono", "Teknisi Senior", "TK/0", 7_500_000, 750_000),
+            ("Maya Lestari", "Admin Penjualan", "TK/1", 6_000_000, 500_000)):
+        services.simpan_karyawan(
+            cid, nama, gaji, jabatan=jabatan, status_ptkp=ptkp,
+            tunjangan_tetap=tunjangan, tanggal_masuk=f"{tahun}-01-01")
+    for bulan in (1, 2, 3):
+        services.hitung_payroll_bulanan(cid, f"{tahun}-{bulan:02d}")
+
     # Rekening kas & bank sudah dibuat otomatis saat profil perusahaan dibuat
     # (satu rekening untuk setiap akun kas/bank pada bagan akun), sehingga
     # saldo awal cukup diisi pada akun COA di atas.

@@ -28,7 +28,15 @@ datas = []
 aset_dir = os.path.join(ROOT, "assets")
 if os.path.isdir(aset_dir):
     for berkas in os.listdir(aset_dir):
-        datas.append((os.path.join(aset_dir, berkas), "assets"))
+        p = os.path.join(aset_dir, berkas)
+        if os.path.isfile(p):
+            datas.append((p, "assets"))
+    # Huruf antarmuka dibundel di subfolder agar tidak bertabrakan dengan
+    # aset lain. Tanpa entri ini aplikasi memakai huruf sistem dan tampilan
+    # berbeda antara Windows 10 dan Windows 11.
+    font_dir = os.path.join(aset_dir, "fonts")
+    if os.path.isdir(font_dir):
+        datas.append((font_dir, os.path.join("assets", "fonts")))
 
 # app_info.json
 info = os.path.join(ROOT, "app_info.json")
@@ -70,6 +78,12 @@ hiddenimports = [
     "hmac",
     "datetime",
     "dataclasses",
+    # Verifikasi tanda tangan lisensi diimpor di dalam fungsi. Tanpa entri
+    # ini EXE tetap terbangun, tetapi aktivasi menolak jawaban server karena
+    # pustaka pemeriksanya tidak ikut terbundel.
+    "cryptography",
+    "cryptography.exceptions",
+    "cryptography.hazmat.primitives.asymmetric.ed25519",
     "PySide6.QtCore",
     "PySide6.QtGui",
     "PySide6.QtWidgets",

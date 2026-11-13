@@ -10,11 +10,11 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPlainTextEdit, QLineEdit,
-    QMessageBox,
 )
 
 from .. import config, laporan_bug as bug
-from . import widgets as w
+from . import theme, widgets as w
+from . import popup
 
 
 class DialogLaporBug(QDialog):
@@ -39,8 +39,8 @@ class DialogLaporBug(QDialog):
 
         luar.addWidget(w.label(
             "Keterangan sistem dan jejak teknis sudah terisi otomatis. "
-            "Cukup jelaskan apa yang Anda lakukan sebelum masalah muncul "
-            "keterangan itu yang paling membantu menelusuri penyebabnya.",
+            "Anda cukup menjelaskan apa yang terjadi; keterangan Anda "
+            "yang paling membantu menelusuri penyebabnya.",
             objek="Muted", wrap=True))
 
         luar.addWidget(w.label("Ringkasan masalah", objek="FormLabel"))
@@ -55,7 +55,14 @@ class DialogLaporBug(QDialog):
             "1. Buka menu Kontrak\n"
             "2. Tekan tombol Kontrak Baru\n"
             "3. Muncul pesan kesalahan")
-        self.inp_langkah.setMinimumHeight(110)
+        # Tinggi dipatok atas dan bawah. Kotak teks bawaan meminta 192 px
+        # yang membuat dialog lebih tinggi daripada batas layar, sehingga
+        # tata letak memeras isinya dan contoh langkah di bawah terpotong.
+        # Gaya global memasang min-height 20 px pada QPlainTextEdit, jadi
+        # batas tinggi juga ditulis pada gaya khusus ini agar tidak dilonggarkan.
+        self.inp_langkah.setFixedHeight(118)
+        theme.latar(self.inp_langkah,
+                    "min-height: 102px; max-height: 102px;")
         luar.addWidget(self.inp_langkah)
 
         luar.addWidget(w.label("Keterangan tambahan (opsional)",
@@ -63,7 +70,9 @@ class DialogLaporBug(QDialog):
         self.inp_catatan = QPlainTextEdit()
         self.inp_catatan.setPlaceholderText(
             "Hal lain yang perlu diketahui")
-        self.inp_catatan.setMinimumHeight(80)
+        self.inp_catatan.setFixedHeight(72)
+        theme.latar(self.inp_catatan,
+                    "min-height: 56px; max-height: 56px;")
         luar.addWidget(self.inp_catatan)
 
         kotak = w.Card()
@@ -72,14 +81,19 @@ class DialogLaporBug(QDialog):
         kl.addWidget(w.label("Keterangan teknis yang akan ikut terkirim",
                              objek="FormLabel"))
         sistem = bug.ringkas_sistem()
-        for k, v in sistem.items():
-            kl.addWidget(w.label(f"{k}: {v}", objek="Muted", wrap=True))
-        if self._kesalahan:
-            kl.addWidget(w.label(f"kesalahan: {self._kesalahan[:200]}",
-                                 objek="Muted", wrap=True))
         kl.addWidget(w.label(
-            f"Jejak log: {len(self._jejak.splitlines())} baris terakhir. "
-            "Laporan juga disimpan di folder data aplikasi.",
+            f"{sistem['aplikasi']} {sistem['versi']} · "
+            f"{sistem['sistem']} ({sistem['arsitektur']}) · "
+            f"Python {sistem['python']}",
+            objek="Muted", wrap=True))
+        if self._kesalahan:
+            kl.addWidget(w.label(f"Kesalahan: {self._kesalahan[:200]}",
+                                 objek="Muted", wrap=True))
+        jumlah_jejak = len(self._jejak.splitlines())
+        kl.addWidget(w.label(
+            (f"Jejak log: {jumlah_jejak} baris terakhir. " if jumlah_jejak
+             else "Jejak log: belum ada catatan. ")
+            + "Laporan juga disimpan di folder data aplikasi.",
             objek="Muted", wrap=True))
         luar.addWidget(kotak)
 
@@ -121,13 +135,14 @@ class DialogLaporBug(QDialog):
         laporan = self._susun()
         berkas = bug.simpan_laporan(laporan["teks"])
         if berkas is None:
-            QMessageBox.warning(self, "Gagal menyimpan",
-                                "Laporan tidak dapat disimpan ke berkas.")
+            popup.peringatkan(self,
+                              "Gagal menyimpan",
+                              "Laporan tidak dapat disimpan ke berkas.")
             return
-        QMessageBox.information(
-            self, "Laporan tersimpan",
-            f"Laporan disimpan di:\n{berkas}\n\n"
-            "Berkas ini dapat Anda lampirkan sendiri saat mengirim email.")
+        popup.beri_tahu(self,
+                        "Laporan tersimpan",
+                        f"Laporan disimpan di:\n{berkas}\n\n"
+                        "Berkas ini dapat Anda lampirkan sendiri saat mengirim email.")
 
     def _kirim(self) -> None:
         laporan = self._susun()
@@ -135,11 +150,11 @@ class DialogLaporBug(QDialog):
         bug.simpan_metadata(self._kesalahan or self.inp_judul.text(), berkas)
 
         if not bug.buka_email(laporan["teks"], self._judul()):
-            QMessageBox.warning(
-                self, "Email tidak terbuka",
-                "Aplikasi email tidak dapat dibuka otomatis.\n\n"
-                + (f"Laporan sudah disimpan di:\n{berkas}\n\n" if berkas else "")
-                + f"Silakan kirim laporan itu ke:\n{bug.EMAIL_PENGEMBANG}")
+            popup.peringatkan(self,
+                              "Email tidak terbuka",
+                              "Aplikasi email tidak dapat dibuka otomatis.\n\n"
+                              + (f"Laporan sudah disimpan di:\n{berkas}\n\n" if berkas else "")
+                              + f"Silakan kirim laporan itu ke:\n{bug.EMAIL_PENGEMBANG}")
             return
 
         pesan = (
@@ -148,7 +163,7 @@ class DialogLaporBug(QDialog):
             "Tekan Kirim di aplikasi email Anda untuk mengirimkannya.")
         if berkas:
             pesan += f"\n\nSalinan laporan tersimpan di:\n{berkas}"
-        QMessageBox.information(self, "Email disiapkan", pesan)
+        popup.beri_tahu(self, "Email disiapkan", pesan)
         self.accept()
 
 

@@ -51,7 +51,10 @@ def label_bermasalah(akar) -> list:
         if not lbl.isVisible():
             continue
         teks = lbl.text().strip()
-        if not teks or teks.lower() not in nama_ikon:
+        # Nama ikon selalu huruf kecil. Teks tampilan yang kebetulan sama
+        # tetapi berhuruf besar (mis. kategori "Pajak") adalah isi sah,
+        # bukan nama ikon yang bocor.
+        if not teks or teks not in nama_ikon:
             continue
         # label ikon selalu kecil; teks wajar berukuran lebih besar
         if lbl.width() > 40 or lbl.height() > 22:

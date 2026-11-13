@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from . import config, db
+from . import coa, config, db
 from .core import accounting as acc
 from .core import tax_engine as tx
 from .modules import (hari_ini, tambah_hari, nomor_berikut, catat_riwayat,
@@ -199,8 +199,7 @@ def buat_invoice(company_id: int, tanggal: str, items: list[dict],
             "lawan_transaksi": nama, "catatan": f"Pendapatan {nomor}",
         }]
         if h["ppn"] > 0:
-            akun_ppn = "2101" if db.q1("SELECT 1 FROM accounts WHERE company_id=? AND kode='2101'",
-                                       (company_id,)) else "2003"
+            akun_ppn = coa.kode_akun_bawaan(company_id, "utang_ppn_keluaran")
             baris_jurnal.append({
                 "kode_akun": akun_ppn, "debit": 0, "kredit": h["ppn"],
                 "lawan_transaksi": nama, "ref_pajak": "PPN Keluaran",
@@ -208,7 +207,7 @@ def buat_invoice(company_id: int, tanggal: str, items: list[dict],
             })
         if total_hpp > 0:
             akun_hpp = "5001"
-            akun_persediaan = "1104"
+            akun_persediaan = coa.kode_akun_bawaan(company_id, "persediaan")
             if items and items[0].get("product_id"):
                 p = get_produk(items[0]["product_id"])
                 if p:
@@ -783,7 +782,7 @@ def buat_bill(company_id: int, tanggal: str, items: list[dict],
               nomor_vendor: str = "", jatuh_tempo: str = "", jenis: str = "Persediaan",
               diskon: int = 0, jenis_ppn: str = "Non-PKP/Tidak Dipungut",
               dapat_dikreditkan: bool = True, po_id: Optional[int] = None,
-              akun_beban: str = "6008", catatan: str = "", user_id=None,
+              akun_beban: str = "", catatan: str = "", user_id=None,
               username: str = "", tambah_stok: bool = True) -> int:
     if not items:
         raise ValueError("Bill harus memiliki minimal satu baris.")
@@ -842,15 +841,16 @@ def buat_bill(company_id: int, tanggal: str, items: list[dict],
                            f"Pembelian {nomor} dari {nama}")
 
         akun_utang = "2001"
-        akun_debit = akun_beban
+        akun_debit = (akun_beban
+                      or coa.kode_akun_bawaan(company_id, "beban_umum"))
         if jenis == "Persediaan":
-            akun_debit = "1104"
+            akun_debit = coa.kode_akun_bawaan(company_id, "persediaan")
             if items and items[0].get("product_id"):
                 p = get_produk(items[0]["product_id"])
                 if p and p["akun_persediaan"]:
                     akun_debit = p["akun_persediaan"]
         elif jenis == "Aset Tetap":
-            akun_debit = "1201"
+            akun_debit = coa.kode_akun_bawaan(company_id, "aset_peralatan")
 
         baris = [{
             "kode_akun": akun_debit, "debit": dpp, "kredit": 0,
@@ -859,9 +859,7 @@ def buat_bill(company_id: int, tanggal: str, items: list[dict],
         }]
         if ppn_res.ppn > 0:
             if dapat_dikreditkan:
-                akun_ppn = "1108" if db.q1(
-                    "SELECT 1 FROM accounts WHERE company_id=? AND kode='1108'",
-                    (company_id,)) else "1104"
+                akun_ppn = coa.kode_akun_bawaan(company_id, "ppn_masukan")
                 baris.append({
                     "kode_akun": akun_ppn, "debit": ppn_res.ppn, "kredit": 0,
                     "lawan_transaksi": nama, "ref_pajak": "PPN Masukan",
@@ -1081,7 +1079,7 @@ def retur_pembelian(company_id: int, tanggal: str, bill_id: int, items: list[dic
         _perbarui_status_bill(conn, bill_id)
 
         akun_utang = "2001"
-        akun_lawan = "1104"
+        akun_lawan = coa.kode_akun_bawaan(company_id, "persediaan")
         if items and items[0].get("product_id"):
             p = get_produk(items[0]["product_id"])
             if p and p["akun_persediaan"]:

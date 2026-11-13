@@ -16,7 +16,9 @@ from pathlib import Path
 
 AKAR = Path(__file__).resolve().parent.parent
 os.environ["AKUNTANSIID_DATA"] = str(AKAR / "_contoh")
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+# Diukur dengan font layar sungguhan. Platform offscreen memakai metrik font
+# yang jauh lebih lebar, sehingga kolom yang sebenarnya muat dilaporkan sempit.
+os.environ.pop("QT_QPA_PLATFORM", None)
 sys.path.insert(0, str(AKAR / "src"))
 
 from PySide6.QtCore import Qt  # noqa: E402
@@ -79,8 +81,8 @@ def main():
     print()
     if masalah:
         print(f"HASIL: {len(masalah)} kolom terlalu sempit")
-    else:
-        print("HASIL: seluruh kolom tabel cukup lebar")
+        return 1
+    print("HASIL: seluruh kolom tabel cukup lebar")
     return 0
 
 

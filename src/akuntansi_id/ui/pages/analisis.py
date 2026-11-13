@@ -12,7 +12,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QBrush, QColor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QFrame,
-    QGridLayout, QSizePolicy, QTabWidget, QTableWidgetItem, QPushButton,
+    QGridLayout, QSizePolicy, QTableWidgetItem, QPushButton,
 )
 
 from ... import services
@@ -65,8 +65,7 @@ class AnalisisPage(QWidget):
         kl.addWidget(self.header)
         luar.addWidget(kepala)
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         wadah = QWidget()
         wl = QVBoxLayout(wadah)
         wl.setContentsMargins(22, 18, 22, 22)
@@ -181,27 +180,42 @@ class AnalisisPage(QWidget):
             catatan.setWordWrap(True)
             theme.latar(catatan,
                         f"color: {C.TEXT_MUTED}; font-size: {theme.FS_SMALL}px; "
-                        f"background: {C.INFO_BG}; border-radius: 8px; "
+                        f"background: {C.SURFACE_ALT}; "
+                        f"border-radius: {theme.SUDUT_KARTU}px; "
                         "padding: 10px 12px;")
             kanan.addWidget(catatan)
 
+        # Empat tingkat temuan ditampilkan sebagai deret angka dengan garis
+        # atas berwarna, seperti legenda pada laporan tercetak. Latar berwarna
+        # penuh akan bersaing dengan angka utama di sebelah kiri.
         st = QHBoxLayout()
-        st.setSpacing(9)
+        st.setSpacing(20)
         for jumlah, label, tingkat in [
             (a.jumlah_kritis, "KRITIS", "kritis"),
             (a.jumlah_peringatan, "PERHATIAN", "peringatan"),
             (a.jumlah_saran, "SARAN", "saran"),
             (a.jumlah_baik, "BAIK", "baik"),
         ]:
-            warna, bg = theme.STATUS_COLORS[tingkat]
-            chip = QLabel(f"<b style='font-size:17px'>{jumlah}</b><br>"
-                          f"<span style='font-size:9px'>{label}</span>")
-            chip.setTextFormat(Qt.RichText)
-            chip.setAlignment(Qt.AlignCenter)
-            theme.latar(chip, f"background: {bg}; color: {warna}; "
-                               "border-radius: 8px; padding: 7px 16px;")
-            chip.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
-            chip.setMinimumWidth(chip.sizeHint().width())
+            warna, _bg = theme.STATUS_COLORS[tingkat]
+            chip = QFrame()
+            chip.setStyleSheet(
+                f"QFrame {{ background: transparent; border: none; "
+                f"border-top: 2px solid {warna}; }}")
+            cl = QVBoxLayout(chip)
+            cl.setContentsMargins(0, 7, 0, 5)
+            cl.setSpacing(1)
+            angka = QLabel(str(jumlah))
+            angka.setStyleSheet(
+                f"color: {warna}; font-family: '{theme.FONT_SERIF}'; "
+                "font-size: 19px; font-weight: 600; background: transparent;")
+            teks = QLabel(label)
+            teks.setStyleSheet(
+                f"color: {C.TEXT_MUTED}; font-size: 9px; font-weight: 700; "
+                "letter-spacing: 0.6px; background: transparent;")
+            cl.addWidget(angka)
+            cl.addWidget(teks)
+            chip.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+            chip.setFixedWidth(64)
             st.addWidget(chip)
         st.addStretch()
         kanan.addLayout(st)
@@ -260,8 +274,8 @@ class AnalisisPage(QWidget):
                 # :checked agar teksnya tetap terbaca di atas latar biru.
                 b.setStyleSheet(f"""
                     QPushButton {{
-                        padding: 7px 15px;
-                        border-radius: 8px;
+                        padding: 7px 14px;
+                        border-radius: {theme.SUDUT_KONTROL}px;
                         border: 1px solid {C.BORDER};
                         background: {C.SURFACE};
                         color: {C.TEXT_MUTED};
@@ -334,7 +348,7 @@ class AnalisisPage(QWidget):
             for kartu in kartu_list:
                 kartu.setVisible(tampil)
 
-    def _judul_seksi(self, judul: str, jumlah: int) -> QWidget:
+    def _judul_seksi(self, judul: str, jumlah: int | None = None) -> QWidget:
         wdg = QWidget()
         l = QHBoxLayout(wdg)
         l.setContentsMargins(0, 14, 0, 2)
@@ -342,13 +356,18 @@ class AnalisisPage(QWidget):
         t = QLabel(judul)
         t.setStyleSheet("font-size: 15px; font-weight: 700; background: transparent;")
         l.addWidget(t)
-        b = QLabel(str(jumlah))
-        theme.latar(b, f"background: {C.NEUTRAL_BG}; color: {C.TEXT_MUTED}; "
-                        "border-radius: 9px; padding: 2px 9px; "
-                        f"font-size: {theme.FS_TINY}px; font-weight: 700;")
-        b.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
-        b.setMinimumWidth(b.sizeHint().width())
-        l.addWidget(b)
+        # Angka hanya ditampilkan bila benar-benar menghitung sesuatu,
+        # misalnya jumlah temuan. Angka nol pada judul bagian rasio tidak
+        # memberi keterangan apa pun dan mudah disalahartikan sebagai
+        # jumlah temuan.
+        if jumlah is not None:
+            b = QLabel(str(jumlah))
+            theme.latar(b, f"background: {C.NEUTRAL_BG}; color: {C.TEXT_MUTED}; "
+                            "border-radius: 9px; padding: 2px 9px; "
+                            f"font-size: {theme.FS_TINY}px; font-weight: 700;")
+            b.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+            b.setMinimumWidth(b.sizeHint().width())
+            l.addWidget(b)
         l.addStretch()
         return wdg
 
@@ -412,7 +431,8 @@ class AnalisisPage(QWidget):
             lay.addWidget(penjelasan)
 
         # --- Likuiditas
-        lay.addWidget(self._judul_seksi("Likuiditas - kemampuan membayar utang jangka pendek", 0))
+        lay.addWidget(self._judul_seksi(
+            "Likuiditas - kemampuan membayar utang jangka pendek"))
         kartu = w.Card()
         grid = QGridLayout()
         grid.setSpacing(16)
@@ -443,7 +463,8 @@ class AnalisisPage(QWidget):
         lay.addWidget(kartu)
 
         # --- Profitabilitas
-        lay.addWidget(self._judul_seksi("Profitabilitas - kemampuan menghasilkan laba", 0))
+        lay.addWidget(self._judul_seksi(
+            "Profitabilitas - kemampuan menghasilkan laba"))
         kartu2 = w.Card()
         grid2 = QGridLayout()
         grid2.setSpacing(16)
@@ -482,7 +503,7 @@ class AnalisisPage(QWidget):
         lay.addWidget(kartu2)
 
         # --- Solvabilitas
-        lay.addWidget(self._judul_seksi("Solvabilitas - struktur pendanaan", 0))
+        lay.addWidget(self._judul_seksi("Solvabilitas - struktur pendanaan"))
         kartu3 = w.Card()
         grid3 = QGridLayout()
         grid3.setSpacing(16)
@@ -523,7 +544,7 @@ class AnalisisPage(QWidget):
         lay.addWidget(kartu3)
 
         # --- Data pendukung
-        lay.addWidget(self._judul_seksi("Data Pendukung", 0))
+        lay.addWidget(self._judul_seksi("Data Pendukung"))
         kartu4 = w.Card()
         baris = QHBoxLayout()
         baris.setSpacing(30)
@@ -556,8 +577,7 @@ class AnalisisPage(QWidget):
         # tombol Ekspor pada kepala halaman memakai tabel ini sebagai
         # sumber datanya.
         # ------------------------------------------------------------
-        lay.addWidget(self._judul_seksi(
-            "Ringkasan Seluruh Rasio", 0))
+        lay.addWidget(self._judul_seksi("Ringkasan Seluruh Rasio"))
         lay.addWidget(self._tabel_rasio(r))
 
         lay.addStretch()
@@ -747,37 +767,58 @@ class AnalisisPage(QWidget):
         baris = QHBoxLayout()
         baris.setSpacing(24)
 
-        k1 = QVBoxLayout()
-        k1.addWidget(w.label("Perubahan Pendapatan (%)", objek="FormLabel"))
         from PySide6.QtWidgets import QSlider
-        self.slider_pendapatan = QSlider(Qt.Horizontal)
-        self.slider_pendapatan.setRange(-50, 100)
-        self.slider_pendapatan.setValue(0)
-        self.slider_pendapatan.setTickPosition(QSlider.TicksBelow)
-        self.slider_pendapatan.setTickInterval(25)
-        self.lbl_pendapatan = QLabel("0%")
-        self.lbl_pendapatan.setStyleSheet(
-            f"font-family: {theme.FONT_ANGKA}; font-size: 17px; font-weight: 700; "
-            f"color: {C.PRIMARY}; background: transparent;")
-        self.slider_pendapatan.valueChanged.connect(self._ubah_slider)
+
+        def kontrol(judul: str, warna: str) -> tuple:
+            kepala = QHBoxLayout()
+            kepala.setSpacing(8)
+            kepala.addWidget(w.label(judul, objek="FormLabel"))
+            kepala.addStretch()
+            nilai = QLabel("0%")
+            nilai.setMinimumWidth(54)
+            nilai.setAlignment(Qt.AlignCenter)
+            theme.latar(
+                nilai,
+                f"font-family: {theme.FONT_ANGKA}; font-size: 15px; "
+                f"font-weight: 700; color: {warna}; "
+                f"background: {C.SURFACE_ALT}; border: 1px solid {C.BORDER}; "
+                "border-radius: 9px; padding: 2px 8px;")
+            kepala.addWidget(nilai)
+
+            penggeser = QSlider(Qt.Horizontal)
+            penggeser.setRange(-50, 100)
+            penggeser.setValue(0)
+            penggeser.setTickPosition(QSlider.NoTicks)
+            penggeser.valueChanged.connect(self._ubah_slider)
+
+            rentang = QHBoxLayout()
+            rentang.setContentsMargins(0, 0, 0, 0)
+            for teks, rata in (("-50%", Qt.AlignLeft),
+                               ("+100%", Qt.AlignRight)):
+                t = QLabel(teks)
+                t.setAlignment(rata | Qt.AlignVCenter)
+                t.setStyleSheet(
+                    f"font-size: {theme.FS_TINY}px; color: {C.TEXT_FAINT}; "
+                    "background: transparent;")
+                rentang.addWidget(t, 1)
+            return kepala, penggeser, nilai, rentang
+
+        k1 = QVBoxLayout()
+        k1.setSpacing(6)
+        kepala1, self.slider_pendapatan, self.lbl_pendapatan, rentang1 = kontrol(
+            "Perubahan Pendapatan (%)", C.PRIMARY)
+        k1.addLayout(kepala1)
         k1.addWidget(self.slider_pendapatan)
-        k1.addWidget(self.lbl_pendapatan)
+        k1.addLayout(rentang1)
         baris.addLayout(k1, 1)
 
         k2 = QVBoxLayout()
-        k2.addWidget(w.label("Perubahan Beban (%)", objek="FormLabel"))
-        self.slider_beban = QSlider(Qt.Horizontal)
-        self.slider_beban.setRange(-50, 100)
-        self.slider_beban.setValue(0)
-        self.slider_beban.setTickPosition(QSlider.TicksBelow)
-        self.slider_beban.setTickInterval(25)
-        self.lbl_beban = QLabel("0%")
-        self.lbl_beban.setStyleSheet(
-            f"font-family: {theme.FONT_ANGKA}; font-size: 17px; font-weight: 700; "
-            f"color: {C.WARNING}; background: transparent;")
-        self.slider_beban.valueChanged.connect(self._ubah_slider)
+        k2.setSpacing(6)
+        kepala2, self.slider_beban, self.lbl_beban, rentang2 = kontrol(
+            "Perubahan Beban (%)", C.WARNING)
+        k2.addLayout(kepala2)
         k2.addWidget(self.slider_beban)
-        k2.addWidget(self.lbl_beban)
+        k2.addLayout(rentang2)
         baris.addLayout(k2, 1)
         kl.addLayout(baris)
 
@@ -792,8 +833,11 @@ class AnalisisPage(QWidget):
         self._render_simulasi(cid, tahun)
 
     def _ubah_slider(self):
-        self.lbl_pendapatan.setText(f"{self.slider_pendapatan.value():+d}%")
-        self.lbl_beban.setText(f"{self.slider_beban.value():+d}%")
+        def teks(nilai: int) -> str:
+            return "0%" if nilai == 0 else f"{nilai:+d}%"
+
+        self.lbl_pendapatan.setText(teks(self.slider_pendapatan.value()))
+        self.lbl_beban.setText(teks(self.slider_beban.value()))
         self._render_simulasi(self.ctx.company_id, self.ctx.tahun)
 
     def _render_simulasi(self, cid: int, tahun: int):
@@ -834,8 +878,9 @@ class AnalisisPage(QWidget):
             v.setStyleSheet(f"font-family: {theme.FONT_ANGKA}; font-size: 19px; "
                             f"font-weight: 700; color: {warna}; background: transparent;")
             l.addWidget(v)
-            d = QLabel(f"Semula {fmt(sebelum)} "
-                       f"({'+' if delta >= 0 else ''}{fmt(delta)})")
+            d = QLabel(
+                f"Semula {fmt(sebelum)}"
+                + (f" ({'+' if delta > 0 else ''}{fmt(delta)})" if delta else ""))
             d.setStyleSheet(f"font-size: {theme.FS_TINY}px; color: {C.TEXT_MUTED}; "
                             "background: transparent;")
             d.setWordWrap(True)

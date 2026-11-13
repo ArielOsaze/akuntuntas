@@ -117,8 +117,8 @@ def main() -> int:
     services.simpan_karyawan(cid, "Karyawan Uji", 5_000_000, status_ptkp="TK/0")
 
     # Halaman yang seharusnya punya tombol.
-    from akuntansi_id.ui.pages import (biaya_bank, mitra, pembelian, produk,
-                                       transaksi)
+    from akuntansi_id.ui.pages import (aset, biaya_bank, coa_page, mitra,
+                                       pembelian, produk, transaksi)
 
     halaman_uji = [
         ("Mitra", mitra.MitraPage, None),
@@ -126,6 +126,8 @@ def main() -> int:
         ("Pembelian", pembelian.PembelianLengkapPage, None),
         ("Jurnal", transaksi.JurnalPage, "tabel"),
         ("Biaya", biaya_bank.BiayaPage, None),
+        ("Aset", aset.AsetPage, "tabel"),
+        ("Bagan Akun", coa_page.CoaPage, "tabel"),
     ]
 
     print("[1. Setiap halaman terbentuk dan memuat tombol]")
@@ -216,7 +218,8 @@ def main() -> int:
               f"ukuran: {berkas.stat().st_size if berkas.exists() else 0}")
 
         pdf = FOLDER / "jurnal.pdf"
-        EC.simpan_pdf(None, "Buku Jurnal", "Tahun 2026", data, str(pdf))
+        EC.simpan_pdf("Buku Jurnal", "Tahun 2026", data, str(pdf),
+                      perusahaan="PT Uji Ekspor")
         p.cek("data tabel halaman dapat dicetak ke PDF A4", pdf.exists(),
               f"ukuran: {pdf.stat().st_size if pdf.exists() else 0}")
         if pdf.exists():
@@ -270,6 +273,20 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         kode = main()
-    finally:
-        shutil.rmtree(FOLDER, ignore_errors=True)
-    sys.exit(kode)
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        kode = 1
+    shutil.rmtree(FOLDER, ignore_errors=True)
+    # Qt di Windows dapat menjatuhkan proses saat membongkar DLL walau
+    # seluruh pemeriksaan lulus. Proses diakhiri langsung supaya kode
+    # keluar mencerminkan hasil uji.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    if os.name == "nt":
+        import ctypes
+        kernel = ctypes.windll.kernel32
+        proses = kernel.OpenProcess(0x0001, False, os.getpid())
+        if proses:
+            kernel.TerminateProcess(proses, int(kode))
+    os._exit(kode)

@@ -9,16 +9,17 @@ from datetime import datetime
 from PySide6.QtCore import Qt, Signal, QDate
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QLineEdit, QDateEdit,
-    QDialog, QMessageBox, QFrame, QGridLayout, QCheckBox, QTabWidget,
+    QDialog, QFrame, QGridLayout, QCheckBox,
     QFileDialog, QTextEdit,
 )
 
-from ... import config, modules as M, modules_ops as O
+from ... import coa, config, modules as M, modules_ops as O
 from ...core import tax_engine as tx
 from ... import istilah
 from .. import theme, widgets as w
 from .. import kalender
 from ..theme import C
+from .. import popup
 
 
 # ==========================================================================
@@ -94,7 +95,8 @@ class DialogBiaya(QDialog):
 
         g.addWidget(w.label("Akun Beban", objek="FormLabel"), 6, 0)
         self.cmb_akun_beban = w.combo_akun(ctx.company_id)
-        w.set_combo_by_data(self.cmb_akun_beban, "6023")
+        w.set_combo_by_data(self.cmb_akun_beban,
+                            coa.kode_akun_bawaan(ctx.company_id, "beban_umum"))
         g.addWidget(self.cmb_akun_beban, 7, 0)
 
         g.addWidget(w.label("Dibayar dari", objek="FormLabel"), 6, 1)
@@ -183,17 +185,18 @@ class DialogBiaya(QDialog):
     def _simpan(self):
         try:
             if not self.inp_uraian.text().strip():
-                QMessageBox.warning(self, "Uraian kosong", "Isi uraian biaya.")
+                popup.peringatkan(self, "Uraian kosong", "Isi uraian biaya.")
                 return
             if self.inp_jumlah.nilai() <= 0:
-                QMessageBox.warning(self, "Jumlah kosong", "Isi jumlah biaya.")
+                popup.peringatkan(self, "Jumlah kosong", "Isi jumlah biaya.")
                 return
             O.ajukan_biaya(
                 self.ctx.company_id,
                 self.inp_tanggal.date().toString("yyyy-MM-dd"),
                 self.inp_uraian.text().strip(),
                 self.inp_jumlah.nilai(),
-                self.cmb_akun_beban.currentData() or "6023",
+                (self.cmb_akun_beban.currentData()
+                 or coa.kode_akun_bawaan(self.ctx.company_id, "beban_umum")),
                 self.cmb_kategori.currentData(),
                 self.inp_vendor.text().strip(),
                 cost_center_id=self.cmb_cc.currentData(),
@@ -206,7 +209,7 @@ class DialogBiaya(QDialog):
                 user_id=self.ctx.user_id, username=self.ctx.username)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class BiayaPage(QWidget):
@@ -278,10 +281,8 @@ class BiayaPage(QWidget):
         self.cmb_kategori_filter.addItem("Semua Kategori", None)
         self.cmb_kategori_filter.currentIndexChanged.connect(self.muat)
         filter_baris.addWidget(self.cmb_kategori_filter)
-        filter_baris.addStretch()
-        self.lbl_info = QLabel("")
-        self.lbl_info.setObjectName("Muted")
-        filter_baris.addWidget(self.lbl_info)
+        self.lbl_info = w.label_ringkas()
+        filter_baris.addWidget(self.lbl_info, 1)
         self.lay.addLayout(filter_baris)
 
         self.tabel = w.Tabel([
@@ -291,10 +292,9 @@ class BiayaPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel.set_pesan_kosong(
-            "Belum ada catatan biaya atau mutasi bank."
+            "Belum ada catatan biaya."
             "\n\n"
-            "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
-            "mutasi rekening bank.")
+            "Tekan tombol Ajukan Biaya untuk mencatat pengeluaran usaha.")
 
         self.tabel.doubleClicked.connect(self._detail)
         self.lay.addWidget(self.tabel, 1)
@@ -392,8 +392,9 @@ class BiayaPage(QWidget):
 
     def _tambah(self):
         if not self.ctx.company_id:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         d = DialogBiaya(self.ctx, self)
         if d.exec():
@@ -460,10 +461,10 @@ class BiayaPage(QWidget):
             # Keterangan ini tampil saat tabel masih kosong, supaya
             # pengguna tahu langkah berikutnya.
             t.set_pesan_kosong(
-                "Belum ada catatan biaya atau mutasi bank."
+                "Belum ada lampiran pada biaya ini."
                 "\n\n"
-                "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
-                "mutasi rekening bank.")
+                "Tekan tombol Lampirkan Bukti untuk menambahkan berkas "
+                "pendukung.")
 
             t.isi([[d["nama_berkas"], d["tipe"] or "", d["created_at"][:16]]
                    for d in docs])
@@ -489,19 +490,19 @@ class BiayaPage(QWidget):
         try:
             O.lampirkan_dokumen(self.ctx.company_id, "expenses", expense_id,
                                 path, "bukti", "", self.ctx.username)
-            QMessageBox.information(self, "Berhasil", "Bukti dilampirkan.")
+            popup.beri_tahu(self, "Berhasil", "Bukti dilampirkan.")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal melampirkan", str(e))
+            popup.galat(self, "Gagal melampirkan", str(e))
 
     def _setujui(self, disetujui: bool):
         b = self._biaya_terpilih()
         if b is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu catatan biaya.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu catatan biaya.")
             return
         if b["status"] not in ("diajukan", "draft"):
-            QMessageBox.information(
-                self, "Tidak dapat diproses",
-                f"Biaya berstatus '{b['status']}' tidak dapat disetujui lagi.")
+            popup.beri_tahu(self,
+                            "Tidak dapat diproses",
+                            f"Biaya berstatus '{b['status']}' tidak dapat disetujui lagi.")
             return
 
         if disetujui:
@@ -521,54 +522,52 @@ class BiayaPage(QWidget):
                             catatan)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
     def _bayar(self):
         b = self._biaya_terpilih()
         if b is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu catatan biaya.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu catatan biaya.")
             return
         if b["dibayar"]:
-            QMessageBox.information(self, "Sudah dibayar", "Biaya ini sudah dibayar.")
+            popup.beri_tahu(self, "Sudah dibayar", "Biaya ini sudah dibayar.")
             return
         if b["status"] not in ("disetujui", "reimbursement"):
-            QMessageBox.warning(
-                self, "Belum disetujui",
-                f"Biaya berstatus '{b['status']}' belum dapat dibayar. "
-                "Setujui terlebih dahulu.")
+            popup.peringatkan(self,
+                              "Belum disetujui",
+                              f"Biaya berstatus '{b['status']}' belum dapat dibayar. "
+                              "Setujui terlebih dahulu.")
             return
-        if QMessageBox.question(
-                self, "Konfirmasi Pembayaran",
-                f"Bayar biaya '{b['uraian']}' sebesar {tx.rupiah(b['jumlah'])}?\n\n"
-                "Jurnal pembayaran akan dibuat otomatis.",
-                QMessageBox.Yes | QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Konfirmasi Pembayaran",
+                           f"Bayar biaya '{b['uraian']}' sebesar {tx.rupiah(b['jumlah'])}?\n\n"
+                           "Jurnal pembayaran akan dibuat otomatis."):
             return
         try:
             O.bayar_biaya(b["id"], user_id=self.ctx.user_id,
                           username=self.ctx.username)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal membayar", str(e))
+            popup.galat(self, "Gagal membayar", str(e))
 
     def _hapus(self):
         b = self._biaya_terpilih()
         if b is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu catatan biaya.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu catatan biaya.")
             return
         if b["dibayar"]:
-            QMessageBox.warning(
-                self, "Tidak dapat dihapus",
-                "Biaya yang sudah dibayar tidak dapat dihapus.")
+            popup.peringatkan(self,
+                              "Tidak dapat dihapus",
+                              "Biaya yang sudah dibayar tidak dapat dihapus.")
             return
-        if QMessageBox.question(
-                self, "Konfirmasi Hapus",
-                f"Hapus biaya '{b['uraian']}'?",
-                QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+        if popup.tanya(self,
+                       "Konfirmasi Hapus",
+                       f"Hapus biaya '{b['uraian']}'?"):
             try:
                 O.hapus_biaya(b["id"], self.ctx.username)
                 self.muat()
             except Exception as e:
-                QMessageBox.critical(self, "Gagal menghapus", str(e))
+                popup.galat(self, "Gagal menghapus", str(e))
 
 
 class DialogPersetujuan(QDialog):
@@ -647,10 +646,10 @@ class DialogKategoriBiaya(QDialog):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel.set_pesan_kosong(
-            "Belum ada catatan biaya atau mutasi bank."
+            "Belum ada kategori biaya."
             "\n\n"
-            "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
-            "mutasi rekening bank.")
+            "Tekan tombol Tambah Kategori untuk membuat kelompok "
+            "pengeluaran.")
 
         lay.addWidget(self.tabel, 1)
 
@@ -693,16 +692,15 @@ class DialogKategoriBiaya(QDialog):
     def _hapus(self):
         r = self.tabel.baris_terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu kategori.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu kategori.")
             return
         data = O.daftar_kategori_biaya(self.ctx.company_id)
         if r >= len(data):
             return
         k = data[r]
-        if QMessageBox.question(
-                self, "Konfirmasi Hapus",
-                f"Hapus kategori '{k['nama']}'?",
-                QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+        if popup.tanya(self,
+                       "Konfirmasi Hapus",
+                       f"Hapus kategori '{k['nama']}'?"):
             M.db.ex("DELETE FROM expense_categories WHERE id=?", (k["id"],))
             self.muat()
 
@@ -727,7 +725,8 @@ class DialogKategoriBaru(QDialog):
 
         g.addWidget(w.label("Akun Beban", objek="FormLabel"), 2, 0)
         self.cmb_akun = w.combo_akun(ctx.company_id)
-        w.set_combo_by_data(self.cmb_akun, "6023")
+        w.set_combo_by_data(self.cmb_akun,
+                            coa.kode_akun_bawaan(ctx.company_id, "beban_umum"))
         g.addWidget(self.cmb_akun, 3, 0)
 
         g.addWidget(w.label("Batas Nilai (Rp)", objek="FormLabel"), 2, 1)
@@ -752,15 +751,17 @@ class DialogKategoriBaru(QDialog):
     def _simpan(self):
         try:
             if not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Nama kosong", "Isi nama kategori.")
+                popup.peringatkan(self, "Nama kosong", "Isi nama kategori.")
                 return
             O.buat_kategori_biaya(self.ctx.company_id, self.inp_nama.text().strip(),
-                                  akun_beban=self.cmb_akun.currentData() or "6023",
+                                  akun_beban=(self.cmb_akun.currentData()
+                                              or coa.kode_akun_bawaan(
+                                                  self.ctx.company_id, "beban_umum")),
                                   batas_nilai=self.inp_batas.nilai(),
                                   perlu_persetujuan=self.chk_setuju.isChecked())
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 # ==========================================================================
@@ -846,7 +847,7 @@ class DialogRekeningBaru(QDialog):
     def _simpan(self):
         try:
             if not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Nama kosong", "Isi nama rekening.")
+                popup.peringatkan(self, "Nama kosong", "Isi nama rekening.")
                 return
             O.buat_kas_bank(
                 self.ctx.company_id, self.inp_nama.text().strip(),
@@ -860,7 +861,7 @@ class DialogRekeningBaru(QDialog):
                 user_id=self.ctx.user_id, username=self.ctx.username)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogImporMutasi(QDialog):
@@ -952,7 +953,7 @@ class DialogImporMutasi(QDialog):
             self.teks.setPlainText(isi)
             self.lbl_berkas.setText(f"Berkas dipilih: {os.path.basename(path)}")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal membaca berkas", str(e))
+            popup.galat(self, "Gagal membaca berkas", str(e))
 
     def _mode_teks(self):
         self.teks.setFocus()
@@ -961,13 +962,15 @@ class DialogImporMutasi(QDialog):
     def _impor(self):
         bank_id = self.cmb_bank.currentData()
         if not bank_id:
-            QMessageBox.warning(self, "Rekening belum dipilih",
-                                "Pilih rekening bank tujuan impor.")
+            popup.peringatkan(self,
+                              "Rekening belum dipilih",
+                              "Pilih rekening bank tujuan impor.")
             return
         isi = self.teks.toPlainText().strip()
         if not isi:
-            QMessageBox.warning(self, "Belum ada data",
-                                "Pilih berkas CSV atau tempelkan isinya.")
+            popup.peringatkan(self,
+                              "Belum ada data",
+                              "Pilih berkas CSV atau tempelkan isinya.")
             return
         try:
             hasil = O.impor_mutasi_dari_csv(self.ctx.company_id, bank_id, isi,
@@ -981,14 +984,14 @@ class DialogImporMutasi(QDialog):
             theme.latar(self.lbl_hasil, f"background: {C.SUCCESS_BG}; border: 1px solid #B8E6D5; "
                 f"border-radius: 8px; padding: 11px 13px; font-size: {theme.FS_SMALL}px;")
             if hasil["berhasil"] > 0:
-                QMessageBox.information(
-                    self, "Impor berhasil",
-                    f"{hasil['berhasil']} mutasi diimpor.\n"
-                    f"{hasil['duplikat']} duplikat dilewati.\n\n"
-                    "Lanjutkan ke rekonsiliasi untuk mencocokkan dengan jurnal.")
+                popup.beri_tahu(self,
+                                "Impor berhasil",
+                                f"{hasil['berhasil']} mutasi diimpor.\n"
+                                f"{hasil['duplikat']} duplikat dilewati.\n\n"
+                                "Lanjutkan ke rekonsiliasi untuk mencocokkan dengan jurnal.")
                 self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal mengimpor", str(e))
+            popup.galat(self, "Gagal mengimpor", str(e))
 
 
 class DialogRekonsiliasi(QDialog):
@@ -1069,10 +1072,10 @@ class DialogRekonsiliasi(QDialog):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel.set_pesan_kosong(
-            "Belum ada catatan biaya atau mutasi bank."
+            "Tidak ada mutasi yang perlu dicocokkan."
             "\n\n"
-            "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
-            "mutasi rekening bank.")
+            "Impor mutasi baru atau periksa kembali mutasi yang sudah "
+            "dicocokkan.")
 
         lay.addWidget(self.tabel, 1)
 
@@ -1173,11 +1176,12 @@ class DialogRekonsiliasi(QDialog):
     def _jurnal_dari_mutasi(self):
         trx = self._mutasi_terpilih()
         if trx is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu mutasi.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu mutasi.")
             return
         if trx["status"] == "tercocok":
-            QMessageBox.information(self, "Sudah tercocok",
-                                    "Mutasi ini sudah dicocokkan dengan jurnal.")
+            popup.beri_tahu(self,
+                            "Sudah tercocok",
+                            "Mutasi ini sudah dicocokkan dengan jurnal.")
             return
 
         d = DialogPilihAkunLawan(self.ctx, trx, self)
@@ -1188,22 +1192,21 @@ class DialogRekonsiliasi(QDialog):
                                  d.akun_terpilih, self.ctx.user_id)
             self._muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal membuat jurnal", str(e))
+            popup.galat(self, "Gagal membuat jurnal", str(e))
 
     def _kecualikan(self):
         trx = self._mutasi_terpilih()
         if trx is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu mutasi.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu mutasi.")
             return
-        if QMessageBox.question(
-                self, "Tandai Dikecualikan",
-                "Tandai mutasi ini sebagai dikecualikan (tidak perlu dicocokkan)?",
-                QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+        if popup.tanya(self,
+                       "Tandai Dikecualikan",
+                       "Tandai mutasi ini sebagai dikecualikan (tidak perlu dicocokkan)?"):
             try:
                 O.cocokkan_mutasi(trx["id"], None, self.ctx.user_id)
                 self._muat()
             except Exception as e:
-                QMessageBox.critical(self, "Gagal", str(e))
+                popup.galat(self, "Gagal", str(e))
 
     def _simpan(self):
         try:
@@ -1228,19 +1231,19 @@ class DialogRekonsiliasi(QDialog):
 
             if selisih == 0:
                 O.selesaikan_rekonsiliasi(rec_id, "Selisih nol", self.ctx.user_id)
-                QMessageBox.information(
-                    self, "Rekonsiliasi selesai",
-                    "Saldo bank dan saldo buku sudah cocok. Rekonsiliasi ditandai "
-                    "selesai.")
+                popup.beri_tahu(self,
+                                "Rekonsiliasi selesai",
+                                "Saldo bank dan saldo buku sudah cocok. Rekonsiliasi ditandai "
+                                "selesai.")
             else:
-                QMessageBox.information(
-                    self, "Rekonsiliasi disimpan",
-                    f"Rekonsiliasi disimpan dengan selisih {tx.rupiah(selisih)}.\n\n"
-                    "Telusuri penyebab selisih: biaya bank, bunga, transfer "
-                    "in transit, atau cek belum dicairkan.")
+                popup.beri_tahu(self,
+                                "Rekonsiliasi disimpan",
+                                f"Rekonsiliasi disimpan dengan selisih {tx.rupiah(selisih)}.\n\n"
+                                "Telusuri penyebab selisih: biaya bank, bunga, transfer "
+                                "in transit, atau cek belum dicairkan.")
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogPilihAkunLawan(QDialog):
@@ -1304,7 +1307,7 @@ class DialogPilihAkunLawan(QDialog):
     def _simpan(self):
         self.akun_terpilih = self.cmb_akun.currentData() or ""
         if not self.akun_terpilih:
-            QMessageBox.warning(self, "Akun belum dipilih", "Pilih akun lawan.")
+            popup.peringatkan(self, "Akun belum dipilih", "Pilih akun lawan.")
             return
         self.accept()
 
@@ -1357,8 +1360,7 @@ class BankPage(QWidget):
         self.kpi_lay.setSpacing(14)
         self.lay.addWidget(self.kpi_area)
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         self.tab_rekening = QWidget()
         self.tab_mutasi = QWidget()
         self.tab_rekonsiliasi = QWidget()
@@ -1385,10 +1387,10 @@ class BankPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_rek.set_pesan_kosong(
-            "Belum ada catatan biaya atau mutasi bank."
+            "Belum ada rekening bank."
             "\n\n"
-            "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
-            "mutasi rekening bank.")
+            "Tekan tombol Rekening Baru di atas untuk mencatat rekening "
+            "usaha.")
 
         lay.addWidget(self.tabel_rek, 1)
 
@@ -1422,10 +1424,8 @@ class BankPage(QWidget):
         self.cmb_status_mutasi.addItem("Dikecualikan", "dikecualikan")
         self.cmb_status_mutasi.currentIndexChanged.connect(self.muat)
         baris.addWidget(self.cmb_status_mutasi)
-        baris.addStretch()
-        self.lbl_mutasi = QLabel("")
-        self.lbl_mutasi.setObjectName("Muted")
-        baris.addWidget(self.lbl_mutasi)
+        self.lbl_mutasi = w.label_ringkas()
+        baris.addWidget(self.lbl_mutasi, 1)
         lay.addLayout(baris)
 
         self.tabel_mutasi = w.Tabel([
@@ -1435,10 +1435,10 @@ class BankPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_mutasi.set_pesan_kosong(
-            "Belum ada catatan biaya atau mutasi bank."
+            "Belum ada mutasi bank."
             "\n\n"
-            "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
-            "mutasi rekening bank.")
+            "Tekan tombol Impor Mutasi di atas untuk memasukkan mutasi dari "
+            "berkas bank.")
 
         lay.addWidget(self.tabel_mutasi, 1)
 
@@ -1465,10 +1465,10 @@ class BankPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_rekons.set_pesan_kosong(
-            "Belum ada catatan biaya atau mutasi bank."
+            "Belum ada riwayat rekonsiliasi."
             "\n\n"
-            "Tekan tombol Tambah untuk mencatat pengeluaran usaha atau "
-            "mutasi rekening bank.")
+            "Buka tab Mutasi Bank, cocokkan mutasi, lalu selesaikan "
+            "rekonsiliasi.")
 
         lay.addWidget(self.tabel_rekons, 1)
 
@@ -1526,6 +1526,12 @@ class BankPage(QWidget):
                 k["nama_bank"] or "", k["nomor_rekening"] or "",
                 k["akun_buku"], tx.rupiah(k["saldo_buku"] or 0),
             ])
+        # Rekening kas tidak punya nama bank atau nomor rekening. Bila semua
+        # baris kosong, kolomnya disembunyikan agar nama rekening lega.
+        self.tabel_rek.setColumnHidden(
+            3, not any((k["nama_bank"] or "").strip() for k in data))
+        self.tabel_rek.setColumnHidden(
+            4, not any((k["nomor_rekening"] or "").strip() for k in data))
         self.tabel_rek.isi(baris, align_kanan={6})
 
     def _muat_mutasi(self):
@@ -1586,8 +1592,9 @@ class BankPage(QWidget):
 
     def _rekening_baru(self):
         if not self.ctx.company_id:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         d = DialogRekeningBaru(self.ctx, self)
         if d.exec():
@@ -1614,13 +1621,17 @@ class BankPage(QWidget):
             self.muat()
 
     def _penyesuaian(self):
-        QMessageBox.information(
+        popup.beri_tahu(
             self, "Penyesuaian Saldo",
-            "Untuk menyesuaikan saldo rekening, buat jurnal manual di menu "
-            "Jurnal Umum:\n\n"
-            "• Saldo bertambah -> DEBIT akun kas/bank, KREDIT akun lawan\n"
-            "• Saldo berkurang -> DEBIT akun lawan, KREDIT akun kas/bank\n\n"
-            "Cantumkan keterangan dan bukti pendukung yang jelas.")
+            "Saldo rekening disesuaikan melalui jurnal manual, bukan diubah "
+            "langsung pada catatan bank.\n\n"
+            "<b>Saldo bertambah</b><br>"
+            "Debit akun kas/bank, kredit akun lawan.\n\n"
+            "<b>Saldo berkurang</b><br>"
+            "Debit akun lawan, kredit akun kas/bank.\n\n"
+            "Buat jurnalnya di menu Jurnal Umum, lalu cantumkan keterangan "
+            "dan bukti pendukung yang jelas.",
+            teks_tombol="Mengerti")
 
     def _mutasi_terpilih(self):
         r = self.tabel_mutasi.baris_terpilih()
@@ -1634,11 +1645,12 @@ class BankPage(QWidget):
     def _jurnal_mutasi(self):
         trx = self._mutasi_terpilih()
         if trx is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu mutasi.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu mutasi.")
             return
         if trx["status"] == "tercocok":
-            QMessageBox.information(self, "Sudah tercocok",
-                                    "Mutasi ini sudah dicocokkan.")
+            popup.beri_tahu(self,
+                            "Sudah tercocok",
+                            "Mutasi ini sudah dicocokkan.")
             return
         d = DialogPilihAkunLawan(self.ctx, trx, self)
         if not d.exec():
@@ -1648,44 +1660,41 @@ class BankPage(QWidget):
                                  d.akun_terpilih, self.ctx.user_id)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
     def _kecualikan_mutasi(self):
         trx = self._mutasi_terpilih()
         if trx is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu mutasi.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu mutasi.")
             return
         try:
             O.cocokkan_mutasi(trx["id"], None, self.ctx.user_id)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
     def _selesaikan(self):
         r = self.tabel_rekons.aris_terpilih() if hasattr(
             self.tabel_rekons, "aris_terpilih") else self.tabel_rekons.baris_terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih",
-                                    "Pilih satu rekonsiliasi.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu rekonsiliasi.")
             return
         data = O.daftar_rekonsiliasi(self.ctx.company_id)
         if r >= len(data):
             return
         rec = data[r]
         if rec["selisih"] != 0:
-            if QMessageBox.question(
-                    self, "Selisih belum nol",
-                    f"Rekonsiliasi ini masih memiliki selisih "
-                    f"{tx.rupiah(rec['selisih'])}.\n\nTetap tandai selesai?",
-                    QMessageBox.Yes | QMessageBox.No,
-                    QMessageBox.No) != QMessageBox.Yes:
+            if not popup.tanya(self,
+                               "Selisih belum nol",
+                               f"Rekonsiliasi ini masih memiliki selisih "
+                               f"{tx.rupiah(rec['selisih'])}.\n\nTetap tandai selesai?"):
                 return
         try:
             O.selesaikan_rekonsiliasi(rec["id"], "Ditandai selesai",
                                       self.ctx.user_id)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
 
 class DialogTransferKas(QDialog):
@@ -1753,11 +1762,14 @@ class DialogTransferKas(QDialog):
     def _simpan(self):
         try:
             if self.cmb_dari.currentData() == self.cmb_ke.currentData():
-                QMessageBox.warning(self, "Rekening sama",
-                                    "Rekening asal dan tujuan harus berbeda.")
+                popup.peringatkan(self,
+                                  "Rekening sama",
+                                  "Rekening asal dan tujuan harus berbeda.")
                 return
             if self.inp_jumlah.nilai() <= 0:
-                QMessageBox.warning(self, "Jumlah kosong", "Isi jumlah transfer.")
+                popup.peringatkan(self,
+                                  "Jumlah kosong",
+                                  "Isi jumlah transfer.")
                 return
             O.transfer_kas_bank(
                 self.ctx.company_id,
@@ -1767,4 +1779,4 @@ class DialogTransferKas(QDialog):
                 self.inp_biaya.nilai(), self.ctx.user_id)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal transfer", str(e))
+            popup.galat(self, "Gagal transfer", str(e))

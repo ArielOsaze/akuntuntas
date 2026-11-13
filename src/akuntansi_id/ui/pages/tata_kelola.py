@@ -4,12 +4,13 @@ keranjang sampah, dokumen, impor massal, dan pencarian global.
 """
 from __future__ import annotations
 
+import html
 import os
 
-from PySide6.QtCore import Qt, Signal, QTimer
+from PySide6.QtCore import Qt, Signal, QTimer, QEvent
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QLineEdit, QDialog,
-    QMessageBox, QFrame, QGridLayout, QCheckBox, QTabWidget, QFileDialog,
+    QFrame, QGridLayout, QCheckBox, QFileDialog,
     QTextEdit, QScrollArea, QListWidget, QListWidgetItem, QSplitter,
 )
 
@@ -18,6 +19,7 @@ from ...core import security as sec
 from ... import istilah
 from .. import theme, widgets as w
 from ..theme import C
+from .. import popup
 
 
 # ==========================================================================
@@ -165,17 +167,20 @@ class DialogPenggunaBaru(QDialog):
                 p1 = self.inp_password.text()
                 p2 = self.inp_password2.text()
                 if not username:
-                    QMessageBox.warning(self, "Username kosong",
-                                        "Isi nama pengguna.")
+                    popup.peringatkan(self,
+                                      "Username kosong",
+                                      "Isi nama pengguna.")
                     return
                 if p1 != p2:
-                    QMessageBox.warning(self, "Kata sandi berbeda",
-                                        "Ulangi kata sandi dengan benar.")
+                    popup.peringatkan(self,
+                                      "Kata sandi berbeda",
+                                      "Ulangi kata sandi dengan benar.")
                     return
                 ok, saran = sec.is_password_acceptable(p1)
                 if not ok:
-                    QMessageBox.warning(self, "Kata sandi lemah",
-                                        " ".join(saran))
+                    popup.peringatkan(self,
+                                      "Kata sandi lemah",
+                                      " ".join(saran))
                     return
                 sec.create_user(username, p1, self.inp_nama.text().strip(),
                                 self.cmb_role.currentData())
@@ -188,7 +193,7 @@ class DialogPenggunaBaru(QDialog):
                            self.cmb_mode.currentData(), baru["id"]))
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogIzinPengguna(QDialog):
@@ -294,7 +299,7 @@ class DialogIzinPengguna(QDialog):
                             "Hak akses diperbarui", self.ctx.username)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class PenggunaPage(QWidget):
@@ -351,10 +356,8 @@ class PenggunaPage(QWidget):
         b4 = w.tombol("Aktifkan/Nonaktifkan", ikon="keluar")
         b4.clicked.connect(self._toggle_aktif)
         baris.addWidget(b4)
-        baris.addStretch()
-        self.lbl_info = QLabel("")
-        self.lbl_info.setObjectName("Muted")
-        baris.addWidget(self.lbl_info)
+        self.lbl_info = w.label_ringkas()
+        baris.addWidget(self.lbl_info, 1)
         self.lay.addLayout(baris)
 
     def muat(self):
@@ -390,7 +393,7 @@ class PenggunaPage(QWidget):
     def _ubah(self):
         p = self._pengguna_terpilih()
         if p is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu pengguna.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu pengguna.")
             return
         d = DialogPenggunaBaru(self.ctx, self, p)
         if d.exec():
@@ -399,7 +402,7 @@ class PenggunaPage(QWidget):
     def _izin(self):
         p = self._pengguna_terpilih()
         if p is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu pengguna.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu pengguna.")
             return
         d = DialogIzinPengguna(self.ctx, p, self)
         if d.exec():
@@ -408,44 +411,44 @@ class PenggunaPage(QWidget):
     def _reset_password(self):
         p = self._pengguna_terpilih()
         if p is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu pengguna.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu pengguna.")
             return
         d = DialogResetPassword(self.ctx, p, self)
         if d.exec():
-            QMessageBox.information(
-                self, "Kata sandi direset",
-                f"Kata sandi {p['username']} berhasil diubah. Sampaikan kata sandi "
-                "baru kepada pengguna secara aman.")
+            popup.beri_tahu(self,
+                            "Kata sandi direset",
+                            f"Kata sandi {p['username']} berhasil diubah. Sampaikan kata sandi "
+                            "baru kepada pengguna secara aman.")
 
     def _toggle_aktif(self):
         p = self._pengguna_terpilih()
         if p is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu pengguna.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu pengguna.")
             return
         if p["id"] == self.ctx.user_id:
-            QMessageBox.warning(self, "Tidak diizinkan",
-                                "Anda tidak dapat menonaktifkan akun sendiri.")
+            popup.peringatkan(self,
+                              "Tidak diizinkan",
+                              "Anda tidak dapat menonaktifkan akun sendiri.")
             return
         if p["role"] == "owner":
             jumlah_owner = len([x for x in sec.list_users()
                                 if x["role"] == "owner" and x["is_active"]])
             if p["is_active"] and jumlah_owner <= 1:
-                QMessageBox.warning(
-                    self, "Tidak diizinkan",
-                    "Minimal harus ada satu akun Pemilik yang aktif.")
+                popup.peringatkan(self,
+                                  "Tidak diizinkan",
+                                  "Minimal harus ada satu akun Pemilik yang aktif.")
                 return
         aksi = "nonaktifkan" if p["is_active"] else "aktifkan"
-        if QMessageBox.question(
-                self, "Konfirmasi",
-                f"Yakin ingin {aksi} akun '{p['username']}'?",
-                QMessageBox.Yes | QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Konfirmasi",
+                           f"Yakin ingin {aksi} akun '{p['username']}'?"):
             return
         try:
             sec.set_user_active(p["id"], not p["is_active"], self.ctx.user_id,
                                 self.ctx.username)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
 
 class DialogResetPassword(QDialog):
@@ -524,12 +527,13 @@ class DialogResetPassword(QDialog):
 
     def _simpan(self):
         if self.inp1.text() != self.inp2.text():
-            QMessageBox.warning(self, "Kata sandi berbeda",
-                                "Ulangi kata sandi dengan benar.")
+            popup.peringatkan(self,
+                              "Kata sandi berbeda",
+                              "Ulangi kata sandi dengan benar.")
             return
         ok, saran = sec.is_password_acceptable(self.inp1.text())
         if not ok:
-            QMessageBox.warning(self, "Kata sandi lemah", " ".join(saran))
+            popup.peringatkan(self, "Kata sandi lemah", " ".join(saran))
             return
         try:
             sec.reset_password(self.pengguna["id"], self.inp1.text(),
@@ -537,7 +541,7 @@ class DialogResetPassword(QDialog):
                                password_aktor=self.inp_admin.text())
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
 
 # ==========================================================================
@@ -588,8 +592,7 @@ class AuditPage(QWidget):
                 "Pasal 28 ayat (1) dan (11) UU KUP - kewajiban menyelenggarakan "
                 "pembukuan dan menyimpan dokumen selama 10 tahun."))
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         self.tab_keamanan = QWidget()
         self.tab_data = QWidget()
         self.tab_admin = QWidget()
@@ -652,10 +655,8 @@ class AuditPage(QWidget):
             cari.setMinimumWidth(300)
             cari.textChanged.connect(self.muat)
             baris.addWidget(cari)
-            baris.addStretch()
-            lbl = QLabel("")
-            lbl.setObjectName("Muted")
-            baris.addWidget(lbl)
+            lbl = w.label_ringkas()
+            baris.addWidget(lbl, 1)
             lay.addLayout(baris)
 
             tabel = w.Tabel(kolom)
@@ -700,10 +701,8 @@ class AuditPage(QWidget):
         self.inp_cari_riwayat.setMinimumWidth(260)
         self.inp_cari_riwayat.textChanged.connect(self.muat)
         baris.addWidget(self.inp_cari_riwayat)
-        baris.addStretch()
-        self.lbl_riwayat = QLabel("")
-        self.lbl_riwayat.setObjectName("Muted")
-        baris.addWidget(self.lbl_riwayat)
+        self.lbl_riwayat = w.label_ringkas()
+        baris.addWidget(self.lbl_riwayat, 1)
         lay.addLayout(baris)
 
         self.tabel_riwayat = w.Tabel([
@@ -811,11 +810,11 @@ class AuditPage(QWidget):
                     wr.writerow([a["ts"], a["kategori"], a["username"],
                                  a["aksi"], a["objek"], a["keterangan"],
                                  a["sumber"]])
-            QMessageBox.information(
-                self, "Ekspor selesai",
-                f"Log {kategori} ({len(data)} catatan) disimpan di:\n{path}")
+            popup.beri_tahu(self,
+                            "Ekspor selesai",
+                            f"Log {kategori} ({len(data)} catatan) disimpan di:\n{path}")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal mengekspor", str(e))
+            popup.galat(self, "Gagal mengekspor", str(e))
 
 
 # ==========================================================================
@@ -879,13 +878,11 @@ class RecycleBinPage(QWidget):
         self.cmb_tabel.currentIndexChanged.connect(self.muat)
         baris.addWidget(self.cmb_tabel)
 
-        self.chk_tampil_dipulihkan = QCheckBox("Tampilkan yang sudah dipulihkan")
+        self.chk_tampil_dipulihkan = QCheckBox("Tampilkan dipulihkan")
         self.chk_tampil_dipulihkan.stateChanged.connect(self.muat)
         baris.addWidget(self.chk_tampil_dipulihkan)
-        baris.addStretch()
-        self.lbl_info = QLabel("")
-        self.lbl_info.setObjectName("Muted")
-        baris.addWidget(self.lbl_info)
+        self.lbl_info = w.label_ringkas()
+        baris.addWidget(self.lbl_info, 1)
         self.lay.addLayout(baris)
 
         self.tabel = w.Tabel([
@@ -963,7 +960,7 @@ class RecycleBinPage(QWidget):
     def _lihat(self):
         r = self._terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu data.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu data.")
             return
         import json
         dlg = QDialog(self)
@@ -1002,39 +999,38 @@ class RecycleBinPage(QWidget):
     def _pulihkan(self):
         r = self._terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu data.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu data.")
             return
         if r["dipulihkan"]:
-            QMessageBox.information(self, "Sudah dipulihkan",
-                                    "Data ini sudah dipulihkan sebelumnya.")
+            popup.beri_tahu(self,
+                            "Sudah dipulihkan",
+                            "Data ini sudah dipulihkan sebelumnya.")
             return
-        if QMessageBox.question(
-                self, "Konfirmasi Pemulihan",
-                f"Pulihkan '{r['judul']}' ({r['tabel']})?",
-                QMessageBox.Yes | QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Konfirmasi Pemulihan",
+                           f"Pulihkan '{r['judul']}' ({r['tabel']})?"):
             return
         try:
             hasil = O.pulihkan_dari_recycle(r["id"], self.ctx.username)
-            QMessageBox.information(self, "Berhasil", hasil["pesan"])
+            popup.beri_tahu(self, "Berhasil", hasil["pesan"])
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal memulihkan", str(e))
+            popup.galat(self, "Gagal memulihkan", str(e))
 
     def _bersihkan(self):
-        if QMessageBox.question(
-                self, "Konfirmasi Bersihkan",
-                "Hapus permanen semua data di keranjang sampah yang lebih tua "
-                "dari 90 hari?\n\nTindakan ini tidak dapat dibatalkan.",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Konfirmasi Bersihkan",
+                           "Hapus permanen semua data di keranjang sampah yang lebih tua "
+                           "dari 90 hari?\n\nTindakan ini tidak dapat dibatalkan."):
             return
         try:
             jumlah = O.bersihkan_recycle_bin(self.ctx.company_id, 90)
-            QMessageBox.information(self, "Selesai",
-                                    f"{jumlah} catatan dihapus permanen.")
+            popup.beri_tahu(self,
+                            "Selesai",
+                            f"{jumlah} catatan dihapus permanen.")
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
 
 # ==========================================================================
@@ -1154,10 +1150,11 @@ class ImporMassalPage(QWidget):
         try:
             with open(path, "w", encoding="utf-8-sig") as f:
                 f.write(O.template_csv(jenis))
-            QMessageBox.information(self, "Template disimpan",
-                                    f"Template disimpan di:\n{path}")
+            popup.beri_tahu(self,
+                            "Template disimpan",
+                            f"Template disimpan di:\n{path}")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
     def _pilih_berkas(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -1172,14 +1169,15 @@ class ImporMassalPage(QWidget):
                 f"<span style='color:{C.INFO}'>Berkas dimuat: "
                 f"{os.path.basename(path)}</span>")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal membaca berkas", str(e))
+            popup.galat(self, "Gagal membaca berkas", str(e))
 
     def _impor(self):
         jenis = self.cmb_jenis.currentData()
         isi = self.teks.toPlainText().strip()
         if not isi:
-            QMessageBox.warning(self, "Belum ada data",
-                                "Pilih berkas CSV atau tempelkan isinya.")
+            popup.peringatkan(self,
+                              "Belum ada data",
+                              "Pilih berkas CSV atau tempelkan isinya.")
             return
         try:
             if jenis in ("customer", "vendor"):
@@ -1210,7 +1208,7 @@ class ImporMassalPage(QWidget):
                 f"font-size: {theme.FS_SMALL}px;")
             self.muat_terkait()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal mengimpor", str(e))
+            popup.galat(self, "Gagal mengimpor", str(e))
 
     def muat_terkait(self):
         pass
@@ -1277,7 +1275,7 @@ class PencarianPage(QWidget):
         baris.addWidget(b)
         self.lay.addLayout(baris)
 
-        self.lbl_info = QLabel("")
+        self.lbl_info = QLabel("Ketik minimal 2 huruf untuk mulai mencari.")
         self.lbl_info.setObjectName("Muted")
         self.lay.addWidget(self.lbl_info)
 
@@ -1294,6 +1292,19 @@ class PencarianPage(QWidget):
         self.hasil_list.itemDoubleClicked.connect(lambda _: self._buka())
         self.splitter.addWidget(self.hasil_list)
 
+        # Keterangan di tengah daftar saat belum ada hasil. Panel kosong
+        # tanpa keterangan mudah disangka masih memuat atau rusak.
+        self._petunjuk = QLabel(self.hasil_list.viewport())
+        self._petunjuk.setAlignment(Qt.AlignCenter)
+        self._petunjuk.setWordWrap(True)
+        self._petunjuk.setAttribute(Qt.WA_TransparentForMouseEvents)
+        theme.latar(
+            self._petunjuk,
+            f"color: {C.TEXT_MUTED}; background: transparent; "
+            f"font-size: {theme.FS_BODY}px; padding: 24px;")
+        self._petunjuk.hide()
+        self.hasil_list.viewport().installEventFilter(self)
+
         self.detail = QTextEdit()
         self.detail.setReadOnly(True)
         theme.latar(self.detail, f"background: {C.SURFACE}; border: 1px solid {C.BORDER}; "
@@ -1305,10 +1316,66 @@ class PencarianPage(QWidget):
 
         aksi = QHBoxLayout()
         aksi.addStretch()
-        b2 = w.tombol("Buka Halaman Terkait", gaya="primary", ikon="")
-        b2.clicked.connect(self._buka)
-        aksi.addWidget(b2)
+        self.btn_buka = w.tombol("Buka Halaman Terkait", gaya="primary", ikon="")
+        self.btn_buka.clicked.connect(self._buka)
+        self.btn_buka.setEnabled(False)
+        self.btn_buka.setToolTip(
+            "Pilih salah satu hasil pencarian lebih dahulu.")
+        aksi.addWidget(self.btn_buka)
         self.lay.addLayout(aksi)
+
+        self._tampilkan_petunjuk_awal()
+
+    def eventFilter(self, obj, peristiwa):
+        """Jaga keterangan daftar tetap di tengah saat panel diubah ukurannya."""
+        if (obj is self.hasil_list.viewport()
+                and peristiwa.type() == QEvent.Resize):
+            self._letakkan_petunjuk()
+        return super().eventFilter(obj, peristiwa)
+
+    def _letakkan_petunjuk(self):
+        area = self.hasil_list.viewport().rect()
+        self._petunjuk.setGeometry(area.adjusted(24, 24, -24, -24))
+
+    def _atur_petunjuk(self, teks: str = ""):
+        """Tampilkan atau sembunyikan keterangan di dalam daftar hasil."""
+        if teks:
+            self._petunjuk.setText(teks)
+            self._letakkan_petunjuk()
+            self._petunjuk.show()
+            self._petunjuk.raise_()
+        else:
+            self._petunjuk.hide()
+
+    def _perbarui_tombol(self):
+        baris = self.hasil_list.currentRow()
+        siap = 0 <= baris < len(self.hasil_terakhir)
+        self.btn_buka.setEnabled(siap)
+        self.btn_buka.setToolTip(
+            "" if siap else "Pilih salah satu hasil pencarian lebih dahulu.")
+
+    def _tampilkan_petunjuk_awal(self):
+        self._atur_petunjuk(
+            "Hasil pencarian akan muncul di sini.\n\n"
+            "Cari nomor invoice, nama pelanggan, kode produk, atau akun.")
+        self.detail.setHtml(
+            f"<div style='color:{C.TEXT_MUTED}'>"
+            f"<p style='color:{C.PRIMARY}; font-size:{theme.FS_H3}px; "
+            "font-weight:600; margin:0 0 8px 0;'>Mulai pencarian</p>"
+            "<p style='margin:0 0 10px 0;'>Ketik minimal dua huruf pada kolom "
+            "pencarian. Hasil dari seluruh data usaha akan muncul di panel "
+            "kiri.</p>"
+            "<p style='margin:0 0 4px 0;'>Yang dapat dicari antara lain:</p>"
+            "<ul style='margin-top:0;'>"
+            "<li>nomor invoice, bill, atau jurnal</li>"
+            "<li>nama pelanggan, pemasok, atau mitra</li>"
+            "<li>kode dan nama produk</li>"
+            "<li>kode dan nama akun bagan akun</li>"
+            "<li>aset tetap dan dokumen</li>"
+            "</ul>"
+            "<p>Pilih salah satu hasil untuk melihat rinciannya, lalu tekan "
+            "Buka Halaman Terkait.</p></div>")
+        self._perbarui_tombol()
 
     def muat(self):
         pass
@@ -1319,9 +1386,12 @@ class PencarianPage(QWidget):
             # bersihkan hasil lama supaya layar tidak menampilkan sisa
             # pencarian sebelumnya saat kata kunci dihapus
             self.hasil_list.clear()
-            self.detail.clear()
             self.hasil_terakhir = []
-            self.lbl_info.setText("")
+            self.lbl_info.setText(
+                "Ketik satu huruf lagi untuk mulai mencari."
+                if teks.strip() else
+                "Ketik minimal 2 huruf untuk mulai mencari.")
+            self._tampilkan_petunjuk_awal()
             self._tunda.stop()
             return
         self._tunda.start()
@@ -1336,13 +1406,14 @@ class PencarianPage(QWidget):
         kata = self.inp_cari.text().strip()
         if len(kata) < 2:
             if not diam:
-                QMessageBox.information(self, "Kata kunci terlalu pendek",
-                                        "Masukkan minimal 2 huruf untuk mencari.")
+                popup.beri_tahu(self,
+                                "Kata kunci terlalu pendek",
+                                "Masukkan minimal 2 huruf untuk mencari.")
             return
         try:
             self.hasil_terakhir = O.cari_global(self.ctx.company_id, kata)
         except Exception as e:
-            QMessageBox.critical(self, "Pencarian gagal", str(e))
+            popup.galat(self, "Pencarian gagal", str(e))
             return
 
         self.hasil_list.clear()
@@ -1353,31 +1424,41 @@ class PencarianPage(QWidget):
             self.hasil_list.addItem(item)
 
         if not self.hasil_terakhir:
+            kata_aman = html.escape(kata)
             self.lbl_info.setText(f"Tidak ada hasil untuk '{kata}'.")
+            self._atur_petunjuk(
+                f"Tidak ada hasil untuk \"{kata}\".\n\n"
+                "Coba kata kunci lain atau periksa ejaan.")
             self.detail.setHtml(
                 f"<div style='color:{C.TEXT_MUTED}'>Tidak ada hasil untuk "
-                f"<b>{kata}</b>.<br><br>Coba kata kunci lain, atau periksa ejaan."
-                "</div>")
+                f"<b>{kata_aman}</b>.<br><br>Coba kata kunci lain, atau periksa "
+                "ejaan.</div>")
+            self._perbarui_tombol()
         else:
             jumlah_jenis: dict[str, int] = {}
             for h in self.hasil_terakhir:
                 jumlah_jenis[h["jenis"]] = jumlah_jenis.get(h["jenis"], 0) + 1
             ringkas = " · ".join(f"{k}: {v}" for k, v in jumlah_jenis.items())
             self.lbl_info.setText(f"{len(self.hasil_terakhir)} hasil - {ringkas}")
+            self._atur_petunjuk("")
             self.hasil_list.setCurrentRow(0)
 
     def _pilih(self, baris: int):
+        self._perbarui_tombol()
         if baris < 0 or baris >= len(self.hasil_terakhir):
             self.detail.clear()
             return
+        self._atur_petunjuk("")
         h = self.hasil_terakhir[baris]
         self.detail.setHtml(
-            f"<h3 style='color:{C.PRIMARY}; margin-bottom:4px;'>{h['judul']}</h3>"
+            f"<h3 style='color:{C.PRIMARY}; margin-bottom:4px;'>"
+            f"{html.escape(str(h['judul']))}</h3>"
             f"<p style='color:{C.TEXT_MUTED}; margin-top:0;'>"
-            f"<b>Jenis:</b> {h['jenis']}<br>"
-            f"<b>Keterangan:</b> {h['keterangan'] or '-'}<br>"
-            f"<b>Halaman:</b> {h['halaman']}<br>"
-            f"<b>ID:</b> {h['id']}</p>"
+            f"<b>Jenis:</b> {html.escape(str(h['jenis']))}<br>"
+            f"<b>Keterangan:</b> "
+            f"{html.escape(str(h['keterangan'] or '-'))}<br>"
+            f"<b>Halaman:</b> {html.escape(str(h['halaman']))}<br>"
+            f"<b>ID:</b> {html.escape(str(h['id']))}</p>"
             f"<hr>"
             f"<p style='color:{C.TEXT_MUTED}'>Klik 'Buka Halaman Terkait' untuk "
             f"membuka data ini di halamannya.</p>")

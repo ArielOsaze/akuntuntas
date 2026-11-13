@@ -32,6 +32,7 @@ from akuntansi_id.ui import theme  # noqa: E402
 
 app.setStyle("Fusion")
 theme.palet_terang(app)
+app.setStyleSheet(theme.stylesheet())
 
 db.init_db()
 sec.ensure_default_admin()
@@ -43,6 +44,8 @@ HASIL.mkdir(parents=True, exist_ok=True)
 
 # Ukuran yang diuji: dari yang paling kecil yang didukung sampai lega.
 UKURAN = [
+    (920, 620),
+    (980, 700),
     (1024, 640),
     (1280, 720),
     (1366, 768),

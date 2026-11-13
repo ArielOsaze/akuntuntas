@@ -6,7 +6,7 @@
 <title>Pembelian Lisensi AkunTuntas - Bayar dengan QRIS</title>
 <meta name="description" content="Beli lisensi AkunTuntas sekali bayar. Pilih paket, pindai QRIS dengan nominal yang sudah terisi, lalu kirim bukti pembayaran. Lisensi dikirim setelah pembayaran diverifikasi.">
 <meta name="theme-color" content="#FFFFFF">
-<link rel="stylesheet" href="checkout.css?v=3">
+<link rel="stylesheet" href="checkout.css?v=4">
 
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" href="logo-32.png" type="image/png" sizes="32x32">
@@ -17,7 +17,8 @@
 <meta property="og:site_name" content="AkunTuntas">
 <meta property="og:title" content="Pembelian Lisensi AkunTuntas - Bayar dengan QRIS">
 <meta property="og:description" content="Lisensi sekali bayar untuk aplikasi pembukuan dan perpajakan AkunTuntas. Bayar dengan QRIS, nominal sudah terisi otomatis.">
-<meta property="og:image" content="https://akuntuntas.xinet.id/pratinjau.png">
+<meta property="og:image" content="https://akuntuntas.xinet.id/pratinjau.png?v=146">
+<meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="AkunTuntas - Pembukuan dan Pajak Perusahaan Indonesia">
@@ -27,7 +28,8 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Pembelian Lisensi AkunTuntas - Bayar dengan QRIS">
 <meta name="twitter:description" content="Lisensi sekali bayar untuk aplikasi pembukuan dan perpajakan AkunTuntas. Bayar dengan QRIS, nominal sudah terisi otomatis.">
-<meta name="twitter:image" content="https://akuntuntas.xinet.id/pratinjau.png">
+<meta name="twitter:image" content="https://akuntuntas.xinet.id/pratinjau.png?v=146">
+<meta name="twitter:image:alt" content="AkunTuntas - Pembukuan dan Pajak Perusahaan Indonesia">
 
 <link rel="canonical" href="https://akuntuntas.xinet.id/beli">
 <script type="application/ld+json">
@@ -40,7 +42,7 @@
     "@type": "Brand",
     "name": "AkunTuntas"
   },
-  "image": "https://akuntuntas.xinet.id/pratinjau.png",
+  "image": "https://akuntuntas.xinet.id/pratinjau.png?v=146",
   "url": "https://akuntuntas.xinet.id/beli",
   "offers": [
     {
@@ -263,7 +265,7 @@
 
             <div class="qris-head">
                 <div class="kicker">Pembayaran QRIS</div>
-                <h1 id="judul-qris">Nominalnya sudah terisi.</h1>
+                <h2 id="judul-qris" class="judul-qris">Nominalnya sudah terisi.</h2>
                 <p>
                     Pindai QR di bawah dari aplikasi bank atau e-wallet. Total
                     pembayaran sudah dimasukkan ke dalam QR, jadi tidak perlu
@@ -467,6 +469,11 @@
 
     el("pilih-standar").addEventListener("click", function () { pilihPaket("standar"); });
     el("pilih-enterprise").addEventListener("click", function () { pilihPaket("enterprise"); });
+
+    // Tautan "Beli Paket Enterprise" membawa ?paket=enterprise; tanpa ini
+    // halaman selalu menampilkan Standar dan pembeli bisa salah bayar.
+    var paketTautan = new URLSearchParams(window.location.search).get("paket");
+    if (paketTautan && PAKET[paketTautan]) pilihPaket(paketTautan);
 
     // Nomor WhatsApp dirapikan: hanya angka, awalan 62 diubah ke 0.
     var wa = el("wa");

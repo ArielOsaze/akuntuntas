@@ -89,9 +89,15 @@ def main() -> int:
     tunggu(app, 0.5)
 
     jumlah = 0
+    def gulir_menu_ke_atas():
+        # Perpindahan halaman atau bentuk badan dapat menyisakan posisi
+        # gulir menu; tangkapan harus selalu mulai dari menu paling atas.
+        jendela.sidebar._area.verticalScrollBar().setValue(0)
+
     for kode, nama_berkas in HALAMAN:
         jendela._navigasi(kode)
         tunggu(app, 0.9)
+        gulir_menu_ke_atas()
 
         if kode == "pencarian":
             halaman = jendela.stack.currentWidget()
@@ -107,6 +113,7 @@ def main() -> int:
         jendela.sidebar.terapkan_bentuk(bentuk)
         jendela._navigasi(kode)
         tunggu(app, 0.9)
+        gulir_menu_ke_atas()
         gambar = jendela.grab()
         gambar.save(str(KELUAR / f"{nama_berkas}.png"))
         jumlah += 1

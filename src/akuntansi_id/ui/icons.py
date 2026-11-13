@@ -17,13 +17,13 @@ from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import (QColor, QIcon, QPainter, QPainterPath, QPen,
                            QPixmap, QPolygonF)
 
-# Warna baku ikon; sesuaikan agar menyatu dengan tema.
-WARNA_GELAP = "#3E4C59"
+# Warna baku ikon; mengikuti tinta dan tembaga dari logo.
+WARNA_GELAP = "#3C4B52"
 WARNA_TERANG = "#FFFFFF"
-WARNA_MUTED = "#7B8794"
-WARNA_PRIMER = "#1B4F8A"
-WARNA_SUKSES = "#0F7B54"
-WARNA_BAHAYA = "#B91C1C"
+WARNA_MUTED = "#7C878C"
+WARNA_PRIMER = "#8A5225"
+WARNA_SUKSES = "#2D6A4F"
+WARNA_BAHAYA = "#A23A32"
 
 _UKURAN_BAKU = (14, 16, 18, 20, 22, 24, 28, 32)
 _CACHE: dict = {}
@@ -285,6 +285,9 @@ def _gambar(nama: str, p: QPainter, u: float) -> None:
         p.drawLine(_p(12, 5, u), _p(12, 19, u))
         p.drawLine(_p(5, 12, u), _p(19, 12, u))
 
+    elif nama == "kurang":
+        p.drawLine(_p(5, 12, u), _p(19, 12, u))
+
     elif nama == "simpan":
         # disket (simpan)
         p.drawPolyline(_poli([(5, 3.5), (16, 3.5), (20.5, 8), (20.5, 20.5),
@@ -316,6 +319,26 @@ def _gambar(nama: str, p: QPainter, u: float) -> None:
         p.drawPath(jalur)
         p.drawEllipse(_r(9.3, 9.3, 5.4, 5.4, u))
         p.drawEllipse(_r(11.3, 11.3, 1.4, 1.4, u))
+
+    elif nama == "mata_tutup":
+        # mata dengan garis miring: isi kolom sedang disembunyikan
+        jalur = QPainterPath(_p(2.8, 12, u))
+        jalur.quadTo(_p(12, 5.6, u), _p(21.2, 12, u))
+        jalur.quadTo(_p(12, 18.4, u), _p(2.8, 12, u))
+        p.drawPath(jalur)
+        p.drawEllipse(_r(9.3, 9.3, 5.4, 5.4, u))
+        p.drawEllipse(_r(11.3, 11.3, 1.4, 1.4, u))
+        p.drawLine(_p(4.2, 4.2, u), _p(19.8, 19.8, u))
+
+    elif nama == "perisai":
+        # perisai dengan centang: data terlindungi
+        p.drawPolyline(_poli([(12, 3.2), (19.6, 6.2), (19.6, 11.6),
+                              (18.2, 16.4), (12, 20.8), (5.8, 16.4),
+                              (4.4, 11.6), (4.4, 6.2), (12, 3.2)], u))
+        p.drawPolyline(_poli([(8.4, 11.8), (11, 14.4), (15.8, 8.8)], u))
+
+    elif nama == "centang":
+        p.drawPolyline(_poli([(4.5, 12.8), (9.6, 18), (19.5, 6.4)], u))
 
     elif nama == "kalender":
         p.drawRoundedRect(_r(4, 5.5, 16, 15, u), 2 * u, 2 * u)
@@ -400,8 +423,10 @@ _NAMA = {
     "biaya", "bank", "mitra", "kontrak", "produk", "aset", "payroll", "dimensi", "periode",
     "konsolidasi", "laporan", "pajak", "checklist", "pengguna", "audit",
     "recycle", "impor", "ekspor", "coa", "perusahaan", "lan", "pengaturan",
-    "bantuan", "keluar", "tambah", "simpan", "hapus", "cetak", "segarkan",
-    "mata", "kalender", "transfer", "peringatan", "info", "uang", "kunci",
+    "bantuan", "keluar", "tambah", "kurang", "simpan", "hapus", "cetak",
+    "segarkan",
+    "mata", "mata_tutup", "perisai", "centang", "kalender", "transfer",
+    "peringatan", "info", "uang", "kunci",
     "buka", "dokumen", "waktu", "laporan_kecil",
     "panah_kiri", "panah_kanan", "panah_bawah",
     "nonaktif", "aktif",
@@ -419,7 +444,7 @@ def pixmap(nama: str, warna: str = WARNA_GELAP, ukuran: int = 20) -> QPixmap:
     p = QPainter(pix)
     p.setRenderHint(QPainter.Antialiasing, True)
     pena = QPen(QColor(warna))
-    pena.setWidthF(max(1.35, ukuran / 15.0))
+    pena.setWidthF(max(1.35, ukuran / 16.0))
     pena.setCapStyle(Qt.RoundCap)
     pena.setJoinStyle(Qt.RoundJoin)
     p.setPen(pena)

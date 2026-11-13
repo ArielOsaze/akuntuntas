@@ -10,7 +10,7 @@ import json
 from datetime import date, datetime, timedelta
 from typing import Any, Optional
 
-from . import db, schema_ext
+from . import coa, db, schema_ext
 
 
 # ==========================================================================
@@ -392,9 +392,11 @@ def riwayat_mitra(partner_id: int, limit: int = 200) -> list:
 # PRODUK, GUDANG & PERSEDIAAN
 # ==========================================================================
 def buat_kategori_produk(company_id: int, nama: str, **kw) -> int:
+    akun_persediaan = (kw.get("akun_persediaan")
+                       or coa.kode_akun_bawaan(company_id, "persediaan"))
     cur = db.ex("""INSERT INTO product_categories(company_id, nama, akun_persediaan,
                   akun_pendapatan, akun_hpp, catatan) VALUES(?,?,?,?,?,?)""",
-                (company_id, nama.strip(), kw.get("akun_persediaan", "1104"),
+                (company_id, nama.strip(), akun_persediaan,
                  kw.get("akun_pendapatan", "4001"), kw.get("akun_hpp", "5001"),
                  kw.get("catatan", "")))
     return cur.lastrowid
@@ -416,6 +418,8 @@ def buat_produk(company_id: int, nama: str, **kw) -> int:
     if metode not in ("fifo", "average"):
         raise ValueError("Metode HPP harus 'fifo' atau 'average'.")
 
+    akun_persediaan = (kw.get("akun_persediaan")
+                       or coa.kode_akun_bawaan(company_id, "persediaan"))
     with db.tx() as conn:
         cur = conn.execute(
             """INSERT INTO products(company_id, kategori_id, kode, barcode, nama,
@@ -426,7 +430,7 @@ def buat_produk(company_id: int, nama: str, **kw) -> int:
              nama.strip(), kw.get("deskripsi", ""), kw.get("satuan", "pcs"),
              tipe, ringkas_angka(kw.get("harga_beli")), ringkas_angka(kw.get("harga_jual")),
              metode, ringkas_angka(kw.get("stok_minimum")),
-             kw.get("akun_persediaan", "1104"), kw.get("akun_pendapatan", "4001"),
+             akun_persediaan, kw.get("akun_pendapatan", "4001"),
              kw.get("akun_hpp", "5001")))
         pid = cur.lastrowid
 

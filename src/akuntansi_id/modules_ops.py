@@ -15,7 +15,7 @@ import zipfile
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from . import config, db, services
+from . import coa, config, db, services
 from .core import accounting as acc
 from .core import tax_engine as tx
 from .modules import (hari_ini, tambah_hari, nomor_berikut, catat_riwayat,
@@ -130,10 +130,12 @@ def _tanggal_dari(baris: list, indeks: int) -> str:
 # BIAYA (EXPENSE MANAGEMENT)
 # ==========================================================================
 def buat_kategori_biaya(company_id: int, nama: str, **kw) -> int:
+    akun_beban = (kw.get("akun_beban")
+                  or coa.kode_akun_bawaan(company_id, "beban_umum"))
     cur = db.ex("""INSERT INTO expense_categories(company_id, nama, akun_beban,
                   batas_nilai, perlu_persetujuan, catatan)
                   VALUES(?,?,?,?,?,?)""",
-                (company_id, nama.strip(), kw.get("akun_beban", "6023"),
+                (company_id, nama.strip(), akun_beban,
                  ringkas_angka(kw.get("batas_nilai")),
                  1 if kw.get("perlu_persetujuan") else 0, kw.get("catatan", "")))
     return cur.lastrowid
@@ -145,7 +147,7 @@ def daftar_kategori_biaya(company_id: int) -> list:
 
 
 def ajukan_biaya(company_id: int, tanggal: str, uraian: str, jumlah: int,
-                 akun_beban: str = "6023", kategori_id: Optional[int] = None,
+                 akun_beban: str = "", kategori_id: Optional[int] = None,
                  vendor: str = "", partner_id: Optional[int] = None,
                  cost_center_id: Optional[int] = None, project_id: Optional[int] = None,
                  branch_id: Optional[int] = None, tipe: str = "langsung",
@@ -163,6 +165,8 @@ def ajukan_biaya(company_id: int, tanggal: str, uraian: str, jumlah: int,
         row = db.q1("SELECT kode FROM accounts WHERE company_id=? AND is_kas_bank=1 "
                     "ORDER BY kode LIMIT 1", (company_id,))
         akun_kas = row["kode"] if row else "1001"
+    if not akun_beban:
+        akun_beban = coa.kode_akun_bawaan(company_id, "beban_umum")
 
     # tentukan perlu persetujuan
     perlu_setuju = False
@@ -468,9 +472,7 @@ def transfer_kas_bank(company_id: int, tanggal: str, dari_kode: str, ke_kode: st
          "catatan": f"Transfer keluar ke {ke['nama']}"},
     ]
     if biaya_admin > 0:
-        akun_admin = "6009" if db.q1(
-            "SELECT 1 FROM accounts WHERE company_id=? AND kode='6009'",
-            (company_id,)) else "8002"
+        akun_admin = coa.kode_akun_bawaan(company_id, "biaya_bank")
         baris.append({"kode_akun": akun_admin, "debit": ringkas_angka(biaya_admin),
                       "kredit": 0, "catatan": "Biaya transfer"})
         baris.append({"kode_akun": dari_kode, "debit": 0,
@@ -1076,7 +1078,8 @@ def _jalankan_satu_template(company_id: int, template, payload: dict,
         return ajukan_biaya(
             company_id, tanggal, payload.get("uraian", template["nama"]),
             ringkas_angka(payload.get("jumlah")),
-            payload.get("akun_beban", "6023"),
+            payload.get("akun_beban")
+            or coa.kode_akun_bawaan(company_id, "beban_umum"),
             payload.get("kategori_id"), payload.get("vendor", ""),
             user_id=user_id)
     # invoice
@@ -1803,10 +1806,13 @@ def laporan_konsolidasi(group_id: int, tahun: int) -> dict:
         total["pendapatan"] += int(lr.pendapatan_usaha * porsi)
         total["beban"] += int((lr.beban_operasional + lr.hpp + lr.beban_lain) * porsi)
         total["laba"] += int(lr.laba_bersih * porsi)
+        akun_piutang = {r["kode"] for r in db.q(
+            "SELECT kode FROM accounts WHERE company_id=? "
+            "AND baris_neraca='Piutang Usaha'", (cid,))}
         total["kas"] += int(sum(v for k, (_, v) in nr.aset_lancar.items()
                                 if k.startswith("100")) * porsi)
         total["piutang"] += int(sum(v for k, (_, v) in nr.aset_lancar.items()
-                                    if k in ("1101", "1102")) * porsi)
+                                    if k in akun_piutang) * porsi)
         total["utang"] += int(nr.total_liabilitas * porsi)
 
     return {

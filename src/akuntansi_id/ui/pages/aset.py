@@ -12,8 +12,7 @@ from datetime import date, datetime
 from PySide6.QtCore import Qt, Signal, QDate
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QLineEdit, QDateEdit,
-    QDialog, QMessageBox, QGridLayout, QCheckBox, QTableWidgetItem, QSpinBox,
-    QTabWidget,
+    QDialog, QGridLayout, QCheckBox, QTableWidgetItem, QSpinBox,
 )
 
 from ... import config, coa, services
@@ -23,6 +22,7 @@ from .. import kalender
 from ..theme import C
 from .. import widgets as w
 from .transaksi import HalamanDasar
+from .. import popup
 
 
 # ==========================================================================
@@ -85,10 +85,10 @@ class AsetPage(HalamanDasar):
         self.body_lay.addWidget(ref)
 
         self.tabel = w.Tabel([
-            ("Kode", 90), ("Nama Aset", -1), ("Tgl Perolehan", 115),
-            ("Harga Perolehan", 150), ("Kelompok Fiskal", 130),
-            ("Metode", 110), ("Peny. Komersial", 145), ("Peny. Fiskal", 140),
-            ("Selisih", 130),
+            ("Kode", 80), ("Nama Aset", -1), ("Tgl Perolehan", 115),
+            ("Harga Perolehan", 140), ("Kelompok Fiskal", 125),
+            ("Metode", 100), ("Peny. Komersial", 125), ("Peny. Fiskal", 120),
+            ("Selisih", 115),
         ])
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
@@ -99,16 +99,17 @@ class AsetPage(HalamanDasar):
             "atau bangunan milik usaha Anda.")
 
         self.body_lay.addWidget(self.tabel, 1)
+        self.header.pasang_ekspor_cetak(self, "Daftar Aset Tetap", "tabel")
 
         baris = QHBoxLayout()
         baris.setSpacing(9)
         b_hapus = w.tombol("Hapus Aset", gaya="danger", ikon="hapus")
         b_hapus.clicked.connect(self._hapus)
         baris.addWidget(b_hapus)
-        baris.addStretch()
         self.lbl_info = QLabel("")
         self.lbl_info.setObjectName("Muted")
-        baris.addWidget(self.lbl_info)
+        self.lbl_info.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        baris.addWidget(self.lbl_info, 1)
         self.body_lay.addLayout(baris)
 
     def muat(self):
@@ -154,45 +155,45 @@ class AsetPage(HalamanDasar):
             return
         aset = services.list_aset(cid)
         if not aset:
-            QMessageBox.information(self, "Belum ada aset",
-                                    "Tambahkan aset tetap terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada aset",
+                            "Tambahkan aset tetap terlebih dahulu.")
             return
         try:
             hasil = services.hitung_penyusutan_tahun(cid, tahun, self.ctx.user_id)
             total_k = sum(h["komersial"] for h in hasil)
             total_f = sum(h["fiskal"] for h in hasil)
-            QMessageBox.information(
-                self, "Penyusutan selesai",
-                f"Penyusutan tahun {tahun} berhasil dihitung untuk {len(hasil)} aset.\n\n"
-                f"Total penyusutan komersial: {theme.money(total_k)}\n"
-                f"Total penyusutan fiskal: {theme.money(total_f)}\n"
-                f"Selisih (menjadi koreksi fiskal): {theme.money(total_k - total_f)}\n\n"
-                "Jurnal penyusutan telah dibuat otomatis.")
+            popup.beri_tahu(self,
+                            "Penyusutan selesai",
+                            f"Penyusutan tahun {tahun} berhasil dihitung untuk {len(hasil)} aset.\n\n"
+                            f"Total penyusutan komersial: {theme.money(total_k)}\n"
+                            f"Total penyusutan fiskal: {theme.money(total_f)}\n"
+                            f"Selisih (menjadi koreksi fiskal): {theme.money(total_k - total_f)}\n\n"
+                            "Jurnal penyusutan telah dibuat otomatis.")
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menghitung", str(e))
+            popup.galat(self, "Gagal menghitung", str(e))
 
     def _hapus(self):
         r = self.tabel.baris_terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu baris aset.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu baris aset.")
             return
         aset = services.list_aset(self.ctx.company_id)
         if r >= len(aset):
             return
         a = aset[r]
-        if QMessageBox.question(
-                self, "Konfirmasi Hapus",
-                f"Hapus aset '{a['nama_aset']}' beserta data penyusutannya?\n\n"
-                "Jurnal perolehan dan penyusutan tidak ikut terhapus otomatis "
-                "perlu disesuaikan manual bila diperlukan.",
-                QMessageBox.Yes | QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Konfirmasi Hapus",
+                           f"Hapus aset '{a['nama_aset']}' beserta data penyusutannya?\n\n"
+                           "Jurnal perolehan dan penyusutan tidak ikut terhapus otomatis "
+                           "perlu disesuaikan manual bila diperlukan."):
             return
         try:
             services.hapus_aset(a["id"], self.ctx.user_id)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menghapus", str(e))
+            popup.galat(self, "Gagal menghapus", str(e))
 
 
 class DialogAset(QDialog):
@@ -227,7 +228,7 @@ class DialogAset(QDialog):
 
         g.addWidget(w.label("Kode Aset (opsional)", objek="FormLabel"), 0, 0)
         self.inp_kode = QLineEdit()
-        self.inp_kode.setPlaceholderText("otomatis bila dikosongkan")
+        self.inp_kode.setPlaceholderText("otomatis bila kosong")
         g.addWidget(self.inp_kode, 1, 0)
 
         g.addWidget(w.label("Nama Aset", objek="FormLabel"), 0, 1, 1, 2)
@@ -280,25 +281,30 @@ class DialogAset(QDialog):
 
         g.addWidget(w.label("Akun Aset", objek="FormLabel"), 6, 2)
         self.cmb_akun_aset = w.combo_akun(ctx.company_id)
-        w.set_combo_by_data(self.cmb_akun_aset, "1201")
+        w.set_combo_by_data(self.cmb_akun_aset,
+                            coa.kode_akun_bawaan(ctx.company_id, "aset_peralatan"))
         g.addWidget(self.cmb_akun_aset, 7, 2)
 
         g.addWidget(w.label("Akun Akumulasi Penyusutan", objek="FormLabel"), 8, 0, 1, 2)
         self.cmb_akun_akum = w.combo_akun(ctx.company_id)
-        w.set_combo_by_data(self.cmb_akun_akum, "1202")
+        w.set_combo_by_data(self.cmb_akun_akum,
+                            coa.kode_akun_bawaan(ctx.company_id, "akum_penyusutan"))
         g.addWidget(self.cmb_akun_akum, 9, 0, 1, 2)
 
         g.addWidget(w.label("Akun Beban Penyusutan", objek="FormLabel"), 8, 2)
         self.cmb_akun_beban = w.combo_akun(ctx.company_id)
-        w.set_combo_by_data(self.cmb_akun_beban, "6007")
+        w.set_combo_by_data(self.cmb_akun_beban,
+                            coa.kode_akun_bawaan(ctx.company_id, "beban_penyusutan"))
         g.addWidget(self.cmb_akun_beban, 9, 2)
         l.addLayout(g)
 
         self.lbl_hint = QLabel("")
         self.lbl_hint.setWordWrap(True)
-        theme.latar(self.lbl_hint, f"background: {C.PRIMARY_SOFT}; border: 1px solid #CFE0F0; "
-            f"border-radius: 8px; padding: 11px 13px; font-size: {theme.FS_SMALL}px; "
-            f"color: {C.TEXT};")
+        theme.latar(self.lbl_hint,
+                    f"color: {C.TEXT}; background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px; "
+                    f"padding: 9px 11px; font-size: {theme.FS_SMALL}px;")
         l.addWidget(self.lbl_hint)
 
         aksi = QHBoxLayout()
@@ -357,10 +363,10 @@ class DialogAset(QDialog):
     def _simpan(self):
         try:
             if not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Nama kosong", "Isi nama aset.")
+                popup.peringatkan(self, "Nama kosong", "Isi nama aset.")
                 return
             if self.inp_harga.nilai() <= 0:
-                QMessageBox.warning(self, "Harga kosong", "Isi harga perolehan.")
+                popup.peringatkan(self, "Harga kosong", "Isi harga perolehan.")
                 return
             kelompok = self.cmb_kelompok.currentData()
             metode = self.cmb_metode.currentData()
@@ -377,13 +383,16 @@ class DialogAset(QDialog):
                 self.spin_umur.value(),
                 self.inp_residu.nilai(),
                 self.inp_nbv.nilai(),
-                self.cmb_akun_aset.currentData() or "1201",
-                self.cmb_akun_akum.currentData() or "1202",
-                self.cmb_akun_beban.currentData() or "6007",
+                (self.cmb_akun_aset.currentData()
+                 or coa.kode_akun_bawaan(self.ctx.company_id, "aset_peralatan")),
+                (self.cmb_akun_akum.currentData()
+                 or coa.kode_akun_bawaan(self.ctx.company_id, "akum_penyusutan")),
+                (self.cmb_akun_beban.currentData()
+                 or coa.kode_akun_bawaan(self.ctx.company_id, "beban_penyusutan")),
                 user_id=self.ctx.user_id)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 # ==========================================================================
@@ -433,8 +442,7 @@ class PayrollPage(QWidget):
         kl.addWidget(self.header, 0)
         luar.addWidget(kepala)
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         wadah = QWidget()
         wl = QVBoxLayout(wadah)
         wl.setContentsMargins(22, 16, 22, 22)
@@ -500,10 +508,10 @@ class PayrollPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_karyawan.set_pesan_kosong(
-            "Belum ada aset tetap yang terdaftar."
+            "Belum ada karyawan yang terdaftar."
             "\n\n"
-            "Tekan tombol Tambah Aset untuk mencatat peralatan, kendaraan, "
-            "atau bangunan milik usaha Anda.")
+            "Tekan tombol Tambah Karyawan untuk mencatat data karyawan. "
+            "Gaji dan PPh 21 dihitung otomatis saat payroll dijalankan.")
 
         lay.addWidget(self.tabel_karyawan, 1)
 
@@ -551,7 +559,7 @@ class PayrollPage(QWidget):
     def _ubah_karyawan(self):
         r = self.tabel_karyawan.baris_terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu karyawan.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu karyawan.")
             return
         data = services.list_karyawan(self.ctx.company_id)
         if r >= len(data):
@@ -563,17 +571,16 @@ class PayrollPage(QWidget):
     def _hapus_karyawan(self):
         r = self.tabel_karyawan.baris_terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu karyawan.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu karyawan.")
             return
         data = services.list_karyawan(self.ctx.company_id)
         if r >= len(data):
             return
         k = data[r]
-        if QMessageBox.question(
-                self, "Konfirmasi",
-                f"Nonaktifkan karyawan '{k['nama']}'?\n\n"
-                "Data historis payroll tetap tersimpan.",
-                QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+        if popup.tanya(self,
+                       "Konfirmasi",
+                       f"Nonaktifkan karyawan '{k['nama']}'?\n\n"
+                       "Data historis payroll tetap tersimpan."):
             services.hapus_karyawan(k["id"])
             self._muat_karyawan()
 
@@ -603,10 +610,10 @@ class PayrollPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         self.tabel_payroll.set_pesan_kosong(
-            "Belum ada aset tetap yang terdaftar."
+            "Belum ada data payroll."
             "\n\n"
-            "Tekan tombol Tambah Aset untuk mencatat peralatan, kendaraan, "
-            "atau bangunan milik usaha Anda.")
+            "Isi data karyawan pada tab Data Karyawan, lalu tekan "
+            "Jalankan Payroll Bulan Ini untuk menghitung gaji dan PPh 21.")
 
         self.tabel_payroll.doubleClicked.connect(self._detail_payroll)
         lay.addWidget(self.tabel_payroll, 1)
@@ -630,18 +637,15 @@ class PayrollPage(QWidget):
         data = services.list_payroll(cid, tahun)
         baris = []
         for p in data:
+            # Jumlah PPh 21 diambil dari rincian karyawan periode ini.
+            pph = sum(x["pph21"] for x in services.detail_payroll(p["id"]))
             baris.append([
                 p["masa"], p["jumlah_karyawan"], theme.money(p["total_bruto"]),
-                theme.money(p["total_potongan"]), "", theme.money(p["total_thp"]),
-                theme.money(p["total_beban"]),
+                theme.money(p["total_potongan"]), theme.money(pph),
+                theme.money(p["total_thp"]), theme.money(p["total_beban"]),
                 "Sudah dijurnal" if p["status"] == "posted" else "Draft",
             ])
-        # isi kolom PPh 21 dari rincian
-        for i, p in enumerate(data):
-            items = services.detail_payroll(p["id"])
-            pph = sum(x["pph21"] for x in items)
-            self.tabel_payroll.setItem(i, 4, QTableWidgetItem(theme.money(pph)))
-        self.tabel_payroll.isi(baris, align_kanan={2, 3, 5, 6})
+        self.tabel_payroll.isi(baris, align_kanan={2, 3, 4, 5, 6})
         total = sum(p["total_beban"] for p in data)
         self.lbl_payroll.setText(f"{len(data)} periode payroll · Total beban "
                                  f"{theme.money(total)}")
@@ -649,12 +653,14 @@ class PayrollPage(QWidget):
     def _jalankan(self):
         cid = self.ctx.company_id
         if not cid:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         if not services.list_karyawan(cid):
-            QMessageBox.information(self, "Belum ada karyawan",
-                                    "Daftarkan karyawan pada tab Data Karyawan.")
+            popup.beri_tahu(self,
+                            "Belum ada karyawan",
+                            "Daftarkan karyawan pada tab Data Karyawan.")
             return
         d = DialogJalankanPayroll(self.ctx, self)
         if d.exec():
@@ -664,7 +670,9 @@ class PayrollPage(QWidget):
     def _detail_payroll(self):
         r = self.tabel_payroll.baris_terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu periode payroll.")
+            popup.beri_tahu(self,
+                            "Belum dipilih",
+                            "Pilih satu periode payroll.")
             return
         data = services.list_payroll(self.ctx.company_id, self.ctx.tahun)
         if r >= len(data):
@@ -692,10 +700,10 @@ class PayrollPage(QWidget):
         # Keterangan ini tampil saat tabel masih kosong, supaya
         # pengguna tahu langkah berikutnya.
         t.set_pesan_kosong(
-            "Belum ada aset tetap yang terdaftar."
+            "Belum ada data payroll."
             "\n\n"
-            "Tekan tombol Tambah Aset untuk mencatat peralatan, kendaraan, "
-            "atau bangunan milik usaha Anda.")
+            "Isi data karyawan pada tab Data Karyawan, lalu tekan "
+            "Jalankan Payroll Bulan Ini.")
 
         baris = [[
             it["nama"], it["status_ptkp"], theme.money(it["gaji_pokok"]),
@@ -730,21 +738,22 @@ class PayrollPage(QWidget):
     def _hapus_payroll(self):
         r = self.tabel_payroll.baris_terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu periode payroll.")
+            popup.beri_tahu(self,
+                            "Belum dipilih",
+                            "Pilih satu periode payroll.")
             return
         data = services.list_payroll(self.ctx.company_id, self.ctx.tahun)
         if r >= len(data):
             return
         p = data[r]
-        if QMessageBox.question(
-                self, "Konfirmasi Hapus",
-                f"Hapus payroll masa {p['masa']} beserta jurnalnya?",
-                QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+        if popup.tanya(self,
+                       "Konfirmasi Hapus",
+                       f"Hapus payroll masa {p['masa']} beserta jurnalnya?"):
             try:
                 services.hapus_payroll(p["id"], self.ctx.user_id)
                 self.muat()
             except Exception as e:
-                QMessageBox.critical(self, "Gagal menghapus", str(e))
+                popup.galat(self, "Gagal menghapus", str(e))
 
 
 class DialogKaryawan(QDialog):
@@ -846,9 +855,11 @@ class DialogKaryawan(QDialog):
         self.lbl_hint = QLabel("")
         self.lbl_hint.setWordWrap(True)
         self.lbl_hint.setTextFormat(Qt.RichText)
-        theme.latar(self.lbl_hint, f"background: {C.PRIMARY_SOFT}; border: 1px solid #CFE0F0; "
-            f"border-radius: 8px; padding: 12px 14px; font-size: {theme.FS_SMALL}px; "
-            f"color: {C.TEXT};")
+        theme.latar(self.lbl_hint,
+                    f"color: {C.TEXT}; background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px; "
+                    f"padding: 9px 11px; font-size: {theme.FS_SMALL}px;")
         l.addWidget(self.lbl_hint)
 
         aksi = QHBoxLayout()
@@ -926,10 +937,10 @@ class DialogKaryawan(QDialog):
     def _simpan(self):
         try:
             if not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Nama kosong", "Isi nama karyawan.")
+                popup.peringatkan(self, "Nama kosong", "Isi nama karyawan.")
                 return
             if self.inp_gaji.nilai() <= 0:
-                QMessageBox.warning(self, "Gaji kosong", "Isi gaji pokok.")
+                popup.peringatkan(self, "Gaji kosong", "Isi gaji pokok.")
                 return
             try:
                 jkk = float(self.inp_jkk.text().replace(",", ".").strip() or "0") / 100
@@ -955,7 +966,7 @@ class DialogKaryawan(QDialog):
                 services.simpan_karyawan(self.ctx.company_id, **data)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogJalankanPayroll(QDialog):
@@ -1000,10 +1011,9 @@ class DialogJalankanPayroll(QDialog):
             # Keterangan ini tampil saat tabel masih kosong, supaya
             # pengguna tahu langkah berikutnya.
             t.set_pesan_kosong(
-                "Belum ada aset tetap yang terdaftar."
+                "Belum ada karyawan aktif."
                 "\n\n"
-                "Tekan tombol Tambah Aset untuk mencatat peralatan, kendaraan, "
-                "atau bangunan milik usaha Anda.")
+                "Tambahkan karyawan pada tab Data Karyawan terlebih dahulu.")
 
             t.setRowCount(len(self.karyawan))
             for i, k in enumerate(self.karyawan):
@@ -1021,9 +1031,11 @@ class DialogJalankanPayroll(QDialog):
             "Untuk masa Desember, aplikasi otomatis memakai penghitungan setahun "
             "penuh sesuai PMK 168/2023.")
         self.lbl_info.setWordWrap(True)
-        theme.latar(self.lbl_info, f"background: {C.PRIMARY_SOFT}; border: 1px solid #CFE0F0; "
-            f"border-radius: 8px; padding: 11px 13px; font-size: {theme.FS_SMALL}px; "
-            f"color: {C.TEXT};")
+        theme.latar(self.lbl_info,
+                    f"color: {C.TEXT}; background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px; "
+                    f"padding: 9px 11px; font-size: {theme.FS_SMALL}px;")
         l.addWidget(self.lbl_info)
 
         aksi = QHBoxLayout()
@@ -1031,7 +1043,7 @@ class DialogJalankanPayroll(QDialog):
         b = w.tombol("Batal")
         b.clicked.connect(self.reject)
         aksi.addWidget(b)
-        bs = w.tombol("Hitung & Posting Payroll", gaya="primary")
+        bs = w.tombol("Hitung && Posting Payroll", gaya="primary")
         bs.clicked.connect(self._jalankan)
         aksi.addWidget(bs)
         l.addLayout(aksi)
@@ -1040,22 +1052,23 @@ class DialogJalankanPayroll(QDialog):
         try:
             masa = self.inp_masa.text().strip()
             if len(masa) != 7 or masa[4] != "-":
-                QMessageBox.warning(self, "Format salah",
-                                    "Format masa pajak harus YYYY-MM, contoh 2026-01.")
+                popup.peringatkan(self,
+                                  "Format salah",
+                                  "Format masa pajak harus YYYY-MM, contoh 2026-01.")
                 return
             bonus = {eid: inp.nilai() for eid, inp in self.inputs.items()
                      if inp.nilai() > 0}
             hasil = services.hitung_payroll_bulanan(
                 self.ctx.company_id, masa, bonus, self.ctx.user_id, posting=True)
-            QMessageBox.information(
-                self, "Payroll selesai",
-                f"Payroll masa {masa} berhasil dihitung untuk "
-                f"{len(hasil['items'])} karyawan.\n\n"
-                f"Total bruto: {theme.money(hasil['total_bruto'])}\n"
-                f"Total PPh 21: {theme.money(hasil['total_pph21'])}\n"
-                f"Total take home pay: {theme.money(hasil['total_thp'])}\n"
-                f"Total beban perusahaan: {theme.money(hasil['total_beban'])}\n\n"
-                "Jurnal payroll telah dibuat otomatis.")
+            popup.beri_tahu(self,
+                            "Payroll selesai",
+                            f"Payroll masa {masa} berhasil dihitung untuk "
+                            f"{len(hasil['items'])} karyawan.\n\n"
+                            f"Total bruto: {theme.money(hasil['total_bruto'])}\n"
+                            f"Total PPh 21: {theme.money(hasil['total_pph21'])}\n"
+                            f"Total take home pay: {theme.money(hasil['total_thp'])}\n"
+                            f"Total beban perusahaan: {theme.money(hasil['total_beban'])}\n\n"
+                            "Jurnal payroll telah dibuat otomatis.")
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menjalankan payroll", str(e))
+            popup.galat(self, "Gagal menjalankan payroll", str(e))

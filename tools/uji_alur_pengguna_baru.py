@@ -28,7 +28,7 @@ FOLDER = Path(tempfile.mkdtemp(prefix="akuntuntas_alur_"))
 os.environ["LOCALAPPDATA"] = str(FOLDER)
 
 from PySide6.QtCore import QDate  # noqa: E402
-from PySide6.QtWidgets import QApplication, QMessageBox  # noqa: E402
+from PySide6.QtWidgets import QApplication  # noqa: E402
 
 app = QApplication.instance() or QApplication([])
 
@@ -154,12 +154,11 @@ def main() -> int:
           f"kode='{kode_bentuk}'")
 
     pesan: list[str] = []
-    asli_info = QMessageBox.information
-    asli_critical = QMessageBox.critical
-    QMessageBox.information = staticmethod(
-        lambda *a, **k: pesan.append(f"info: {a[2][:50]}") or QMessageBox.Ok)
-    QMessageBox.critical = staticmethod(
-        lambda *a, **k: pesan.append(f"critical: {a[2][:80]}") or QMessageBox.Ok)
+    from akuntansi_id.ui import popup
+    asli_info = popup.beri_tahu
+    asli_critical = popup.galat
+    popup.beri_tahu = lambda *a, **k: pesan.append(f"info: {a[2][:50]}")
+    popup.galat = lambda *a, **k: pesan.append(f"critical: {a[2][:80]}")
 
     try:
         halaman._buat()
@@ -167,8 +166,8 @@ def main() -> int:
         p.cek("Tombol tidak menimbulkan galat", False,
               f"{type(e).__name__}: {e}")
     finally:
-        QMessageBox.information = asli_info
-        QMessageBox.critical = asli_critical
+        popup.beri_tahu = asli_info
+        popup.galat = asli_critical
 
     app.processEvents()
     galat = [x for x in pesan if x.startswith("critical")]

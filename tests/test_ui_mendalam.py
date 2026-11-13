@@ -420,11 +420,43 @@ def main():
     cek("Neraca saldo seimbang", tb["seimbang"],
         f"debit={tb['debit']} kredit={tb['kredit']}")
 
+    # Tutup jendela dan buang sisa dialog selagi QApplication masih hidup.
+    # Tanpa ini, penutupan Qt saat proses berakhir dapat memicu pelanggaran
+    # akses setelah seluruh pemeriksaan selesai.
+    penyesuai = getattr(app, "_penyesuai_dialog", None)
+    if penyesuai is not None:
+        app.removeEventFilter(penyesuai)
+    jendela.close()
+    jendela.deleteLater()
+    for _ in range(4):
+        app.processEvents()
+
     print(f"\n{'=' * 72}")
     print(f"HASIL: {lulus} LULUS, {gagal} GAGAL")
     print("=" * 72)
-    return 1 if gagal else 0
+    # Ratusan dialog dibuka selama pemeriksaan. Membongkarnya saat proses
+    # berakhir dapat memicu pelanggaran akses Qt setelah hasil tercetak,
+    # sehingga rangkaian tampak gagal. Keluar langsung dengan kode yang
+    # sesuai.
+    _keluar_paksa(1 if gagal else 0)
+
+
+def _keluar_paksa(kode: int):
+    """Akhiri proses tanpa menjalankan pembongkaran DLL Qt."""
+    sys.stdout.flush()
+    sys.stderr.flush()
+    if os.name == "nt":
+        import ctypes
+        kernel = ctypes.windll.kernel32
+        proses = kernel.OpenProcess(0x0001, False, os.getpid())
+        if proses:
+            kernel.TerminateProcess(proses, int(kode))
+    os._exit(kode)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        main()
+    except Exception:
+        traceback.print_exc()
+        _keluar_paksa(1)

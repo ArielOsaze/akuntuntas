@@ -9,18 +9,20 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from PySide6.QtCore import Qt, Signal, QDate
+from PySide6.QtCore import Qt, Signal, QDate, QSize
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QLineEdit, QDateEdit,
-    QPushButton, QDialog, QMessageBox, QFrame, QGridLayout,
+    QPushButton, QDialog, QFrame, QGridLayout,
 )
 
 from ... import config, coa, services
 from ...core import accounting as acc
 from .. import theme
 from .. import kalender
+from .. import icons
 from ..theme import C
 from .. import widgets as w
+from .. import popup
 
 
 # ==========================================================================
@@ -170,8 +172,9 @@ class DialogJurnal(QDialog):
         # --- tabel baris
         lay.addWidget(w.label("Rincian Debit & Kredit", objek="FormLabel"))
         self.tabel = w.Tabel([
-            ("Akun", 300), ("Keterangan", 250), ("Lawan Transaksi", 170),
-            ("NPWP/NIK", 130), ("Debit (Rp)", 145), ("Kredit (Rp)", 145), ("", 40),
+            ("Akun", 225), ("Keterangan", 210), ("Lawan Transaksi", 145),
+            ("NPWP/NIK", 110), ("Debit (Rp)", 120), ("Kredit (Rp)", 120),
+            ("", 44),
         ])
         self.tabel.setMinimumHeight(260)
         lay.addWidget(self.tabel, 1)
@@ -192,7 +195,9 @@ class DialogJurnal(QDialog):
 
         # --- ringkasan keseimbangan
         self.panel_cek = QFrame()
-        theme.latar(self.panel_cek, f"background: {C.NEUTRAL_BG}; border-radius: 8px;")
+        theme.latar(self.panel_cek,
+                    f"background: {C.SURFACE_ALT}; border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px;")
         cl = QHBoxLayout(self.panel_cek)
         cl.setContentsMargins(16, 12, 16, 12)
         cl.setSpacing(26)
@@ -269,12 +274,15 @@ class DialogJurnal(QDialog):
                     lambda v, r=i, k=kunci: self._ubah_nilai(r, k, v))
                 self.tabel.setCellWidget(i, kolom, e)
 
-            b_hapus = QPushButton("")
-            b_hapus.setStyleSheet(
-                f"QPushButton {{ background: transparent; border: none; "
-                f"color: {C.TEXT_FAINT}; font-size: 15px; font-weight: 700; }}"
-                f"QPushButton:hover {{ color: {C.DANGER}; }}")
+            b_hapus = QPushButton()
+            b_hapus.setIcon(icons.ikon("hapus", C.TEXT_MUTED, 15))
+            b_hapus.setIconSize(QSize(15, 15))
+            b_hapus.setToolTip("Hapus baris")
             b_hapus.setCursor(Qt.PointingHandCursor)
+            b_hapus.setStyleSheet(
+                "QPushButton { background: transparent; border: none; }"
+                f"QPushButton:hover {{ background: {C.DANGER_BG};"
+                " border-radius: 6px; }")
             b_hapus.clicked.connect(lambda _, r=i: self._hapus_baris(r))
             self.tabel.setCellWidget(i, 6, b_hapus)
 
@@ -346,6 +354,17 @@ class DialogJurnal(QDialog):
         j.setObjectName("SectionTitle")
         l.addWidget(j)
 
+        # Kode akun contoh mengikuti bagan akun perusahaan aktif, karena
+        # penomoran UMKM berbeda dari penomoran PT lengkap.
+        cid = self.ctx.company_id
+        akun_bank = coa.kode_akun_bawaan(cid, "bank")
+        akun_ppn = coa.kode_akun_bawaan(cid, "utang_ppn_keluaran")
+        akun_atk = coa.kode_akun_bawaan(cid, "perlengkapan")
+        akun_utilitas = coa.kode_akun_bawaan(cid, "utilitas")
+        akun_aset = coa.kode_akun_bawaan(cid, "aset_peralatan")
+        akun_akum = coa.kode_akun_bawaan(cid, "akum_penyusutan")
+        akun_penyusutan = coa.kode_akun_bawaan(cid, "beban_penyusutan")
+
         contoh_list = [
             ("Setoran modal awal usaha",
              "Mencatat uang yang disetor pemilik sebagai modal usaha.",
@@ -363,39 +382,39 @@ class DialogJurnal(QDialog):
              "Penjualan Rp10 juta + PPN 11% = Rp11,1 juta.",
              [("1001", "Penerimaan penjualan + PPN", "Pelanggan", 11_100_000, 0),
               ("4001", "Pendapatan penjualan", "Pelanggan", 0, 10_000_000),
-              ("2101", "PPN keluaran 11%", "Pelanggan", 0, 1_100_000)]),
+              (akun_ppn, "PPN keluaran 11%", "Pelanggan", 0, 1_100_000)]),
             ("Pembelian perlengkapan tunai",
              "Membeli perlengkapan kantor secara tunai.",
-             [("6008", "Pembelian ATK", "Toko ATK", 750_000, 0),
+             [(akun_atk, "Pembelian ATK", "Toko ATK", 750_000, 0),
               ("1001", "Pembayaran tunai", "Toko ATK", 0, 750_000)]),
             ("Pembayaran beban listrik & internet",
              "Tagihan utilitas bulanan.",
-             [("6003", "Beban listrik & internet", "PLN/ISP", 1_200_000, 0),
-              ("1002", "Transfer bank", "PLN/ISP", 0, 1_200_000)]),
+             [(akun_utilitas, "Beban listrik & internet", "PLN/ISP", 1_200_000, 0),
+              (akun_bank, "Transfer bank", "PLN/ISP", 0, 1_200_000)]),
             ("Pembayaran gaji karyawan",
              "Gaji bersih dibayarkan tunai.",
              [("6001", "Beban gaji bulan ini", "Karyawan", 5_000_000, 0),
               ("1001", "Pembayaran gaji", "Karyawan", 0, 5_000_000)]),
             ("Penerimaan pelunasan piutang",
              "Pelanggan melunasi tagihan tempo.",
-             [("1002", "Penerimaan pelunasan", "Pelanggan", 10_000_000, 0),
+             [(akun_bank, "Penerimaan pelunasan", "Pelanggan", 10_000_000, 0),
               ("1101", "Piutang dilunasi", "Pelanggan", 0, 10_000_000)]),
             ("Membeli peralatan (aset tetap) tunai",
              "Peralatan kerja umur lebih dari satu tahun.",
-             [("1201", "Perolehan peralatan", "Toko", 8_000_000, 0),
-              ("1002", "Pembayaran peralatan", "Toko", 0, 8_000_000)]),
+             [(akun_aset, "Perolehan peralatan", "Toko", 8_000_000, 0),
+              (akun_bank, "Pembayaran peralatan", "Toko", 0, 8_000_000)]),
             ("Penarikan pribadi pemilik (prive)",
              "Uang usaha dipakai keperluan pribadi. BUKAN beban usaha.",
              [("3002", "Prive pemilik", "Pemilik", 2_000_000, 0),
               ("1001", "Penarikan tunai", "Pemilik", 0, 2_000_000)]),
             ("Penyusutan peralatan bulanan",
              "Mengakui beban penyusutan aset tetap.",
-             [("6007", "Beban penyusutan", "", 200_000, 0),
-              ("1202", "Akumulasi penyusutan", "", 0, 200_000)]),
+             [(akun_penyusutan, "Beban penyusutan", "", 200_000, 0),
+              (akun_akum, "Akumulasi penyusutan", "", 0, 200_000)]),
             ("Pembayaran utang usaha",
              "Melunasi utang ke pemasok.",
              [("2001", "Pelunasan utang", "Pemasok", 3_000_000, 0),
-              ("1002", "Transfer bank", "Pemasok", 0, 3_000_000)]),
+              (akun_bank, "Transfer bank", "Pemasok", 0, 3_000_000)]),
         ]
 
         for nama, ket, baris in contoh_list:
@@ -457,8 +476,9 @@ class DialogJurnal(QDialog):
                 acc.nomor_bukti_berikut(self.ctx.company_id)
             keterangan = self.inp_ket.text().strip()
             if not keterangan:
-                QMessageBox.warning(self, "Keterangan kosong",
-                                    "Isi keterangan transaksi agar jurnal mudah ditelusuri.")
+                popup.peringatkan(self,
+                                  "Keterangan kosong",
+                                  "Isi keterangan transaksi agar jurnal mudah ditelusuri.")
                 return
 
             baris = []
@@ -475,7 +495,9 @@ class DialogJurnal(QDialog):
 
             v = acc.validasi_jurnal(baris, self.ctx.company_id)
             if not v.valid:
-                QMessageBox.warning(self, "Jurnal tidak valid", "\n".join(v.errors))
+                popup.peringatkan(self,
+                                  "Jurnal tidak valid",
+                                  "\n".join(v.errors))
                 return
 
             if self.entry_id:
@@ -484,7 +506,7 @@ class DialogJurnal(QDialog):
                                           keterangan, baris, self.ctx.user_id)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 # ==========================================================================
@@ -501,9 +523,12 @@ class JurnalPage(HalamanDasar):
 
         self.inp_cari = QLineEdit()
         self.inp_cari.setPlaceholderText("Cari keterangan atau nomor bukti…")
-        self.inp_cari.setMinimumWidth(240)
+        self.inp_cari.setMinimumWidth(280)
+        self.inp_cari.setMaximumWidth(440)
         self.inp_cari.textChanged.connect(self.muat)
-        self.header.tambah_aksi(self.inp_cari)
+        # Pencarian diletakkan di badan halaman, bukan di deretan aksi
+        # header. Dengan begitu header tetap ringkas pada jendela 1280 px
+        # dan kotak pencarian tidak mendesak tombol ekspor dan cetak.
         self.header.pasang_ekspor_cetak(self, "Buku Jurnal", "tabel")
 
         # panel kontrol keseimbangan
@@ -514,6 +539,12 @@ class JurnalPage(HalamanDasar):
         self.cek_lay.setContentsMargins(16, 11, 16, 11)
         self.cek_lay.setSpacing(28)
         self.body_lay.addWidget(self.panel_cek)
+
+        baris_cari = QHBoxLayout()
+        baris_cari.setSpacing(10)
+        baris_cari.addWidget(self.inp_cari)
+        baris_cari.addStretch()
+        self.body_lay.addLayout(baris_cari)
 
         help_panel = self._help("jurnal")
         if help_panel:
@@ -537,10 +568,10 @@ class JurnalPage(HalamanDasar):
         b_hapus = w.tombol("Hapus", gaya="danger", ikon="hapus")
         b_hapus.clicked.connect(self._hapus)
         baris_aksi.addWidget(b_hapus)
-        baris_aksi.addStretch()
-        self.lbl_info = QLabel("")
-        self.lbl_info.setObjectName("Muted")
-        baris_aksi.addWidget(self.lbl_info)
+        # Label mengisi sisa baris, bukan hanya selebar sizeHint-nya.
+        # Dengan begitu keterangannya tetap satu baris pada jendela lebar.
+        self.lbl_info = w.label_ringkas()
+        baris_aksi.addWidget(self.lbl_info, 1)
         self.body_lay.addLayout(baris_aksi)
 
     def muat(self):
@@ -582,7 +613,7 @@ class JurnalPage(HalamanDasar):
                        f"= total kredit {theme.money(cek['kredit'])}")
             l.setStyleSheet(f"color: {C.SUCCESS}; font-weight: 700; "
                             "background: transparent;")
-            self.cek_lay.addWidget(l)
+            self.cek_lay.addWidget(l, 1)
         else:
             theme.latar(self.panel_cek, f"background: {C.DANGER_BG}; border: 1px solid #F5C2C2; "
                 "border-radius: 8px;")
@@ -590,13 +621,13 @@ class JurnalPage(HalamanDasar):
                        f"tidak seimbang. Selisih total {theme.money(cek['selisih'])}.")
             l.setStyleSheet(f"color: {C.DANGER}; font-weight: 700; "
                             "background: transparent;")
-            self.cek_lay.addWidget(l)
-        self.cek_lay.addStretch()
+            self.cek_lay.addWidget(l, 1)
 
     def _baru(self):
         if not self.ctx.company_id:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         d = DialogJurnal(self.ctx, self)
         if d.exec():
@@ -613,7 +644,7 @@ class JurnalPage(HalamanDasar):
     def _detail(self):
         eid = self._selected_id()
         if eid is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu baris jurnal.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu baris jurnal.")
             return
         lines = services.detail_jurnal(eid)
         from ... import db
@@ -657,17 +688,17 @@ class JurnalPage(HalamanDasar):
     def _ubah(self):
         eid = self._selected_id()
         if eid is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu baris jurnal.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu baris jurnal.")
             return
         from ... import db
         e = db.q1("SELECT sumber FROM journal_entries WHERE id=?", (eid,))
         if e and e["sumber"] not in ("manual",):
-            QMessageBox.information(
-                self, "Jurnal otomatis",
-                f"Jurnal ini dibuat otomatis oleh modul '{e['sumber']}'.\n\n"
-                "Untuk mengubahnya, ubah datanya pada halaman terkait "
-                "(Penjualan/Pembelian/Payroll/Aset Tetap/Pajak) agar jurnal "
-                "ikut diperbarui.")
+            popup.beri_tahu(self,
+                            "Jurnal otomatis",
+                            f"Jurnal ini dibuat otomatis oleh modul '{e['sumber']}'.\n\n"
+                            "Untuk mengubahnya, ubah datanya pada halaman terkait "
+                            "(Penjualan/Pembelian/Payroll/Aset Tetap/Pajak) agar jurnal "
+                            "ikut diperbarui.")
             return
         d = DialogJurnal(self.ctx, self, entry_id=eid)
         if d.exec():
@@ -676,16 +707,15 @@ class JurnalPage(HalamanDasar):
     def _hapus(self):
         eid = self._selected_id()
         if eid is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu baris jurnal.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu baris jurnal.")
             return
-        if QMessageBox.question(
-                self, "Konfirmasi Hapus",
-                "Hapus jurnal ini beserta seluruh barisnya?\n\n"
-                "Tindakan ini tidak dapat dibatalkan.",
-                QMessageBox.Yes | QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Konfirmasi Hapus",
+                           "Hapus jurnal ini beserta seluruh barisnya?\n\n"
+                           "Tindakan ini tidak dapat dibatalkan."):
             return
         try:
             services.hapus_jurnal(eid, self.ctx.user_id)
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menghapus", str(e))
+            popup.galat(self, "Gagal menghapus", str(e))

@@ -10,9 +10,9 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QLineEdit, QDialog,
-    QMessageBox, QGridLayout, QTabWidget, QFileDialog, QSpinBox, QDateEdit,
-    QTextEdit, QTableWidgetItem,
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QCheckBox, QComboBox, QLineEdit,
+    QDialog, QGridLayout, QFileDialog, QSpinBox,
+    QDateEdit, QTextEdit, QTableWidgetItem,
 )
 from PySide6.QtCore import QDate
 
@@ -20,6 +20,7 @@ from ... import kontrak as kt
 from ... import modules as M
 from .. import theme, widgets as w
 from ..theme import C
+from .. import popup
 
 
 # ==========================================================================
@@ -57,8 +58,7 @@ class DialogKontrak(QDialog):
                 "KUHPerdata Pasal 1313 dan 1338; UU 7/2014 Pasal 33-51; "
                 "PMK 68/2022 untuk sewa tanah/bangunan."))
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
 
         # ---------------------------------------------------------- umum
         tab_umum = QWidget()
@@ -116,23 +116,22 @@ class DialogKontrak(QDialog):
         g.addWidget(w.label("Tanggal Mulai", objek="FormLabel"), 6, 1)
         self.dt_mulai = QDateEdit()
         self.dt_mulai.setCalendarPopup(True)
-        self.dt_mulai.setDisplayFormat("dd-MM-yyyy")
+        self.dt_mulai.setDisplayFormat("dd/MM/yyyy")
         self.dt_mulai.setDate(QDate.currentDate())
+        self.dt_mulai.setMinimumWidth(130)
         g.addWidget(self.dt_mulai, 7, 1)
 
         g.addWidget(w.label("Tanggal Berakhir", objek="FormLabel"), 6, 2)
-        baris_akhir = QHBoxLayout()
-        self.chk_tanpa_akhir = QComboBox()
-        self.chk_tanpa_akhir.addItem("Ada batas waktu", False)
-        self.chk_tanpa_akhir.addItem("Tanpa batas waktu", True)
-        self.chk_tanpa_akhir.currentIndexChanged.connect(self._ganti_akhir)
-        baris_akhir.addWidget(self.chk_tanpa_akhir, 1)
         self.dt_akhir = QDateEdit()
         self.dt_akhir.setCalendarPopup(True)
-        self.dt_akhir.setDisplayFormat("dd-MM-yyyy")
+        self.dt_akhir.setDisplayFormat("dd/MM/yyyy")
         self.dt_akhir.setDate(QDate.currentDate().addYears(1))
-        baris_akhir.addWidget(self.dt_akhir, 1)
-        g.addLayout(baris_akhir, 7, 2)
+        self.dt_akhir.setMinimumWidth(130)
+        g.addWidget(self.dt_akhir, 7, 2)
+
+        self.chk_tanpa_akhir = QCheckBox("Tanpa batas waktu")
+        self.chk_tanpa_akhir.stateChanged.connect(self._ganti_akhir)
+        g.addWidget(self.chk_tanpa_akhir, 8, 2)
 
         g.addWidget(w.label("Pemberitahuan Berakhir (hari sebelum)",
                             objek="FormLabel"), 8, 0)
@@ -211,7 +210,7 @@ class DialogKontrak(QDialog):
         n.setColumnStretch(0, 1)
         n.setColumnStretch(1, 1)
         n.setColumnStretch(2, 1)
-        self.tabs.addTab(tab_nilai, "Nilai & Pajak")
+        self.tabs.addTab(tab_nilai, "Nilai && Pajak")
 
         # -------------------------------------------------- barang/jasa
         tab_item = QWidget()
@@ -236,7 +235,7 @@ class DialogKontrak(QDialog):
         baris_it.addWidget(b_hapus_item)
         baris_it.addStretch()
         it.addLayout(baris_it)
-        self.tabs.addTab(tab_item, "Barang & Jasa")
+        self.tabs.addTab(tab_item, "Barang && Jasa")
 
         # ----------------------------------------------------- dokumen
         tab_dok = QWidget()
@@ -256,7 +255,7 @@ class DialogKontrak(QDialog):
         b_pilih = w.tombol("Pilih Berkas", gaya="biasa", ikon="dokumen")
         b_pilih.clicked.connect(self._pilih_dokumen)
         baris_dok.addWidget(b_pilih)
-        b_baca = w.tombol("Baca & Isi Otomatis", gaya="primary", ikon="pengaturan")
+        b_baca = w.tombol("Baca && Isi Otomatis", gaya="primary", ikon="pengaturan")
         b_baca.clicked.connect(self._baca_dokumen)
         baris_dok.addWidget(b_baca)
         d.addLayout(baris_dok)
@@ -319,8 +318,7 @@ class DialogKontrak(QDialog):
         self._isi_hukum()
 
     def _ganti_akhir(self):
-        tanpa = bool(self.chk_tanpa_akhir.currentData())
-        self.dt_akhir.setEnabled(not tanpa)
+        self.dt_akhir.setEnabled(not self.chk_tanpa_akhir.isChecked())
 
     def _ganti_skema(self):
         skema = self.cmb_skema.currentData()
@@ -392,15 +390,16 @@ class DialogKontrak(QDialog):
     def _baca_dokumen(self):
         jalur = self.inp_dokumen.text().strip()
         if not jalur:
-            QMessageBox.information(self, "Belum ada berkas",
-                                    "Pilih berkas kontrak lebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada berkas",
+                            "Pilih berkas kontrak lebih dahulu.")
             return
         teks = kt.baca_dokumen(jalur)
         if not teks:
-            QMessageBox.warning(
-                self, "Tidak dapat membaca",
-                "Isi berkas tidak dapat dibaca. Pastikan berkas berupa PDF "
-                "berteks (bukan hasil pindai), DOCX, atau TXT.")
+            popup.peringatkan(self,
+                              "Tidak dapat membaca",
+                              "Isi berkas tidak dapat dibaca. Pastikan berkas berupa PDF "
+                              "berteks (bukan hasil pindai), DOCX, atau TXT.")
             return
 
         hasil = kt.urai_teks(teks)
@@ -426,7 +425,7 @@ class DialogKontrak(QDialog):
             self.dt_mulai.setDate(QDate.fromString(hasil["tanggal_mulai"],
                                                    "yyyy-MM-dd"))
         if hasil.get("tanggal_akhir"):
-            self.chk_tanpa_akhir.setCurrentIndex(0)
+            self.chk_tanpa_akhir.setChecked(False)
             self.dt_akhir.setDate(QDate.fromString(hasil["tanggal_akhir"],
                                                    "yyyy-MM-dd"))
         if hasil.get("nilai"):
@@ -463,9 +462,10 @@ class DialogKontrak(QDialog):
         if k.get("tanggal_mulai"):
             self.dt_mulai.setDate(QDate.fromString(k["tanggal_mulai"], "yyyy-MM-dd"))
         if k.get("tanggal_akhir"):
+            self.chk_tanpa_akhir.setChecked(False)
             self.dt_akhir.setDate(QDate.fromString(k["tanggal_akhir"], "yyyy-MM-dd"))
         else:
-            self.chk_tanpa_akhir.setCurrentIndex(1)
+            self.chk_tanpa_akhir.setChecked(True)
             self._ganti_akhir()
         self.spn_notif.setValue(int(k.get("pemberitahuan_berakhir_hari") or 30))
         self.chk_perpanjangan.setCurrentIndex(1 if k.get("opsi_perpanjangan") else 0)
@@ -492,17 +492,18 @@ class DialogKontrak(QDialog):
     # ------------------------------------------------------------------
     def _simpan(self):
         if not self.inp_judul.text().strip():
-            QMessageBox.warning(self, "Judul belum diisi",
-                                "Isi judul perjanjian lebih dahulu.")
+            popup.peringatkan(self,
+                              "Judul belum diisi",
+                              "Isi judul perjanjian lebih dahulu.")
             return
         mitra_id = self.cmb_mitra.currentData()
         if not mitra_id and not self.inp_pihak2.text().strip():
-            QMessageBox.warning(
-                self, "Pihak kedua belum diisi",
-                "Pilih mitra dari daftar atau isi nama mitra secara manual.")
+            popup.peringatkan(self,
+                              "Pihak kedua belum diisi",
+                              "Pilih mitra dari daftar atau isi nama mitra secara manual.")
             return
 
-        tanpa_akhir = bool(self.chk_tanpa_akhir.currentData())
+        tanpa_akhir = self.chk_tanpa_akhir.isChecked()
         data = {
             "id": (self.kontrak or {}).get("id"),
             "nomor": self.inp_nomor.text().strip(),
@@ -541,8 +542,9 @@ class DialogKontrak(QDialog):
             self.kontrak_id = kid
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan",
-                                 f"Kontrak tidak dapat disimpan.\n\n{e}")
+            popup.galat(self,
+                        "Gagal menyimpan",
+                        f"Kontrak tidak dapat disimpan.\n\n{e}")
 
     def _kumpulkan_item(self) -> list:
         hasil = []
@@ -802,10 +804,10 @@ class KontrakPage(QWidget):
             return
         teks = kt.baca_dokumen(jalur)
         if not teks:
-            QMessageBox.warning(
-                self, "Tidak dapat membaca",
-                "Isi berkas tidak dapat dibaca. Gunakan PDF berteks, DOCX, "
-                "atau TXT.")
+            popup.peringatkan(self,
+                              "Tidak dapat membaca",
+                              "Isi berkas tidak dapat dibaca. Gunakan PDF berteks, DOCX, "
+                              "atau TXT.")
             return
         dlg = DialogKontrak(self.ctx, self)
         dlg.inp_dokumen.setText(jalur)
@@ -824,8 +826,9 @@ class KontrakPage(QWidget):
     def _ubah(self):
         k = self._terpilih()
         if not k:
-            QMessageBox.information(self, "Belum dipilih",
-                                    "Pilih satu kontrak pada tabel lebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum dipilih",
+                            "Pilih satu kontrak pada tabel lebih dahulu.")
             return
         penuh = kt.ambil(int(k["id"]))
         dlg = DialogKontrak(self.ctx, self, penuh)
@@ -835,8 +838,9 @@ class KontrakPage(QWidget):
     def _detail(self):
         k = self._terpilih()
         if not k:
-            QMessageBox.information(self, "Belum dipilih",
-                                    "Pilih satu kontrak pada tabel lebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum dipilih",
+                            "Pilih satu kontrak pada tabel lebih dahulu.")
             return
         penuh = kt.ambil(int(k["id"]))
         baris = kt.termin(int(k["id"]))
@@ -883,23 +887,21 @@ class KontrakPage(QWidget):
             for b in berkas:
                 bagian.append(f"• {b['nama']}")
 
-        kotak = QMessageBox(self)
-        kotak.setWindowTitle("Rincian Kontrak")
-        kotak.setTextFormat(Qt.RichText)
-        kotak.setText("<br>".join(bagian))
-        kotak.exec()
+        popup.beri_tahu(self, "Rincian Kontrak", "<br>".join(bagian),
+                        teks_tombol="Tutup")
 
     def _hapus(self):
         k = self._terpilih()
         if not k:
-            QMessageBox.information(self, "Belum dipilih",
-                                    "Pilih satu kontrak pada tabel lebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum dipilih",
+                            "Pilih satu kontrak pada tabel lebih dahulu.")
             return
-        if QMessageBox.question(
-                self, "Hapus kontrak",
-                f"Hapus kontrak {k['nomor']}?\n\n"
-                "Kontrak dipindahkan ke keranjang sampah dan masih dapat "
-                "dipulihkan.") != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Hapus kontrak",
+                           f"Hapus kontrak {k['nomor']}?\n\n"
+                           "Kontrak dipindahkan ke keranjang sampah dan masih dapat "
+                           "dipulihkan."):
             return
         kt.hapus(int(k["id"]), self.ctx.company_id)
         self.muat()

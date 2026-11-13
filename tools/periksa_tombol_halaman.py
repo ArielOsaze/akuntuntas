@@ -17,16 +17,17 @@ from pathlib import Path
 AKAR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(AKAR / "src"))
 
-from akuntansi_id import db  # noqa: E402
+# Data uji harus ditetapkan SEBELUM akuntansi_id diimpor, supaya alat ini
+# tidak pernah membuka data pembukuan pengguna yang sebenarnya.
+os.environ["AKUNTANSIID_DATA"] = str(AKAR / "_data_potret_ui")
 
-os.environ.setdefault("AKUNTUNTAS_DATA", str(AKAR / "_data_potret"))
+from akuntansi_id import db  # noqa: E402
 
 
 def main() -> int:
     kode_list = sys.argv[1:] or ["analisis", "dashboard"]
 
     from PySide6.QtCore import QEventLoop, QTimer, Qt
-    from PySide6.QtGui import QFont
     from PySide6.QtWidgets import QApplication, QPushButton
     from akuntansi_id.ui import theme as tema
     from akuntansi_id.ui.main_window import MainWindow
@@ -41,7 +42,7 @@ def main() -> int:
         app = QApplication([])
     app.setStyle("Fusion")
     tema.palet_terang(app)
-    app.setFont(QFont("Segoe UI", 10))
+    # Huruf aplikasi dipasang oleh tema, sama seperti saat aplikasi berjalan.
     app.setStyleSheet(tema.stylesheet())
 
     db.init_db()

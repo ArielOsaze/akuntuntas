@@ -2,7 +2,7 @@
 
 ## Pembukuan dan Pajak Perusahaan Indonesia
 
-Versi 1.0.0, Edisi Regulasi 2026
+Versi 1.4.6, Edisi Regulasi 2026
 
 Aplikasi desktop Windows untuk pembukuan dan perpajakan, dirancang untuk
 usaha mikro, kecil, dan menengah (UMKM), Perseroan Perorangan, hingga
@@ -247,6 +247,14 @@ namun tetap bisa bila ingin.
 
 Cari satu kata kunci di seluruh data: invoice, bill, pelanggan, produk,
 jurnal, aset, biaya, dan proyek. Hasilnya langsung menuju catatannya.
+
+### Dua Halaman Berdampingan
+
+Buka halaman kedua di samping halaman yang sedang dikerjakan lewat tombol
+**Dua halaman** pada baris status, menu **Tampilan**, atau pintasan
+**Ctrl+Shift+D**. Setiap sisi memiliki pemilih halaman sendiri, sehingga
+penjualan dan biaya dapat dilihat atau dicatat berdampingan tanpa
+berpindah menu. Kedua sisi diperbarui setelah data disimpan.
 
 ### Payroll
 

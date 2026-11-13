@@ -11,17 +11,18 @@ from PySide6.QtCore import Qt, Signal, QDate, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QLineEdit, QDateEdit,
-    QDialog, QMessageBox, QGridLayout, QCheckBox, QTabWidget, QFileDialog,
+    QDialog, QGridLayout, QCheckBox, QFileDialog,
     QSpinBox,
 )
 
-from ... import config, db, modules as M, modules_ops as O
+from ... import coa, config, db, modules as M, modules_ops as O
 from ...core import accounting as acc
 from ...core import tax_engine as tx
 from ... import istilah
 from .. import theme, widgets as w
 from .. import kalender
 from ..theme import C
+from .. import popup
 
 
 # ==========================================================================
@@ -80,14 +81,14 @@ class DialogCostCenter(QDialog):
     def _simpan(self):
         try:
             if not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Nama kosong", "Isi nama cost center.")
+                popup.peringatkan(self, "Nama kosong", "Isi nama cost center.")
                 return
             O.buat_cost_center(self.ctx.company_id, self.inp_nama.text().strip(),
                                penanggung_jawab=self.inp_pj.text().strip(),
                                anggaran=self.inp_anggaran.nilai())
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogProyek(QDialog):
@@ -173,7 +174,7 @@ class DialogProyek(QDialog):
     def _simpan(self):
         try:
             if not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Nama kosong", "Isi nama proyek.")
+                popup.peringatkan(self, "Nama kosong", "Isi nama proyek.")
                 return
             O.buat_proyek(
                 self.ctx.company_id, self.inp_nama.text().strip(),
@@ -186,7 +187,7 @@ class DialogProyek(QDialog):
                 catatan=self.inp_catatan.text().strip())
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogCabang(QDialog):
@@ -251,7 +252,7 @@ class DialogCabang(QDialog):
     def _simpan(self):
         try:
             if not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Nama kosong", "Isi nama cabang.")
+                popup.peringatkan(self, "Nama kosong", "Isi nama cabang.")
                 return
             O.buat_cabang(self.ctx.company_id, self.inp_nama.text().strip(),
                           kota=self.inp_kota.text().strip(),
@@ -260,7 +261,7 @@ class DialogCabang(QDialog):
                           npwp=self.inp_npwp.text().strip())
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 # ==========================================================================
@@ -296,8 +297,7 @@ class DimensiPage(QWidget):
         self.lay.setSpacing(13)
         luar.addWidget(isi, 1)
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         self.tab_cc = QWidget()
         self.tab_proyek = QWidget()
         self.tab_cabang = QWidget()
@@ -395,10 +395,8 @@ class DimensiPage(QWidget):
         self.cmb_dimensi.addItem("Cabang", "cabang")
         self.cmb_dimensi.currentIndexChanged.connect(self._muat_laporan)
         baris.addWidget(self.cmb_dimensi)
-        baris.addStretch()
-        self.lbl_laporan = QLabel("")
-        self.lbl_laporan.setObjectName("Muted")
-        baris.addWidget(self.lbl_laporan)
+        self.lbl_laporan = w.label_ringkas()
+        baris.addWidget(self.lbl_laporan, 1)
         lay.addLayout(baris)
 
         self.tabel_laporan = w.Tabel([
@@ -476,7 +474,7 @@ class DimensiPage(QWidget):
             data = O.laba_rugi_dimensi(cid, self.ctx.tahun,
                                        self.cmb_dimensi.currentData())
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
             return
         baris, warna = [], {}
         for i, d in enumerate(data):
@@ -491,8 +489,9 @@ class DimensiPage(QWidget):
 
     def _tambah_cc(self):
         if not self.ctx.company_id:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         d = DialogCostCenter(self.ctx, self)
         if d.exec():
@@ -500,8 +499,9 @@ class DimensiPage(QWidget):
 
     def _tambah_proyek(self):
         if not self.ctx.company_id:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         d = DialogProyek(self.ctx, self)
         if d.exec():
@@ -509,8 +509,9 @@ class DimensiPage(QWidget):
 
     def _tambah_cabang(self):
         if not self.ctx.company_id:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         d = DialogCabang(self.ctx, self)
         if d.exec():
@@ -519,7 +520,7 @@ class DimensiPage(QWidget):
     def _lihat_proyek(self):
         r = self.tabel_proyek.baris_terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu proyek.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu proyek.")
             return
         data = O.daftar_proyek(self.ctx.company_id)
         if r >= len(data):
@@ -762,8 +763,9 @@ class KonsolidasiPage(QWidget):
     def _tambah_anggota(self):
         grup_id = self.cmb_grup.currentData()
         if not grup_id:
-            QMessageBox.information(self, "Belum ada grup",
-                                    "Buat grup terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada grup",
+                            "Buat grup terlebih dahulu.")
             return
         d = DialogTambahAnggota(self.ctx, grup_id, self)
         if d.exec():
@@ -815,13 +817,13 @@ class DialogGrupBaru(QDialog):
     def _simpan(self):
         try:
             if not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Nama kosong", "Isi nama grup.")
+                popup.peringatkan(self, "Nama kosong", "Isi nama grup.")
                 return
             O.buat_grup_entitas(self.inp_nama.text().strip(),
                                 self.inp_catatan.text().strip())
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 class DialogTambahAnggota(QDialog):
@@ -875,7 +877,7 @@ class DialogTambahAnggota(QDialog):
                                   self.spin_persen.value())
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 # ==========================================================================
@@ -911,8 +913,7 @@ class PeriodePage(QWidget):
         self.lay.setSpacing(13)
         luar.addWidget(isi, 1)
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
+        self.tabs = w.Tab()
         self.tab_periode = QWidget()
         self.tab_otomasi = QWidget()
         self.tab_reminder = QWidget()
@@ -1134,11 +1135,12 @@ class PeriodePage(QWidget):
     def _tutup(self):
         p = self._periode_terpilih()
         if p is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu periode.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu periode.")
             return
         if p["status"] == "tertutup":
-            QMessageBox.information(self, "Sudah tertutup",
-                                    "Periode ini sudah tertutup.")
+            popup.beri_tahu(self,
+                            "Sudah tertutup",
+                            "Periode ini sudah tertutup.")
             return
 
         saldo = acc.neraca_saldo(self.ctx.company_id, self.spin_tahun_periode.value(),
@@ -1153,9 +1155,7 @@ class PeriodePage(QWidget):
                       f"(selisih {tx.rupiah(abs(saldo.selisih))}). "
                       "Periksa jurnal Anda sebelum menutup buku.")
 
-        if QMessageBox.question(self, "Konfirmasi Tutup Buku", pesan,
-                                QMessageBox.Yes | QMessageBox.No,
-                                QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self, "Konfirmasi Tutup Buku", pesan):
             return
 
         from PySide6.QtWidgets import QInputDialog
@@ -1170,19 +1170,21 @@ class PeriodePage(QWidget):
                          self.ctx.full_name or self.ctx.username, catatan,
                          self.ctx.user_id)
             self.muat()
-            QMessageBox.information(self, "Berhasil",
-                                    f"Periode {p['periode']} berhasil ditutup.")
+            popup.beri_tahu(self,
+                            "Berhasil",
+                            f"Periode {p['periode']} berhasil ditutup.")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menutup buku", str(e))
+            popup.galat(self, "Gagal menutup buku", str(e))
 
     def _buka(self):
         p = self._periode_terpilih()
         if p is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu periode.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu periode.")
             return
         if p["status"] != "tertutup":
-            QMessageBox.information(self, "Belum tertutup",
-                                    "Periode ini masih terbuka.")
+            popup.beri_tahu(self,
+                            "Belum tertutup",
+                            "Periode ini masih terbuka.")
             return
 
         from PySide6.QtWidgets import QInputDialog
@@ -1191,9 +1193,10 @@ class PeriodePage(QWidget):
             "Mengapa periode ini dibuka kembali?\n"
             "(Alasan dicatat dalam log audit)")
         if not ok or not alasan.strip():
-            QMessageBox.information(self, "Dibatalkan",
-                                    "Alasan wajib diisi untuk membuka kembali "
-                                    "periode.")
+            popup.beri_tahu(self,
+                            "Dibatalkan",
+                            "Alasan wajib diisi untuk membuka kembali "
+                            "periode.")
             return
 
         try:
@@ -1201,21 +1204,19 @@ class PeriodePage(QWidget):
                         self.ctx.full_name or self.ctx.username, alasan,
                         self.ctx.user_id)
             self.muat()
-            QMessageBox.information(
-                self, "Periode dibuka",
-                f"Periode {p['periode']} dibuka kembali. Alasan tercatat di "
-                "log audit.")
+            popup.beri_tahu(self,
+                            "Periode dibuka",
+                            f"Periode {p['periode']} dibuka kembali. Alasan tercatat di "
+                            "log audit.")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
     def _tutup_tahun(self):
         tahun = self.spin_tahun_periode.value()
-        if QMessageBox.question(
-                self, "Tutup Seluruh Tahun",
-                f"Tutup semua periode tahun {tahun} yang masih terbuka?\n\n"
-                "Pastikan seluruh transaksi tahun tersebut sudah lengkap.",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Tutup Seluruh Tahun",
+                           f"Tutup semua periode tahun {tahun} yang masih terbuka?\n\n"
+                           "Pastikan seluruh transaksi tahun tersebut sudah lengkap."):
             return
         berhasil = gagal = 0
         for b in range(1, 13):
@@ -1230,15 +1231,16 @@ class PeriodePage(QWidget):
             except Exception:
                 gagal += 1
         self.muat()
-        QMessageBox.information(
-            self, "Selesai",
-            f"{berhasil} periode ditutup." +
-            (f"\n{gagal} periode gagal ditutup." if gagal else ""))
+        popup.beri_tahu(self,
+                        "Selesai",
+                        f"{berhasil} periode ditutup." +
+                        (f"\n{gagal} periode gagal ditutup." if gagal else ""))
 
     def _template_baru(self):
         if not self.ctx.company_id:
-            QMessageBox.information(self, "Belum ada perusahaan",
-                                    "Buat profil perusahaan terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "Belum ada perusahaan",
+                            "Buat profil perusahaan terlebih dahulu.")
             return
         d = DialogTemplateBerulang(self.ctx, self)
         if d.exec():
@@ -1254,65 +1256,63 @@ class PeriodePage(QWidget):
                     pesan += f"• {d['template']} - {theme.tanggal_id(d['tanggal'])}\n"
                 if len(hasil["dibuat"]) > 10:
                     pesan += f"\n...dan {len(hasil['dibuat']) - 10} lainnya."
-                QMessageBox.information(self, "Otomasi selesai", pesan)
+                popup.beri_tahu(self, "Otomasi selesai", pesan)
             else:
-                QMessageBox.information(self, "Tidak ada yang jatuh tempo",
-                                        "Semua template sudah dijalankan sampai "
-                                        "tanggal hari ini.")
+                popup.beri_tahu(self,
+                                "Tidak ada yang jatuh tempo",
+                                "Semua template sudah dijalankan sampai "
+                                "tanggal hari ini.")
             if hasil["jumlah_gagal"]:
                 g = hasil["gagal"][0]
-                QMessageBox.warning(
-                    self, "Sebagian gagal",
-                    f"{hasil['jumlah_gagal']} template gagal dijalankan.\n\n"
-                    f"Contoh: {g['template']} - {g['error']}")
+                popup.peringatkan(self,
+                                  "Sebagian gagal",
+                                  f"{hasil['jumlah_gagal']} template gagal dijalankan.\n\n"
+                                  f"Contoh: {g['template']} - {g['error']}")
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menjalankan otomasi", str(e))
+            popup.galat(self, "Gagal menjalankan otomasi", str(e))
 
     def _hentikan_template(self):
         r = self.tabel_otomasi.baris_terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu template.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu template.")
             return
         data = O.daftar_template_berulang(self.ctx.company_id, aktif_saja=False)
         if r >= len(data):
             return
         t = data[r]
-        if QMessageBox.question(
-                self, "Konfirmasi",
-                f"Hentikan template '{t['nama']}'?",
-                QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+        if popup.tanya(self, "Konfirmasi", f"Hentikan template '{t['nama']}'?"):
             O.hapus_template_berulang(t["id"])
             self.muat()
 
     def _reminder_piutang(self):
         try:
             jumlah = O.buat_reminder_dari_piutang(self.ctx.company_id, 30)
-            QMessageBox.information(
-                self, "Selesai",
-                f"{jumlah} pengingat dibuat untuk piutang yang jatuh tempo "
-                "dalam 30 hari ke depan." if jumlah else
-                "Semua piutang sudah memiliki pengingat.")
+            popup.beri_tahu(self,
+                            "Selesai",
+                            f"{jumlah} pengingat dibuat untuk piutang yang jatuh tempo "
+                            "dalam 30 hari ke depan." if jumlah else
+                            "Semua piutang sudah memiliki pengingat.")
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
     def _reminder_utang(self):
         try:
             jumlah = O.buat_reminder_dari_utang(self.ctx.company_id, 30)
-            QMessageBox.information(
-                self, "Selesai",
-                f"{jumlah} pengingat dibuat untuk utang yang jatuh tempo "
-                "dalam 30 hari ke depan." if jumlah else
-                "Semua utang sudah memiliki pengingat.")
+            popup.beri_tahu(self,
+                            "Selesai",
+                            f"{jumlah} pengingat dibuat untuk utang yang jatuh tempo "
+                            "dalam 30 hari ke depan." if jumlah else
+                            "Semua utang sudah memiliki pengingat.")
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
     def _selesaikan_reminder(self):
         r = self.tabel_reminder.baris_terpilih()
         if r is None:
-            QMessageBox.information(self, "Belum dipilih", "Pilih satu pengingat.")
+            popup.beri_tahu(self, "Belum dipilih", "Pilih satu pengingat.")
             return
         data = O.daftar_reminder(self.ctx.company_id, "")
         if r >= len(data):
@@ -1321,7 +1321,7 @@ class PeriodePage(QWidget):
             O.selesaikan_reminder(data[r]["id"])
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
 
 class DialogTemplateBerulang(QDialog):
@@ -1395,20 +1395,24 @@ class DialogTemplateBerulang(QDialog):
 
         g.addWidget(w.label("Akun Beban/Debit", objek="FormLabel"), 8, 0)
         self.cmb_debit = w.combo_akun(ctx.company_id)
-        w.set_combo_by_data(self.cmb_debit, "6021")
+        w.set_combo_by_data(self.cmb_debit,
+                            coa.kode_akun_bawaan(ctx.company_id, "sewa"))
         g.addWidget(self.cmb_debit, 9, 0)
 
         g.addWidget(w.label("Akun Kas/Kredit", objek="FormLabel"), 8, 1)
         self.cmb_kredit = w.combo_akun(ctx.company_id)
-        w.set_combo_by_data(self.cmb_kredit, "1002")
+        w.set_combo_kandidat(self.cmb_kredit, ["1001", "1003", "1002"])
         g.addWidget(self.cmb_kredit, 9, 1)
         lay.addLayout(g)
 
         self.lbl_preview = QLabel("")
         self.lbl_preview.setWordWrap(True)
         self.lbl_preview.setTextFormat(Qt.RichText)
-        theme.latar(self.lbl_preview, f"background: {C.PRIMARY_SOFT}; border-radius: 8px; padding: 11px 13px; "
-            f"font-size: {theme.FS_SMALL}px;")
+        theme.latar(self.lbl_preview,
+                    f"color: {C.TEXT}; background: {C.SURFACE_ALT}; "
+                    f"border: 1px solid {C.BORDER}; "
+                    f"border-radius: {theme.SUDUT_KARTU}px; "
+                    f"padding: 9px 11px; font-size: {theme.FS_SMALL}px;")
         lay.addWidget(self.lbl_preview)
 
         aksi = QHBoxLayout()
@@ -1442,10 +1446,10 @@ class DialogTemplateBerulang(QDialog):
     def _simpan(self):
         try:
             if not self.inp_nama.text().strip():
-                QMessageBox.warning(self, "Nama kosong", "Isi nama template.")
+                popup.peringatkan(self, "Nama kosong", "Isi nama template.")
                 return
             if self.inp_jumlah.nilai() <= 0:
-                QMessageBox.warning(self, "Jumlah kosong", "Isi jumlah.")
+                popup.peringatkan(self, "Jumlah kosong", "Isi jumlah.")
                 return
 
             tipe = self.cmb_tipe.currentData()
@@ -1462,7 +1466,7 @@ class DialogTemplateBerulang(QDialog):
                 tanggal_akhir=self.inp_akhir.date().toString("yyyy-MM-dd"))
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menyimpan", str(e))
+            popup.galat(self, "Gagal menyimpan", str(e))
 
 
 # ==========================================================================
@@ -1629,42 +1633,44 @@ class LanPage(QWidget):
                       mode=self.cmb_mode.currentData(),
                       server_host=self.inp_host.text().strip())
         except Exception as e:
-            QMessageBox.critical(
-                self, "Setelan LAN gagal disimpan",
-                f"Setelan LAN tidak dapat disimpan.\n\n{e}\n\n"
-                "Periksa apakah port yang dipilih masih dipakai program lain, "
-                "lalu coba lagi.")
+            popup.galat(self,
+                        "Setelan LAN gagal disimpan",
+                        f"Setelan LAN tidak dapat disimpan.\n\n{e}\n\n"
+                        "Periksa apakah port yang dipilih masih dipakai program lain, "
+                        "lalu coba lagi.")
             return
-        QMessageBox.information(self, "Setelan tersimpan",
-                                "Setelan LAN sudah disimpan.")
+        popup.beri_tahu(self,
+                        "Setelan tersimpan",
+                        "Setelan LAN sudah disimpan.")
         self.muat()
 
     def _uji(self):
         host = self.inp_host.text().strip()
         if not host:
-            QMessageBox.information(self, "IP kosong",
-                                    "Isi alamat IP server terlebih dahulu.")
+            popup.beri_tahu(self,
+                            "IP kosong",
+                            "Isi alamat IP server terlebih dahulu.")
             return
         try:
             hasil = O.uji_koneksi_lan(host, self.spin_port.value())
             if hasil["ok"]:
-                QMessageBox.information(self, "Berhasil", hasil["pesan"])
+                popup.beri_tahu(self, "Berhasil", hasil["pesan"])
             else:
-                QMessageBox.warning(self, "Gagal terhubung", hasil["pesan"])
+                popup.peringatkan(self, "Gagal terhubung", hasil["pesan"])
         except Exception as e:
-            QMessageBox.critical(self, "Gagal menguji", str(e))
+            popup.galat(self, "Gagal menguji", str(e))
 
     def _token(self):
         try:
             token = O.token_lan_baru()
-            QMessageBox.information(
-                self, "Token baru dibuat",
-                f"Token: {token}\n\nBagikan token ini ke komputer klien. "
-                "Token diperlukan agar hanya komputer yang diizinkan dapat "
-                "mengakses data.")
+            popup.beri_tahu(self,
+                            "Token baru dibuat",
+                            f"Token: {token}\n\nBagikan token ini ke komputer klien. "
+                            "Token diperlukan agar hanya komputer yang diizinkan dapat "
+                            "mengakses data.")
             self.muat()
         except Exception as e:
-            QMessageBox.critical(self, "Gagal", str(e))
+            popup.galat(self, "Gagal", str(e))
 
     def _backup(self):
         path, _ = QFileDialog.getSaveFileName(
@@ -1678,13 +1684,13 @@ class LanPage(QWidget):
             db.create_backup(f"Cadangan manual ke {os.path.basename(path)}")
             import shutil
             shutil.copy2(config.DB_PATH, path)
-            QMessageBox.information(
-                self, "Cadangan dibuat",
-                f"Cadangan disimpan di:\n{path}\n\n"
-                "Simpan berkas ini di tempat aman (flashdisk atau drive "
-                "eksternal).")
+            popup.beri_tahu(self,
+                            "Cadangan dibuat",
+                            f"Cadangan disimpan di:\n{path}\n\n"
+                            "Simpan berkas ini di tempat aman (flashdisk atau drive "
+                            "eksternal).")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal membuat cadangan", str(e))
+            popup.galat(self, "Gagal membuat cadangan", str(e))
 
     def _restore(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -1692,25 +1698,24 @@ class LanPage(QWidget):
             "Berkas Cadangan (*.db);;Semua Berkas (*)")
         if not path:
             return
-        if QMessageBox.warning(
-                self, "Konfirmasi Pemulihan",
-                "Memulihkan cadangan akan MENGGANTI seluruh data saat ini "
-                "dengan isi berkas cadangan.\n\n"
-                "Aplikasi perlu ditutup dan dibuka kembali setelah pemulihan.\n\n"
-                "Lanjutkan?",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No) != QMessageBox.Yes:
+        if not popup.tanya(self,
+                           "Konfirmasi Pemulihan",
+                           "Memulihkan cadangan akan MENGGANTI seluruh data saat ini "
+                           "dengan isi berkas cadangan.\n\n"
+                           "Aplikasi perlu ditutup dan dibuka kembali setelah pemulihan.\n\n"
+                           "Lanjutkan?",
+                           jenis="peringatan"):
             return
         try:
             from pathlib import Path
             db.create_backup("Sebelum pemulihan dari cadangan")
             db.restore_backup(Path(path))
-            QMessageBox.information(
-                self, "Pemulihan selesai",
-                "Data berhasil dipulihkan.\n\nTutup aplikasi lalu buka kembali "
-                "agar semua perubahan tampil.")
+            popup.beri_tahu(self,
+                            "Pemulihan selesai",
+                            "Data berhasil dipulihkan.\n\nTutup aplikasi lalu buka kembali "
+                            "agar semua perubahan tampil.")
         except Exception as e:
-            QMessageBox.critical(self, "Gagal memulihkan", str(e))
+            popup.galat(self, "Gagal memulihkan", str(e))
 
     def _buka_folder(self):
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(config.DATA_DIR)))

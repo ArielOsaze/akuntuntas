@@ -7,6 +7,7 @@ Yang diperiksa:
   3. Lisensi yang terdaftar di perangkat lain ditolak.
   4. Lisensi berlaku selamanya, tidak mati karena masa tanda tangan lewat.
   5. Paket Standar menyembunyikan fitur lanjutan; Enterprise menampilkan semua.
+  6. Pustaka pemeriksa tanda tangan tersedia dan benar-benar memverifikasi.
 
 Pemeriksaan yang memerlukan jaringan (aktivasi ke server) hanya dijalankan
 bila sambungan tersedia, supaya pengujian tetap dapat berjalan tanpa internet.
@@ -46,6 +47,7 @@ def uji_sidik():
         sidik == LIS.sidik_perangkat())
     cek("Nama perangkat terbaca", bool(LIS.nama_perangkat()))
     cek("Keterangan sistem terbaca", bool(LIS.info_sistem()))
+    cek("MAC perangkat terbaca", bool(LIS._alamat_mac()))
 
 
 def uji_berkas_lisensi():
@@ -174,9 +176,52 @@ def uji_menu_sidebar():
     jw2.close()
 
 
+def uji_pustaka_tanda_tangan():
+    print()
+    print("6. PUSTAKA PEMERIKSA TANDA TANGAN")
+
+    # Aktivasi menolak jawaban server bila pustaka ini tidak dapat diimpor.
+    # Kejadian yang dijaga: cryptography tidak ikut terbundel ke dalam EXE,
+    # sehingga seluruh aktivasi gagal dengan pesan "tidak dapat diperiksa
+    # keasliannya" meskipun jawaban servernya benar.
+    try:
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric import ed25519
+    except ImportError as galat:
+        cek("Pustaka cryptography dapat diimpor", False, str(galat))
+        print("  Tanpa pustaka ini semua aktivasi lisensi akan gagal.")
+        return
+
+    cek("Pustaka cryptography dapat diimpor", True)
+
+    # Pemeriksaan harus benar-benar berjalan, bukan sekadar pustakanya ada.
+    privat = ed25519.Ed25519PrivateKey.generate()
+    publik = privat.public_key().public_bytes(
+        serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+
+    asli = LIS.KUNCI_PUBLIK
+    LIS.KUNCI_PUBLIK = publik.hex()
+    try:
+        muatan = '{"kunci":"ATNTUJI","paket":"enterprise"}'
+        tanda = privat.sign(muatan.encode("utf-8")).hex()
+        cek("Tanda tangan asli diterima", LIS.tanda_sah(muatan, tanda))
+        cek("Muatan yang diubah ditolak",
+            not LIS.tanda_sah(muatan + " ", tanda))
+    finally:
+        LIS.KUNCI_PUBLIK = asli
+
+    # Kunci publik bawaan harus berbentuk kunci Ed25519 yang sah.
+    try:
+        ed25519.Ed25519PublicKey.from_public_bytes(
+            bytes.fromhex(LIS.KUNCI_PUBLIK))
+        cek("Kunci publik bawaan dapat dibaca", True)
+    except (ValueError, TypeError) as galat:
+        cek("Kunci publik bawaan dapat dibaca", False, str(galat))
+
+
 def uji_lifetime():
     print()
-    print("6. LISENSI BERLAKU SELAMANYA")
+    print("7. LISENSI BERLAKU SELAMANYA")
 
     # Lisensi yang tanda tangannya sudah lewat masa tetap harus sah.
     # Pengujian memakai waktu yang digeser, bukan mengubah berkas, supaya
@@ -213,6 +258,7 @@ def main() -> int:
     uji_pemalsuan()
     uji_pembatasan_paket()
     uji_menu_sidebar()
+    uji_pustaka_tanda_tangan()
     uji_lifetime()
 
     print()

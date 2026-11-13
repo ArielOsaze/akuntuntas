@@ -15,36 +15,61 @@ Termasuk:
 """
 from __future__ import annotations
 
+import re
+import time
+from datetime import date
 from typing import Optional
 
-from PySide6.QtCore import Qt, Signal, QSize, QTimer, QRectF
-from PySide6.QtGui import (QFont, QColor, QFontMetrics, QIcon, QPainter,
-                           QPen, QPixmap)
+from PySide6.QtCore import Qt, Signal, QSize, QTimer, QRectF, QRegularExpression
+from PySide6.QtGui import (QFont, QColor, QBrush, QFontMetrics, QIcon, QPainter,
+                           QPen, QPixmap, QRegularExpressionValidator)
 from PySide6.QtWidgets import (
-    QFrame, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QWidget,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
-    QLineEdit, QSizePolicy, QScrollArea, QComboBox,
-    QStyleOptionViewItem, QStyle,
+    QApplication, QFrame, QLabel, QVBoxLayout, QHBoxLayout, QPushButton,
+    QWidget, QTableWidget, QTableWidgetItem, QHeaderView,
+    QAbstractItemView, QLineEdit, QSizePolicy, QScrollArea, QComboBox,
+    QProgressBar, QStyledItemDelegate, QStyleOptionViewItem,
+    QStyle, QTabWidget,
 )
 
 from .. import config
 from . import icons
 from . import theme
 from .theme import C
+from . import popup
 
-# Warna tombol per gaya: (latar, teks, tepi). Dipakai tombol() untuk memasang
-# gayanya sendiri agar tidak bergantung pada stylesheet aplikasi.
+# Warna tombol per gaya: (latar, teks, tepi, latar hover, latar tekan).
+# Dipakai tombol() untuk memasang gayanya sendiri agar tidak bergantung pada
+# stylesheet aplikasi. Gaya "success" dibuat berwarna lembut supaya tidak
+# bersaing dengan satu tombol utama pada baris aksi yang sama.
 GAYA_TOMBOL = {
-    "primary": (C.PRIMARY, C.TEXT_INVERSE, C.PRIMARY),
-    "danger": (C.DANGER, C.TEXT_INVERSE, C.DANGER),
-    "success": (C.SUCCESS, C.TEXT_INVERSE, C.SUCCESS),
+    "primary": (C.PRIMARY, C.TEXT_INVERSE, C.PRIMARY, C.PRIMARY_DARK, "#0F1518"),
+    "danger": (C.DANGER, C.TEXT_INVERSE, C.DANGER, "#862C26", "#6F221D"),
+    "success": (C.SUCCESS_BG, C.SUCCESS, "#BFDCCB", "#DFEEE5", "#BFDCCB"),
 }
 
-# Padding sel tabel dari stylesheet (7px 9px): 9px kiri + 9px kanan. Lebar
+# Padding sel tabel dari stylesheet (8px 8px): 8px kiri + 8px kanan. Lebar
 # teks saja tidak cukup untuk menghitung lebar kolom karena Qt mengurangi
 # lebar sel dengan padding ini sebelum menggambar; tanpa memperhitungkannya
 # Qt memakai elipsis meski menurut hitungan teks kolomnya sudah cukup.
-PADDING_SEL = 18
+PADDING_SEL = 16
+CADANGAN_SEL = 8
+
+# Saat ruang tabel sempit, kolom fleksibel (kolom teks seperti keterangan
+# atau nama) boleh menyusut agar seluruh kolom tetap terlihat tanpa menggeser
+# mendatar. Di bawah batas ini tabel memakai lebar penuh isinya dan digeser.
+MIN_LEBAR_FLEKSIBEL = 90
+
+# Batas nominal yang boleh diketik. SQLite menyimpan uang sebagai INTEGER
+# 64-bit, sedangkan nominal ini juga dipakai untuk menjumlahkan baris,
+# menghitung PPN, dan menyusun laporan. Batas Rp999 triliun menyisakan
+# ruang yang lebar untuk perhitungan turunan tersebut.
+BATAS_NOMINAL = 999_999_999_999_999
+_BATAS_DIGIT = len(str(BATAS_NOMINAL))
+
+
+def _format_nominal(nilai: int) -> str:
+    """Format angka dengan pemisah ribuan gaya Indonesia."""
+    return f"{nilai:,}".replace(",", ".")
 
 
 # ==========================================================================
@@ -136,24 +161,24 @@ class Card(QFrame):
 class KpiTile(QFrame):
     """Kartu ringkas berisi satu angka utama beserta label dan keterangan.
 
-    Susunannya sengaja dibuat bertingkat: label kecil di atas, angka besar di
-    tengah, keterangan di bawah. Perbedaan ukuran angka terhadap labelnya
-    dibuat mencolok supaya angka dapat dipindai sekilas, bukan dibaca satu
-    per satu.
+    Angka ditulis dengan huruf serif seperti angka pokok pada laporan
+    keuangan, labelnya berupa huruf kecil renggang di atasnya. Ikon garis
+    kecil hanya menjadi penanda, bukan keping berwarna yang menarik
+    perhatian lebih besar daripada angkanya.
     """
 
     def __init__(self, label: str, value: str = "", hint: str = "",
                  warna: str = None, ikon: str = "", parent=None):
         super().__init__(parent)
         self.setObjectName("KpiTile")
-        self.setMinimumHeight(112)
-        # Lebar minimum dijaga kecil supaya tiga kartu dalam satu baris tetap
-        # muat pada layar 1366 piksel, ukuran terkecil yang didukung. Nilai
-        # yang terlalu besar membuat kartu ketiga keluar dari tepi jendela.
-        self.setMinimumWidth(120)
+        self.setMinimumHeight(116)
+        # Lebar minimum dijaga kecil supaya kartu dalam satu baris tetap
+        # muat pada layar 1366 piksel. Nilai yang terlalu besar membuat
+        # kartu terakhir keluar dari tepi jendela.
+        self.setMinimumWidth(110)
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(16, 13, 16, 13)
-        lay.setSpacing(4)
+        lay.setContentsMargins(17, 14, 17, 14)
+        lay.setSpacing(5)
 
         baris_atas = QHBoxLayout()
         baris_atas.setSpacing(8)
@@ -164,27 +189,19 @@ class KpiTile(QFrame):
         self.lbl_label.setWordWrap(True)
         baris_atas.addWidget(self.lbl_label, 1)
         if ikon:
-            # ikon digambar sebagai pixmap, bukan karakter teks
-            warna_ikon = warna or icons.WARNA_MUTED
             self.lbl_ikon = QLabel()
-            self.lbl_ikon.setPixmap(icons.pixmap(ikon, warna_ikon, 17))
-            self.lbl_ikon.setFixedSize(17, 17)
+            self.lbl_ikon.setPixmap(icons.pixmap(ikon, C.TEXT_FAINT, 15))
+            self.lbl_ikon.setFixedSize(15, 15)
+            self.lbl_ikon.setAlignment(Qt.AlignCenter)
             self.lbl_ikon.setStyleSheet("background: transparent;")
-            baris_atas.addWidget(self.lbl_ikon, 0)
+            baris_atas.addWidget(self.lbl_ikon, 0, Qt.AlignTop)
         lay.addLayout(baris_atas)
 
         self.lbl_value = QLabel(value)
-        self.lbl_value.setObjectName("KpiValue")
+        self.lbl_value.setObjectName("KpiAngka")
         self.lbl_value.setToolTip(value)
         self.lbl_value.setMinimumWidth(0)
-        # warna disimpan: ukuran huruf disesuaikan ulang setiap kali kartu
-        # berubah lebar, dan stylesheet-nya ditulis ulang saat itu
         self._warna_value = warna
-        if warna:
-            self.lbl_value.setStyleSheet(
-                f"font-family: {theme.FONT_ANGKA}; "
-                f"font-size: {theme.FS_DISPLAY}px; font-weight: 700; "
-                f"color: {warna}; background: transparent;")
         lay.addWidget(self.lbl_value)
 
         self.lbl_hint = QLabel(hint)
@@ -194,10 +211,10 @@ class KpiTile(QFrame):
         lay.addWidget(self.lbl_hint)
         lay.addStretch()
 
-        # Sediakan teks asli agar dapat ditampilkan utuh saat ruang terbatas.
         self._label_penuh = label.upper()
         self._value_penuh = value
         self._hint_penuh = hint
+        self._rapikan_teks()
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -209,10 +226,8 @@ class KpiTile(QFrame):
 
         Nominal rupiah tidak boleh dipotong: angka yang terpotong membuat
         laporan salah dibaca. Bila ruangnya kurang, ukuran huruf diturunkan
-        bertahap sampai angkanya muat, bukan dipotong dengan elipsis.
-
-        Ukuran ditulis lewat stylesheet per widget karena aturan #KpiValue
-        di stylesheet utama mengalahkan setFont().
+        bertahap sampai angkanya muat. Elipsis hanya dipakai pada keadaan
+        darurat ketika huruf sudah mencapai ukuran terkecil.
         """
         lebar = max(self.lbl_value.width(), 40)
         teks = self._value_penuh
@@ -220,44 +235,37 @@ class KpiTile(QFrame):
 
         ukuran = theme.FS_DISPLAY
         while ukuran > 13:
-            font = theme.font_angka(ukuran)
-            if QFontMetrics(font).horizontalAdvance(teks) <= lebar - 4:
+            font = theme.font_serif_angka(ukuran)
+            if QFontMetrics(font).horizontalAdvance(teks) <= lebar - 2:
                 break
             ukuran -= 1
 
-        font = theme.font_angka(ukuran)
+        font = theme.font_serif_angka(ukuran)
         fm = QFontMetrics(font)
-
-        if fm.horizontalAdvance(teks) > lebar - 4:
-            self.lbl_value.setText(fm.elidedText(teks, Qt.ElideRight,
-                                                 lebar - 4))
-        else:
-            self.lbl_value.setText(teks)
+        teks_tampil = teks
+        if fm.horizontalAdvance(teks) > lebar - 2:
+            teks_tampil = fm.elidedText(teks, Qt.ElideRight, lebar - 2)
+        if self.lbl_value.text() != teks_tampil:
+            self.lbl_value.setText(teks_tampil)
 
         self.lbl_value.setStyleSheet(
-            f"font-family: {theme.FONT_ANGKA}; font-size: {ukuran}px; "
-            f"font-weight: 700; color: {warna}; background: transparent; "
-            "letter-spacing: -0.5px;")
+            f"font-family: '{theme.FONT_SERIF}', Georgia, serif; "
+            f"font-size: {ukuran}px; font-weight: 600; color: {warna}; "
+            "background: transparent;")
 
-        # tinggi kartu mengikuti tinggi teks label + nilai + keterangan
         perlu = (self.layout().contentsMargins().top()
                  + self.lbl_label.sizeHint().height()
                  + self.lbl_value.sizeHint().height()
                  + self.lbl_hint.sizeHint().height()
                  + self.layout().spacing() * 2
                  + self.layout().contentsMargins().bottom())
-        self.setMinimumHeight(max(112, perlu))
+        self.setMinimumHeight(max(116, perlu))
 
     def set_value(self, value: str, warna: str = None):
         if warna:
             self._warna_value = warna
         self._value_penuh = value
         self.lbl_value.setToolTip(value)
-        self.lbl_value.setText(value)
-        if warna:
-            self.lbl_value.setStyleSheet(
-                f"font-size: {theme.FS_DISPLAY}px; font-weight: 700; "
-                f"color: {warna}; background: transparent;")
         self._rapikan_teks()
 
     def set_hint(self, hint: str):
@@ -285,6 +293,9 @@ class HelpPanel(QFrame):
                  parent=None, dapat_ditutup: bool = True):
         super().__init__(parent)
         self.setObjectName("HelpPanel")
+        # Panel penjelasan tidak boleh ikut melar mengisi sisa tinggi
+        # dialog; ruang lebih sebaiknya diberikan kepada tabel atau isian.
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
         lay = QVBoxLayout(self)
         lay.setContentsMargins(16, 13, 16, 13)
         lay.setSpacing(7)
@@ -292,7 +303,7 @@ class HelpPanel(QFrame):
         baris = QHBoxLayout()
         baris.setSpacing(8)
         ikon = QLabel()
-        ikon.setPixmap(icons.pixmap("info", icons.WARNA_PRIMER, 16))
+        ikon.setPixmap(icons.pixmap("info", icons.WARNA_MUTED, 16))
         ikon.setFixedSize(16, 16)
         ikon.setStyleSheet("background: transparent;")
         baris.addWidget(ikon)
@@ -312,7 +323,7 @@ class HelpPanel(QFrame):
                 f"QPushButton {{ background: transparent; border: none; "
                 f"color: {C.PRIMARY_DARK}; font-size: 17px; font-weight: 700; "
                 f"padding: 0; }}"
-                f"QPushButton:hover {{ background: #CFE0F0; border-radius: 11px; }}")
+                f"QPushButton:hover {{ background: {C.ACCENT_SOFT}; border-radius: 11px; }}")
             btn.clicked.connect(self.hide)
             baris.addWidget(btn)
         lay.addLayout(baris)
@@ -345,7 +356,7 @@ class InfoBanner(QFrame):
         lay.setSpacing(11)
 
         # ikon garis sesuai tingkat kepentingan banner
-        ikon_map = {"info": "info", "ok": "simpan", "success": "simpan",
+        ikon_map = {"info": "info", "ok": "centang", "success": "centang",
                     "warning": "peringatan", "peringatan": "peringatan",
                     "danger": "peringatan", "kritis": "peringatan"}
         warna_map = {"info": C.INFO, "ok": C.SUCCESS, "success": C.SUCCESS,
@@ -383,25 +394,240 @@ class InfoBanner(QFrame):
 # BADGE
 # ==========================================================================
 class Badge(QLabel):
-    """Label kecil berwarna untuk status."""
+    """Label kecil berwarna untuk status.
+
+    Bentuknya persegi dengan sudut 3 px, seperti cap pada dokumen, bukan
+    pil pastel. Warna latar dipakai sangat tipis agar status tetap terbaca
+    sebagai keterangan dan tidak bersaing dengan angka di sekitarnya.
+    """
 
     def __init__(self, teks: str, tingkat: str = "netral", parent=None):
         super().__init__(teks.upper(), parent)
         warna, bg = theme.STATUS_COLORS.get(tingkat, (C.TEXT_MUTED, C.NEUTRAL_BG))
         self.setStyleSheet(
-            f"QLabel {{ background: {bg}; color: {warna}; border-radius: 9px; "
-            f"padding: 3px 10px; font-size: {theme.FS_TINY}px; font-weight: 700; }}")
+            f"QLabel {{ background: {bg}; color: {warna}; border-radius: 3px; "
+            f"padding: 3px 8px; font-size: 10px; font-weight: 700; "
+            "letter-spacing: 0.5px; }")
         self.setAlignment(Qt.AlignCenter)
         # Lebar minimum dikunci pada lebar teks supaya label tidak menyusut
         # sampai tulisannya terpotong saat ruang di sekitarnya sempit.
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.setMinimumWidth(
-            self.fontMetrics().horizontalAdvance(teks.upper()) + 24)
+            self.fontMetrics().horizontalAdvance(teks.upper()) + 18)
+
+
+class Tab(QTabWidget):
+    """
+    Baris tab bergaya dokumen.
+
+    Garis dasar bawaan Qt tidak dipakai. Qt menggambarnya memakai warna
+    palet sistem, berwarna putih dan tidak sebaris dengan penanda tab
+    terpilih, sehingga penanda tembaga tampak melayang terpisah dari baris
+    tabnya. Di sini garis pemisah digambar sendiri tepat pada baris piksel
+    yang sama dengan penanda, dan bagian di bawah tab terpilih dilewati
+    supaya penandanya terlihat menyambung ke isi halaman.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setDocumentMode(True)
+        self.tabBar().setDrawBase(False)
+        self.tabBar().setExpanding(False)
+
+    def paintEvent(self, ev):
+        super().paintEvent(ev)
+        bar = self.tabBar()
+        if bar.count() == 0:
+            return
+        y = bar.geometry().bottom()
+        aktif = bar.tabRect(self.currentIndex())
+        aktif.moveLeft(aktif.left() + bar.x())
+        p = QPainter(self)
+        p.setPen(QPen(QColor(C.BORDER), 1))
+        if aktif.left() > 0:
+            p.drawLine(0, y, aktif.left() - 1, y)
+        if aktif.right() < self.width():
+            p.drawLine(aktif.right() + 1, y, self.width(), y)
+        p.end()
 
 
 # ==========================================================================
 # TABEL
 # ==========================================================================
+class _LencanaStatus(QStyledItemDelegate):
+    """
+    Gambar isi kolom status sebagai lencana kecil, bukan teks polos.
+
+    Warna lencana mengikuti warna teks yang sudah dipasang pada sel, sehingga
+    status lunas, terlambat, dan batal tetap terbaca cepat tanpa perlu
+    menambah kolom baru. Latar lencana memakai warna yang sama dengan
+    transparansi rendah agar tetap tenang di antara angka tabel.
+    """
+
+    def paint(self, painter, option, index):
+        opsi = QStyleOptionViewItem(option)
+        self.initStyleOption(opsi, index)
+        teks = opsi.text
+        opsi.text = ""
+
+        gaya = (opsi.widget.style() if opsi.widget is not None
+                else QApplication.style())
+        gaya.drawControl(QStyle.CE_ItemViewItem, opsi, painter, opsi.widget)
+        if not teks:
+            return
+
+        data_warna = index.data(Qt.ForegroundRole)
+        if isinstance(data_warna, QBrush):
+            warna = data_warna.color()
+        elif isinstance(data_warna, QColor):
+            warna = data_warna
+        else:
+            warna = QColor(C.TEXT_MUTED)
+
+        font = QFont(opsi.font)
+        font.setWeight(QFont.DemiBold)
+        painter.save()
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setFont(font)
+        fm = painter.fontMetrics()
+        lebar_teks = fm.horizontalAdvance(teks)
+        tinggi = max(20, fm.height() + 5)
+        # Padding lencana dibuat ringkas agar status seperti "Disetujui"
+        # tetap terbaca utuh pada kolom selebar judulnya.
+        lebar = min(lebar_teks + 14, max(26, opsi.rect.width() - 8))
+        kotak = QRectF(opsi.rect.left() + 4,
+                       opsi.rect.center().y() - tinggi / 2 + 1,
+                       lebar, tinggi)
+
+        isi = QColor(warna)
+        isi.setAlpha(22)
+        tepi = QColor(warna)
+        tepi.setAlpha(60)
+        painter.setPen(QPen(tepi, 1))
+        painter.setBrush(isi)
+        painter.drawRoundedRect(kotak, 3, 3)
+        painter.setPen(warna)
+        painter.drawText(kotak.adjusted(5, 0, -5, 0), Qt.AlignCenter,
+                         fm.elidedText(teks, Qt.ElideRight,
+                                       max(8, int(kotak.width()) - 10)))
+        painter.restore()
+
+
+# Nama bulan untuk mengenali tanggal tampilan Indonesia, mis. "25 Okt 2026".
+_BULAN_URUT = {
+    nama.lower(): i + 1
+    for i, nama in enumerate(config.MONTH_ABBR_ID + config.MONTH_NAMES_ID)
+}
+_POLA_TANGGAL = re.compile(r"^(\d{1,2})\s+([A-Za-z]+)\.?\s+(\d{4})(?:\s.*)?$")
+_POLA_ISO = re.compile(r"^(\d{4})-(\d{2})-(\d{2})(?:[ T].*)?$")
+# Angka tampilan Indonesia: rupiah, persen, kuantitas dengan satuan pendek.
+_POLA_ANGKA = re.compile(
+    r"^[+-]?\s*\(?\s*(?:Rp\.?\s*)?(\d[\d.,]*)\s*\)?\s*"
+    r"(%|[A-Za-z]{1,12})?\s*$", re.IGNORECASE)
+_KOSONG = {"", "-", "--", "n/a", "na", "tidak ada", "belum ada"}
+
+
+def _nilai_angka(teks: str) -> Optional[float]:
+    """Ubah angka tampilan Indonesia menjadi float, atau None bila bukan angka."""
+    t = teks.strip()
+    negatif = (t.startswith("(") and t.endswith(")")) or t.startswith("-")
+    cocok = _POLA_ANGKA.match(t)
+    if not cocok:
+        return None
+    token = cocok.group(1)
+    try:
+        if "," in token:
+            # Koma adalah desimal; titik adalah pemisah ribuan.
+            nilai = float(token.replace(".", "").replace(",", "."))
+        elif "." in token:
+            bagian = token.split(".")
+            # "1.234" dan "1.234.567" adalah ribuan; "1.5" adalah desimal.
+            if (len(bagian[-1]) == 3
+                    and all(len(x) == 3 for x in bagian[1:])):
+                nilai = float("".join(bagian))
+            else:
+                nilai = float(token)
+        else:
+            nilai = float(token)
+    except ValueError:
+        return None
+    return -nilai if negatif else nilai
+
+
+def _kunci_urut(teks: str) -> tuple:
+    """
+    Kunci pengurutan yang mengikuti makna isi sel.
+
+    Tanpa kunci ini, kolom rupiah, persen, kuantitas, dan tanggal diurutkan
+    sebagai teks: "Rp9.000" muncul setelah "Rp10.000", dan "3 Okt" sebelum
+    "25 Sep". Nilai kosong diletakkan paling atas pada urutan menaik.
+    """
+    t = str(teks or "").strip()
+    if not t or t.casefold() in _KOSONG:
+        return (0, 0.0, "")
+
+    cocok = _POLA_ISO.match(t)
+    if cocok:
+        try:
+            urut = date(int(cocok.group(1)), int(cocok.group(2)),
+                        int(cocok.group(3))).toordinal()
+            return (1, float(urut), t)
+        except ValueError:
+            pass
+
+    cocok = _POLA_TANGGAL.match(t)
+    if cocok:
+        bulan = _BULAN_URUT.get(cocok.group(2).casefold())
+        if bulan:
+            try:
+                urut = date(int(cocok.group(3)), bulan,
+                            int(cocok.group(1))).toordinal()
+                return (1, float(urut), t)
+            except ValueError:
+                pass
+
+    angka = _nilai_angka(t)
+    if angka is not None:
+        return (2, angka, t.casefold())
+    return (3, 0.0, t.casefold())
+
+
+class _ItemTabel(QTableWidgetItem):
+    """Item tabel yang mengurutkan nominal, persen, dan tanggal secara benar."""
+
+    def __lt__(self, lain):
+        if isinstance(lain, QTableWidgetItem):
+            return _kunci_urut(self.text()) < _kunci_urut(lain.text())
+        return super().__lt__(lain)
+
+    @classmethod
+    def dari(cls, item: QTableWidgetItem) -> "_ItemTabel":
+        """Salin item biasa menjadi item yang dapat diurutkan secara makna."""
+        baru = cls(item.text())
+        baru.setTextAlignment(item.textAlignment())
+        baru.setFlags(item.flags())
+        baru.setFont(item.font())
+        if item.foreground().style() != Qt.NoBrush:
+            baru.setForeground(item.foreground())
+        if item.background().style() != Qt.NoBrush:
+            baru.setBackground(item.background())
+        baru.setToolTip(item.toolTip())
+        baru.setStatusTip(item.statusTip())
+        baru.setWhatsThis(item.whatsThis())
+        baru.setSizeHint(item.sizeHint())
+        # Hanya salin keadaan centang bila item asal memang memilikinya.
+        # Nilai bawaan QTableWidgetItem adalah "tidak dicentang", dan
+        # menuliskannya kembali membuat setiap sel menampilkan kotak centang.
+        if item.data(Qt.CheckStateRole) is not None:
+            baru.setCheckState(item.checkState())
+        if not item.icon().isNull():
+            baru.setIcon(item.icon())
+        data = item.data(Qt.UserRole)
+        if data is not None:
+            baru.setData(Qt.UserRole, data)
+        return baru
+
+
 class Tabel(QTableWidget):
     """
     Tabel standar aplikasi: tanpa grid mencolok, header rapi,
@@ -414,7 +640,9 @@ class Tabel(QTableWidget):
 
     def __init__(self, kolom: list[tuple[str, int]] = None, parent=None):
         super().__init__(parent)
-        self.setAlternatingRowColors(False)
+        # Baris berselang-seling tipis: mata dapat mengikuti satu baris
+        # sampai kolom terakhir tanpa kehilangan tempat.
+        self.setAlternatingRowColors(True)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setSelectionMode(QAbstractItemView.SingleSelection)
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -422,11 +650,28 @@ class Tabel(QTableWidget):
         # hover baris memudahkan mengikuti baris pada tabel berkolom banyak
         self.setMouseTracking(True)
         self.verticalHeader().setVisible(False)
-        self.verticalHeader().setDefaultSectionSize(34)
-        self.verticalHeader().setMinimumSectionSize(26)
+        self.verticalHeader().setDefaultSectionSize(40)
+        self.verticalHeader().setMinimumSectionSize(32)
         self.horizontalHeader().setHighlightSections(False)
-        self.horizontalHeader().setFixedHeight(38)
+        self.horizontalHeader().setFixedHeight(42)
+        # Judul kolom mengikuti rata isinya: judul teks di kiri, judul angka
+        # di kanan. Judul yang selalu di tengah membuat mata harus bergeser
+        # dari judul ke angka pada setiap kolom.
+        self.horizontalHeader().setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        # Digit tabel memakai lebar sama supaya nominal pada baris berbeda
+        # sejajar tepat di bawah satu sama lain.
+        font_tabel = QFont(theme.FONT_UI)
+        try:
+            font_tabel.setFeature(QFont.Tag("tnum"), 1)
+        except Exception:
+            pass
+        self.setFont(font_tabel)
         self.setSortingEnabled(True)
+        self.horizontalHeader().setSortIndicatorShown(True)
+        # Tabel yang memuat kotak isian tidak boleh diurutkan: Qt hanya
+        # memindahkan item teks, sedangkan widget sel tetap di baris lama,
+        # sehingga isian dan label barisnya bertukar tempat.
+        self._punya_widget = False
         # Keterangan yang tampil saat tabel belum berisi data.
         self.pesan_kosong = "Belum ada data pada tabel ini."
         self._label_kosong = None
@@ -476,17 +721,48 @@ class Tabel(QTableWidget):
         self._label_kosong.show()
         self._label_kosong.raise_()
 
+    def _lepas_widget_sel(self, baris: int):
+        """
+        Buang seluruh widget sel pada satu baris.
+
+        QTableWidget tidak membuang widget lama saat sel diganti atau baris
+        dihapus. Widget itu tetap menjadi anak area gulir, tetap terlihat,
+        dan tetap menerima klik. Saat tabel digambar ulang, tumpukan widget
+        lama di atas sel baru dapat menutupi kolom akun atau bahkan menekan
+        tombol hapus baris tanpa sengaja. Karena itu widget dilepas dan
+        dihapus sendiri setiap kali sel atau baris dibuang.
+        """
+        for kolom in range(self.columnCount()):
+            widget = self.cellWidget(baris, kolom)
+            if widget is None:
+                continue
+            self.removeCellWidget(baris, kolom)
+            widget.hide()
+            widget.setParent(None)
+            widget.deleteLater()
+
     def clearContents(self):
+        for baris in range(self.rowCount()):
+            self._lepas_widget_sel(baris)
         super().clearContents()
         self._perbarui_pesan_kosong()
 
     def setRowCount(self, baris: int):
+        if baris < self.rowCount():
+            for lama in range(baris, self.rowCount()):
+                self._lepas_widget_sel(lama)
         super().setRowCount(baris)
         self._perbarui_pesan_kosong()
 
     def showEvent(self, event):
         super().showEvent(event)
         self._perbarui_pesan_kosong()
+
+    def setItem(self, baris: int, kolom: int, item):
+        """Bungkus item biasa agar seluruh kolom terurut sesuai maknanya."""
+        if item is not None and not isinstance(item, _ItemTabel):
+            item = _ItemTabel.dari(item)
+        super().setItem(baris, kolom, item)
 
     def setCellWidget(self, baris: int, kolom: int, widget):
         """
@@ -496,9 +772,23 @@ class Tabel(QTableWidget):
         Kotak isian rupiah butuh ruang lebih besar, jadi teks yang diketik
         terpotong dan tidak terlihat. Tinggi baris dinaikkan mengikuti
         kebutuhan widget tertinggi pada baris itu.
+
+        Tabel yang berisi widget tidak lagi dapat diurutkan. Qt hanya
+        mengurutkan item teks dan tidak memindahkan widget sel, sehingga
+        tombol serta kotak isian akan tertinggal di baris yang salah.
         """
+        lama = self.cellWidget(baris, kolom)
+        if lama is not None and lama is not widget:
+            self.removeCellWidget(baris, kolom)
+            lama.hide()
+            lama.setParent(None)
+            lama.deleteLater()
         super().setCellWidget(baris, kolom, widget)
         if widget is not None:
+            self._punya_widget = True
+            if self.isSortingEnabled():
+                self.setSortingEnabled(False)
+                self.horizontalHeader().setSortIndicatorShown(False)
             self._sesuaikan_tinggi_baris(baris)
 
     def _sesuaikan_tinggi_baris(self, baris: int):
@@ -555,7 +845,10 @@ class Tabel(QTableWidget):
         self.initViewItemOption(opt)
         metrik = QFontMetrics(opt.font)
         margin = self.style().pixelMetric(QStyle.PM_FocusFrameHMargin, None, self)
-        sisa = 2 * margin + PADDING_SEL
+        # Delegate menggambar sel beberapa piksel lebih lebar daripada
+        # hitungan padding saja. Tanpa cadangan ini, kolom yang "pas" tetap
+        # memakai elipsis meski ruang tabel masih tersisa.
+        sisa = 2 * margin + PADDING_SEL + CADANGAN_SEL
 
         perlu = metrik.horizontalAdvance(judul) + sisa + 12
         isi = self._perlu_isi.get(i, 0)
@@ -576,8 +869,13 @@ class Tabel(QTableWidget):
         perlu = {}
         rancangan = {}
         for i, (judul, lebar) in enumerate(kolom):
+            if self.isColumnHidden(i):
+                continue
             perlu[i] = self._lebar_perlu(i, judul)
-            rancangan[i] = lebar if lebar > 0 else perlu[i]
+            # Lebar rancangan tidak boleh lebih sempit daripada kebutuhan isi,
+            # misalnya nominal besar yang melebihi lebar kolom bawaan.
+            rancangan[i] = max(lebar, perlu[i]) if lebar > 0 else perlu[i]
+        fleksibel = [i for i in fleksibel if i in rancangan]
 
         tersedia = self.viewport().width()
         if tersedia <= 0:
@@ -615,15 +913,30 @@ class Tabel(QTableWidget):
                     self.setColumnWidth(i, rancangan[i])
             return
 
-        # ruang tidak cukup untuk seluruh isi: pakai lebar minimum,
-        # tabel menggeser mendatar agar tidak ada teks yang terpotong
+        # ruang tidak cukup untuk seluruh isi. Kolom teks fleksibel adalah
+        # penyebab utama kelebihan lebar (keterangan panjang), sedangkan
+        # kolom angka dan tanggal tidak boleh dipotong. Bila kolom fleksibel
+        # masih cukup lebar setelah menyusut, pakai seluruh ruang tersedia
+        # supaya semua kolom terlihat tanpa menggeser mendatar.
+        sisa_fleksibel = tersedia - sum(
+            perlu[i] for i in perlu if i not in fleksibel)
+        if fleksibel and sisa_fleksibel >= MIN_LEBAR_FLEKSIBEL * len(fleksibel):
+            for i in perlu:
+                lebar = (sisa_fleksibel // len(fleksibel)
+                         if i in fleksibel else perlu[i])
+                if self.columnWidth(i) != lebar:
+                    self.setColumnWidth(i, lebar)
+            return
+
+        # teks panjang tetap dipertahankan utuh; tabel menggeser mendatar
         for i in perlu:
             if self.columnWidth(i) != perlu[i]:
                 self.setColumnWidth(i, perlu[i])
 
     def isi(self, baris: list[list], warna_baris: dict = None,
             align_kanan: set = None, warna_sel: dict = None,
-            tebal_kolom: set = None, kolom_penanda: int = None):
+            tebal_kolom: set = None, kolom_penanda: int = None,
+            tebal_baris: set = None):
         """
         Isi tabel.
           baris        : list of list nilai
@@ -634,6 +947,8 @@ class Tabel(QTableWidget):
           kolom_penanda: kolom yang diberi warna penanda. Bila tidak diisi,
                          kolom status dicari otomatis; bila tabel tidak punya
                          kolom status, seluruh baris yang diwarnai
+          tebal_baris  : set indeks baris yang dicetak tebal, misalnya baris
+                         subtotal pada laporan keuangan
 
         Warna baris dipakai untuk dua keperluan: menandai baris judul atau
         total, dan menandai keadaan baris data. Untuk yang kedua, mewarnai
@@ -644,11 +959,18 @@ class Tabel(QTableWidget):
         align_kanan = align_kanan or set()
 
         # cari kolom status pada judul kolom
-        if kolom_penanda is None and warna_baris:
+        if kolom_penanda is None:
             for i, (judul, _) in enumerate(getattr(self, "_kolom", [])):
                 if "status" in judul.lower() or "keadaan" in judul.lower():
                     kolom_penanda = i
                     break
+        # Lencana hanya dipasang pada kolom status. Kolom nominal yang diberi
+        # warna penanda (mis. saldo piutang) tetap berupa angka biasa; angka
+        # di dalam lencana sulit dibandingkan dan mudah disangka status.
+        for i, (judul, _) in enumerate(getattr(self, "_kolom", [])):
+            if "status" in judul.lower() or "keadaan" in judul.lower():
+                self._pasang_lencana(i)
+                break
 
         self.setSortingEnabled(False)
         self.setRowCount(0)
@@ -657,11 +979,17 @@ class Tabel(QTableWidget):
             for c, nilai in enumerate(data):
                 if nilai is None:
                     nilai = ""
-                item = QTableWidgetItem(str(nilai))
+                item = _ItemTabel(str(nilai))
                 # teks penuh selalu tersedia lewat tooltip meski kolom sempit
                 item.setToolTip(str(nilai))
                 if c in align_kanan:
                     item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                    font_angka = QFont(self.font())
+                    try:
+                        font_angka.setFeature(QFont.Tag("tnum"), 1)
+                    except Exception:
+                        pass
+                    item.setFont(font_angka)
                 else:
                     item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
                 if warna_sel and (r, c) in warna_sel:
@@ -669,14 +997,18 @@ class Tabel(QTableWidget):
                 elif warna_baris and r in warna_baris:
                     if kolom_penanda is None or c == kolom_penanda:
                         item.setForeground(QColor(warna_baris[r]))
-                if tebal_kolom and c in tebal_kolom:
+                if ((tebal_kolom and c in tebal_kolom)
+                        or (tebal_baris and r in tebal_baris)):
                     font = item.font()
                     font.setBold(True)
                     item.setFont(font)
                 self.setItem(r, c, item)
-        self.setSortingEnabled(True)
-        self._ukur_perlu_isi(baris, align_kanan)
-        self._lebarkan_kolom_angka(baris, align_kanan)
+        if not self._punya_widget:
+            self.setSortingEnabled(True)
+            self.horizontalHeader().setSortIndicatorShown(True)
+        self._atur_rata_judul(align_kanan)
+        self._ukur_perlu_isi(baris, align_kanan, tebal_kolom, tebal_baris)
+        self._lebarkan_kolom_angka(baris, align_kanan, tebal_kolom, tebal_baris)
         # batas minimum kolom berubah setelah isi diukur, jadi lebarnya
         # dihitung ulang agar isi tidak terpotong
         kolom = getattr(self, "_kolom", None)
@@ -685,41 +1017,101 @@ class Tabel(QTableWidget):
             if fleksibel:
                 self._seimbangkan_kolom(fleksibel, kolom)
 
-    def _ukur_perlu_isi(self, baris: list[list], align_kanan: set):
+    def tinggi_konten(self) -> int:
+        """Tinggi yang dibutuhkan seluruh baris beserta judul kolom."""
+        tinggi = self.horizontalHeader().height() + 2 * self.frameWidth()
+        for r in range(self.rowCount()):
+            if not self.isRowHidden(r):
+                tinggi += self.rowHeight(r)
+        return tinggi
+
+    def sesuaikan_tinggi(self, minimum: int = 120, maksimum: int = 0):
+        """
+        Tetapkan tinggi tabel sesuai isinya.
+
+        Laporan keuangan dibaca sebagai satu kesatuan; bila tabel dipaksa
+        pendek, baris terakhir dan totalnya tersembunyi di balik gulir
+        dalam tabel. Dengan tinggi mengikuti isi, satu-satunya gulir yang
+        dipakai adalah gulir halaman.
+        """
+        tinggi = max(minimum, self.tinggi_konten())
+        if maksimum:
+            tinggi = min(tinggi, maksimum)
+        self.setFixedHeight(tinggi)
+
+    def _atur_rata_judul(self, align_kanan: set):
+        """Samakan rata judul kolom dengan rata isinya."""
+        for c in range(self.columnCount()):
+            item = self.horizontalHeaderItem(c)
+            if item is None:
+                continue
+            rata = Qt.AlignRight if c in align_kanan else Qt.AlignLeft
+            item.setTextAlignment(rata | Qt.AlignVCenter)
+
+    def _pasang_lencana(self, kolom: int):
+        """Pasang penggambar lencana pada kolom status, sekali per tabel."""
+        if not hasattr(self, "_lencana"):
+            self._lencana = {}
+        if kolom not in self._lencana:
+            delegate = _LencanaStatus(self)
+            self._lencana[kolom] = delegate
+            self.setItemDelegateForColumn(kolom, delegate)
+
+    def _ukur_perlu_isi(self, baris: list[list], align_kanan: set,
+                        tebal_kolom: set = None, tebal_baris: set = None):
         """
         Catat lebar yang dibutuhkan tiap kolom untuk menampilkan isinya.
 
         Dipakai sebagai batas bawah saat kolom disusutkan: tanpa ini, kolom
         yang muat judulnya tetapi tidak muat isinya akan memotong isi, seperti
-        nomor kontrak atau nama mitra yang panjang.
+        nomor kontrak atau nama mitra yang panjang. Sel yang dicetak tebal
+        memakai huruf lebih lebar, jadi lebarnya diukur dengan huruf tebal;
+        bila diukur dengan huruf biasa, nominal seperti "Rp111.000.000"
+        tetap terpotong meski kolom sudah dianggap cukup.
         """
-        opt = QStyleOptionViewItem()
-        self.initViewItemOption(opt)
-        metrik = QFontMetrics(opt.font)
+        dasar = QFont(self.font())
+        tebal = QFont(dasar)
+        tebal.setBold(True)
+        metrik_biasa = QFontMetrics(dasar)
+        metrik_tebal = QFontMetrics(tebal)
         for c in range(self.columnCount()):
             perlu = 0
-            for data in baris:
+            for r, data in enumerate(baris):
                 if c < len(data) and data[c] is not None:
+                    pakai_tebal = ((tebal_kolom and c in tebal_kolom)
+                                   or (tebal_baris and r in tebal_baris))
+                    metrik = metrik_tebal if pakai_tebal else metrik_biasa
                     lebar = metrik.horizontalAdvance(str(data[c]))
                     if lebar > perlu:
                         perlu = lebar
             self._perlu_isi[c] = perlu
 
-    def _lebarkan_kolom_angka(self, baris: list[list], align_kanan: set):
+    def _lebarkan_kolom_angka(self, baris: list[list], align_kanan: set,
+                              tebal_kolom: set = None,
+                              tebal_baris: set = None):
         """Pastikan kolom angka cukup lebar untuk nominal terpanjang.
 
         Nominal rupiah yang terpotong membuat laporan salah dibaca, jadi
         kolom angka dilebarkan sesuai isinya (tanpa mengubah kolom teks).
+        Huruf tebal pada kolom saldo membutuhkan ruang tambahan.
         """
         if not align_kanan:
             return
+        dasar = QFont(self.font())
+        tebal = QFont(dasar)
+        tebal.setBold(True)
+        metrik_biasa = QFontMetrics(dasar)
+        metrik_tebal = QFontMetrics(tebal)
         for c in align_kanan:
             if c >= self.columnCount():
                 continue
             perlu = 0
-            for data in baris:
+            for r, data in enumerate(baris):
                 if c < len(data) and data[c] is not None:
-                    perlu = max(perlu, self.fontMetrics().horizontalAdvance(
+                    pakai_tebal = ((tebal_kolom and c in tebal_kolom)
+                                   or (tebal_baris and r in tebal_baris))
+                    metrik = metrik_tebal if pakai_tebal else metrik_biasa
+                    perlu = max(perlu, metrik.horizontalAdvance(
                         str(data[c])) + 24)
             if perlu > self.columnWidth(c):
                 self.setColumnWidth(c, perlu)
@@ -770,7 +1162,10 @@ class InputRupiah(QLineEdit):
     Menyimpan nilai sebagai integer pada .nilai().
     """
 
-    valueChanged = Signal(int)
+    # Signal(int) di PySide6 memakai int 32-bit, sehingga nominal di atas
+    # Rp2.147.483.647 melempar OverflowError saat emit. object meneruskan
+    # int Python apa adanya.
+    valueChanged = Signal(object)
 
     def __init__(self, parent=None, placeholder: str = "0"):
         super().__init__(parent)
@@ -778,6 +1173,7 @@ class InputRupiah(QLineEdit):
         self.setPlaceholderText(placeholder)
         self.setAlignment(Qt.AlignRight)
         self._nilai = 0
+        self._waktu_peringatan = 0.0
         self.textChanged.connect(self._on_text)
         self.setToolTip("Masukkan angka tanpa titik. Pemisah ribuan ditambahkan otomatis.")
 
@@ -792,15 +1188,45 @@ class InputRupiah(QLineEdit):
         if bersih == "":
             self._nilai = 0
             return
+        # Nol di depan tidak menambah besaran nilai, jadi dibuang lebih dulu
+        # agar "0003.000.000.000" tidak dianggap melewati batas digit.
+        bersih = bersih.lstrip("0") or "0"
+        # Diperiksa sebelum int(): konversi teks yang sangat panjang pun
+        # dapat melempar ValueError karena batas digit Python.
+        if len(bersih) > _BATAS_DIGIT:
+            self._kembalikan_ke_nilai_sah()
+            return
         baru = int(bersih)
+        if baru > BATAS_NOMINAL:
+            self._kembalikan_ke_nilai_sah()
+            return
         if baru != self._nilai:
             self._nilai = baru
             self.valueChanged.emit(baru)
-        terformat = f"{baru:,}".replace(",", ".")
+        terformat = _format_nominal(baru)
         if teks != terformat:
             self.blockSignals(True)
             self.setText(terformat)
             self.blockSignals(False)
+
+    def _kembalikan_ke_nilai_sah(self):
+        """Tolak angka di luar batas tanpa membuat aplikasi berhenti."""
+        self.blockSignals(True)
+        self.setText(_format_nominal(self._nilai))
+        self.end(False)
+        self.blockSignals(False)
+        sekarang = time.monotonic()
+        if sekarang - self._waktu_peringatan >= 2.0:
+            self._waktu_peringatan = sekarang
+            QTimer.singleShot(0, self._tampilkan_batas)
+
+    def _tampilkan_batas(self):
+        batas = f"Rp{_format_nominal(BATAS_NOMINAL)}"
+        popup.peringatkan(self,
+                          "Nominal terlalu besar",
+                          f"Nominal yang Anda masukkan melebihi batas maksimum {batas}.\n\n"
+                          "Angka dikembalikan ke nilai sebelumnya. Bila nilai transaksi "
+                          "memang lebih besar, pecah menjadi beberapa transaksi.")
 
     def nilai(self) -> int:
         return self._nilai
@@ -808,12 +1234,54 @@ class InputRupiah(QLineEdit):
     def set_nilai(self, v):
         self._nilai = int(v or 0)
         self.blockSignals(True)
-        self.setText(f"{self._nilai:,}".replace(",", ".") if self._nilai else "")
+        self.setText(_format_nominal(self._nilai) if self._nilai else "")
         self.blockSignals(False)
 
     def kosongkan(self):
         self.set_nilai(0)
         self.clear()
+
+
+class InputQty(QLineEdit):
+    """Kotak isian jumlah barang yang menerima angka desimal (mis. 1,5 kg)."""
+
+    # object, bukan float: nilai diteruskan apa adanya tanpa pembulatan Qt.
+    valueChanged = Signal(object)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("MoneyInput")
+        self.setPlaceholderText("0")
+        self.setAlignment(Qt.AlignRight)
+        self._nilai = 0.0
+        self.setValidator(QRegularExpressionValidator(
+            QRegularExpression(r"^\d{0,12}(?:[.,]\d{0,3})?$"), self))
+        self.textChanged.connect(self._on_text)
+        self.setToolTip(
+            "Masukkan jumlah barang. Gunakan koma atau titik untuk desimal, "
+            "mis. 1,5.")
+
+    def _on_text(self, teks: str):
+        bersih = teks.strip().replace(",", ".")
+        if bersih in ("", "."):
+            nilai = 0.0
+        else:
+            try:
+                nilai = float(bersih)
+            except ValueError:
+                return
+        if abs(nilai - self._nilai) > 1e-9:
+            self._nilai = nilai
+            self.valueChanged.emit(nilai)
+
+    def nilai(self) -> float:
+        return self._nilai
+
+    def set_nilai(self, v):
+        self._nilai = max(0.0, float(v or 0))
+        self.blockSignals(True)
+        self.setText(f"{self._nilai:g}".replace(".", ",") if self._nilai else "")
+        self.blockSignals(False)
 
 
 class InputPersen(QLineEdit):
@@ -863,45 +1331,52 @@ class TemuanCard(QFrame):
     }
 
     def __init__(self, temuan, parent=None, ringkas: bool = False,
-                 buka_halaman=None):
+                 buka_halaman=None, datar: bool = False):
         super().__init__(parent)
         self.setObjectName("TemuanCard")
-        warna, bg = theme.STATUS_COLORS.get(temuan.tingkat, (C.TEXT_MUTED, C.NEUTRAL_BG))
+        warna, _bg = theme.STATUS_COLORS.get(
+            temuan.tingkat, (C.TEXT_MUTED, C.NEUTRAL_BG))
 
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(0)
+        outer = QHBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
 
-        # Garis warna di kiri
-        isi = QWidget()
-        isi.setStyleSheet("background: transparent;")
-        dalam = QVBoxLayout(isi)
-        dalam.setContentsMargins(16, 13, 16, 14)
-        dalam.setSpacing(10)
+        # Penanda tingkat berupa garis tipis, bukan blok warna. Mata dapat
+        # menemukan kelompok temuan tanpa garis itu menutupi isinya.
+        rail = QFrame()
+        rail.setFixedWidth(2)
+        theme.latar(rail, f"background: {warna}; border: none;")
+        outer.addWidget(rail)
 
-        # Header: badge + judul
+        dalam = QVBoxLayout()
+        dalam.setContentsMargins(17, 14, 18, 15)
+        dalam.setSpacing(7)
+        outer.addLayout(dalam, 1)
+
+        # Kepala: tingkat dan kategori sebagai keterangan, judul sebagai isi.
         header = QHBoxLayout()
-        header.setSpacing(10)
-        teks_badge = f"{temuan.ikon} {temuan.label}"
-        badge = QLabel(teks_badge)
-        theme.latar(badge, f"background: {bg}; color: {warna}; border-radius: 9px; "
-            f"padding: 3px 10px; font-size: {theme.FS_TINY}px; font-weight: 800;")
-        badge.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
-        badge.setMinimumWidth(
-            badge.fontMetrics().horizontalAdvance(teks_badge) + 24)
-        header.addWidget(badge)
-
+        header.setSpacing(7)
+        lbl_tingkat = QLabel(temuan.label.upper())
+        lbl_tingkat.setStyleSheet(
+            f"color: {warna}; font-size: 10px; font-weight: 800; "
+            "letter-spacing: 0.8px; background: transparent;")
+        header.addWidget(lbl_tingkat)
+        titik = QLabel("·")
+        titik.setStyleSheet(
+            f"color: {C.TEXT_FAINT}; font-size: 11px; background: transparent;")
+        header.addWidget(titik)
         lbl_kat = QLabel(temuan.kategori)
         lbl_kat.setStyleSheet(
             f"color: {C.TEXT_FAINT}; font-size: {theme.FS_TINY}px; "
-            "font-weight: 600; background: transparent;")
+            "background: transparent;")
         header.addWidget(lbl_kat)
         header.addStretch()
         dalam.addLayout(header)
 
         lbl_judul = QLabel(temuan.judul)
         lbl_judul.setStyleSheet(
-            f"font-size: {theme.FS_H3}px; font-weight: 700; color: {C.TEXT}; "
+            f"font-family: '{theme.FONT_SERIF}', Georgia, serif; "
+            f"font-size: 16px; font-weight: 600; color: {C.TEXT}; "
             "background: transparent;")
         lbl_judul.setWordWrap(True)
         dalam.addWidget(lbl_judul)
@@ -909,27 +1384,28 @@ class TemuanCard(QFrame):
         if temuan.angka:
             lbl_angka = QLabel(temuan.angka)
             lbl_angka.setStyleSheet(
-                f"font-family: {theme.FONT_ANGKA}; font-size: {theme.FS_SMALL}px; "
-                f"color: {warna}; font-weight: 700; background: transparent;")
+                f"font-family: '{theme.FONT_SERIF}', Georgia, serif; "
+                f"font-size: {theme.FS_BODY}px; color: {warna}; "
+                "font-weight: 600; background: transparent;")
             dalam.addWidget(lbl_angka)
 
-        # Penjelasan
         if ringkas:
             if temuan.tindakan:
-                dalam.addWidget(self._blok("Yang perlu dilakukan", temuan.tindakan,
-                                           C.PRIMARY_DARK))
+                dalam.addWidget(self._blok("Yang perlu dilakukan",
+                                           temuan.tindakan, C.TEXT))
         else:
             dalam.addWidget(self._blok("Apa artinya", temuan.penjelasan, C.TEXT))
             if temuan.tindakan:
-                dalam.addWidget(self._blok("Yang perlu dilakukan", temuan.tindakan,
-                                           C.PRIMARY_DARK))
+                dalam.addWidget(self._blok("Yang perlu dilakukan",
+                                           temuan.tindakan, C.TEXT))
             if temuan.dampak:
-                dalam.addWidget(self._blok("Bila dibiarkan", temuan.dampak, "#7A4A00"))
+                dalam.addWidget(self._blok("Bila dibiarkan", temuan.dampak,
+                                           C.WARNING))
             if temuan.dasar_hukum:
                 lbl_h = QLabel(f" {temuan.dasar_hukum}")
                 lbl_h.setWordWrap(True)
                 lbl_h.setStyleSheet(
-                    f"color: {C.PRIMARY_DARK}; font-size: {theme.FS_TINY}px; "
+                    f"color: {C.TEXT_FAINT}; font-size: {theme.FS_TINY}px; "
                     "font-style: italic; background: transparent;")
                 dalam.addWidget(lbl_h)
 
@@ -939,61 +1415,183 @@ class TemuanCard(QFrame):
         halaman = getattr(temuan, "halaman", "")
         if halaman and buka_halaman is not None and not ringkas:
             baris_aksi = QHBoxLayout()
-            baris_aksi.setContentsMargins(0, 0, 0, 0)
+            baris_aksi.setContentsMargins(0, 3, 0, 0)
             baris_aksi.setSpacing(8)
 
             teks_tombol = self.NAMA_HALAMAN.get(halaman, "Buka Halaman")
-            btn = QPushButton(teks_tombol)
-            btn.setCursor(Qt.PointingHandCursor)
-            btn.setStyleSheet(f"""
-                QPushButton {{
-                    padding: 8px 16px;
-                    border-radius: 8px;
-                    border: 1px solid {C.PRIMARY};
-                    background: {C.SURFACE};
-                    color: {C.PRIMARY_DARK};
-                    font-size: {theme.FS_SMALL}px;
-                    font-weight: 600;
-                }}
-                QPushButton:hover {{
-                    background: {C.PRIMARY};
-                    color: {C.TEXT_INVERSE};
-                }}
-                QPushButton:pressed {{
-                    background: {C.PRIMARY_DARK};
-                    color: {C.TEXT_INVERSE};
-                }}
-            """)
+            btn = tombol(teks_tombol, gaya="biasa")
             btn.clicked.connect(lambda _=False, h=halaman: buka_halaman(h))
             baris_aksi.addWidget(btn)
             baris_aksi.addStretch()
             dalam.addLayout(baris_aksi)
 
-        lay.addWidget(isi)
-        self.setStyleSheet(
-            f"QFrame#TemuanCard {{ background: {C.SURFACE}; "
-            f"border: 1px solid {C.BORDER}; border-left: 4px solid {warna}; "
-            "border-radius: 8px; }}")
+        if datar:
+            self.setStyleSheet(
+                f"QFrame#TemuanCard {{ background: transparent; "
+                f"border: none; border-bottom: 1px solid {C.BORDER}; "
+                "border-radius: 0; }")
+        else:
+            self.setStyleSheet(
+                f"QFrame#TemuanCard {{ background: {C.SURFACE}; "
+                f"border: 1px solid {C.BORDER}; "
+                "border-radius: 3px; }}")
 
     def _blok(self, judul: str, isi: str, warna: str) -> QWidget:
         w = QWidget()
         w.setStyleSheet("background: transparent;")
         l = QVBoxLayout(w)
-        l.setContentsMargins(0, 0, 0, 0)
-        l.setSpacing(3)
+        l.setContentsMargins(0, 2, 0, 0)
+        l.setSpacing(2)
         j = QLabel(judul.upper())
         j.setStyleSheet(
-            f"color: {C.TEXT_FAINT}; font-size: 10px; font-weight: 800; "
-            "letter-spacing: 0.4px; background: transparent;")
+            f"color: {C.TEXT_FAINT}; font-size: 9.5px; font-weight: 700; "
+            "letter-spacing: 0.8px; background: transparent;")
         l.addWidget(j)
         t = QLabel(rata_kanan_kiri(isi))
         t.setTextFormat(Qt.RichText)
         t.setWordWrap(True)
         t.setStyleSheet(f"color: {warna}; font-size: {theme.FS_SMALL}px; "
-                        "background: transparent; line-height: 150%;")
+                        "background: transparent; line-height: 155%;")
         t.setTextInteractionFlags(Qt.TextSelectableByMouse)
         l.addWidget(t)
         return w
+
+
+# ==========================================================================
+# ANGKA POKOK EDITORIAL
+# ==========================================================================
+class AngkaBuku(QWidget):
+    """
+    Satu angka pokok laporan: label renggang, nominal serif besar, keterangan.
+
+    Dipakai pada pita kinerja dan ringkasan halaman. Angka mengecil sendiri
+    bila ruangnya sempit, tetapi tidak pernah dipotong selama masih ada
+    ukuran huruf yang masuk akal.
+    """
+
+    def __init__(self, label: str = "", nilai: str = "", hint: str = "",
+                 warna: str = None, ukuran: int = 32, parent=None):
+        super().__init__(parent)
+        self._label_penuh = label
+        self._nilai_penuh = nilai
+        self._hint_penuh = hint
+        self._warna = warna or C.TEXT
+        self._ukuran = max(16, int(ukuran))
+        self._ukuran_terpakai = self._ukuran
+
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(3)
+
+        self.lbl_label = QLabel(label.upper())
+        self.lbl_label.setObjectName("LedgerLabel")
+        self.lbl_label.setWordWrap(True)
+        self.lbl_label.setMinimumWidth(0)
+        lay.addWidget(self.lbl_label)
+
+        self.lbl_nilai = QLabel(nilai)
+        self.lbl_nilai.setObjectName("LedgerAngka")
+        self.lbl_nilai.setMinimumWidth(0)
+        self.lbl_nilai.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        lay.addWidget(self.lbl_nilai)
+
+        self.lbl_hint = QLabel(hint)
+        self.lbl_hint.setObjectName("LedgerHint")
+        self.lbl_hint.setWordWrap(True)
+        self.lbl_hint.setMinimumWidth(0)
+        self.lbl_hint.setVisible(bool(hint))
+        lay.addWidget(self.lbl_hint)
+
+        self._rapikan()
+
+    def sizeHint(self):
+        ukuran = super().sizeHint()
+        ukuran.setHeight(max(ukuran.height(),
+                             int(self._ukuran * 1.25) + 34))
+        return ukuran
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._rapikan()
+
+    def _rapikan(self):
+        lebar = max(self.lbl_nilai.width(), 40)
+        ukuran = self._ukuran
+        while ukuran > 15:
+            if QFontMetrics(theme.font_serif_angka(ukuran)) \
+                    .horizontalAdvance(self._nilai_penuh) <= lebar:
+                break
+            ukuran -= 1
+        self._ukuran_terpakai = ukuran
+        self.lbl_nilai.setText(self._nilai_penuh)
+        self.lbl_nilai.setStyleSheet(
+            f"font-family: '{theme.FONT_SERIF}', Georgia, serif; "
+            f"font-size: {ukuran}px; font-weight: 600; "
+            f"color: {self._warna}; background: transparent;")
+        # Baris angka tidak boleh dipaksa lebih tinggi daripada hurufnya;
+        # tanpa ini tinggi label mengikuti ukuran saran lama saat huruf
+        # mengecil dan menyisakan rongga di bawah angka.
+        self.lbl_nilai.setMinimumHeight(
+            QFontMetrics(theme.font_serif_angka(ukuran)).height() + 2)
+
+    def set_nilai(self, nilai: str, warna: str = None):
+        self._nilai_penuh = nilai
+        if warna:
+            self._warna = warna
+        self.lbl_nilai.setToolTip(nilai)
+        self._rapikan()
+        self.updateGeometry()
+
+    def set_label(self, label: str):
+        self._label_penuh = label
+        self.lbl_label.setText(label.upper())
+        self.lbl_label.setToolTip(label)
+
+    def set_hint(self, hint: str):
+        self._hint_penuh = hint
+        self.lbl_hint.setText(hint)
+        self.lbl_hint.setVisible(bool(hint))
+
+
+class MeterBatas(QWidget):
+    """
+    Meter tipis untuk posisi sebuah nilai terhadap batas tertentu.
+
+    Nilai di atas 100% tetap digambar penuh dengan warna batas, sedangkan
+    angka persisnya dibaca dari keterangan di bawah meter. Garis kecil pada
+    80% menandai wilayah waspada sebelum batas tercapai.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._nilai = 0.0
+        self._warna = C.ACCENT
+        self.setFixedHeight(11)
+        self.setMinimumWidth(70)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+    def set_nilai(self, persen: float, warna: str = None):
+        self._nilai = max(0.0, min(100.0, float(persen or 0)))
+        if warna:
+            self._warna = warna
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        kiri, kanan = 0.0, float(self.width())
+        y = 4.0
+        p.setPen(Qt.NoPen)
+        p.setBrush(QColor(C.BORDER))
+        p.drawRoundedRect(QRectF(kiri, y, max(0.0, kanan - kiri), 4), 2, 2)
+        if self._nilai > 0:
+            isi = (kanan - kiri) * self._nilai / 100.0
+            p.setBrush(QColor(self._warna))
+            p.drawRoundedRect(QRectF(kiri, y, max(2.0, isi), 4), 2, 2)
+        p.setPen(QPen(QColor(C.BORDER_STRONG), 1))
+        p.drawLine(int(kiri + (kanan - kiri) * 0.8), 1,
+                   int(kiri + (kanan - kiri) * 0.8), 10)
+        p.end()
 
 
 # ==========================================================================
@@ -1001,143 +1599,103 @@ class TemuanCard(QFrame):
 # ==========================================================================
 class SkorGauge(QWidget):
     """
-    Lingkaran progres menampilkan skor 0-100.
+    Skor kesehatan sebagai angka besar dan meter tipis.
 
-    Angka dan labelnya diukur lebih dulu supaya keduanya berada di dalam
-    lingkaran tanpa menyentuh busurnya. Bila label lebih lebar daripada
-    ruang yang tersedia, ukuran hurufnya diperkecil bertahap.
+    Angka adalah informasi utama, sedangkan meter hanya menunjukkan
+    posisinya pada skala 0-100. Lencana dan cincin donat tidak dipakai:
+    keduanya membuat penilaian terlihat seperti kartu permainan, bukan
+    bagian dari laporan keuangan.
     """
 
     def __init__(self, parent=None, ukuran: int = 150):
         super().__init__(parent)
         self.skor = 0
         self.label = ""
-        # Saat pembukuan masih kosong, lingkaran tidak menampilkan angka
-        # nol, karena angka itu terbaca sebagai penilaian buruk.
+        self.grade = ""
         self.belum_dinilai = False
-        self.ukuran = ukuran
-        self.setFixedSize(ukuran, ukuran)
+        self.setFixedWidth(max(138, int(ukuran)))
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
 
-    def set_skor(self, skor: int, label: str = "", belum_dinilai: bool = False):
-        """
-        Tetapkan nilai yang ditampilkan lingkaran.
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(2)
 
-        Parameter belum_dinilai dipakai saat pembukuan masih kosong. Nilai
-        nol tidak ditampilkan sebagai angka, karena angka nol terbaca
-        sebagai penilaian buruk, padahal yang terjadi adalah belum ada
-        yang dapat dinilai.
-        """
+        baris = QHBoxLayout()
+        baris.setSpacing(6)
+        self.lbl_skor = QLabel("0")
+        self.lbl_skor.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
+        baris.addWidget(self.lbl_skor, 0, Qt.AlignBottom)
+        self.lbl_sufiks = QLabel("/ 100")
+        self.lbl_sufiks.setStyleSheet(
+            f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_FAINT}; "
+            "background: transparent; padding-bottom: 12px;")
+        baris.addWidget(self.lbl_sufiks, 0, Qt.AlignBottom)
+        baris.addStretch()
+        lay.addLayout(baris)
+
+        self.lbl_grade = QLabel("")
+        self.lbl_grade.setWordWrap(True)
+        lay.addWidget(self.lbl_grade)
+
+        self.bar = QProgressBar()
+        self.bar.setRange(0, 100)
+        self.bar.setTextVisible(False)
+        self.bar.setFixedHeight(5)
+        lay.addSpacing(5)
+        lay.addWidget(self.bar)
+
+        self.lbl_hint = QLabel("Skor kesehatan keuangan")
+        self.lbl_hint.setStyleSheet(
+            f"font-size: {theme.FS_TINY}px; color: {C.TEXT_FAINT}; "
+            "background: transparent;")
+        self.lbl_hint.setWordWrap(True)
+        lay.addWidget(self.lbl_hint)
+        self._terapkan()
+
+    def set_skor(self, skor: int, label: str = "", belum_dinilai: bool = False,
+                 grade: str = ""):
         self.skor = max(0, min(100, int(skor)))
         self.label = label
+        self.grade = grade
         self.belum_dinilai = belum_dinilai
-        self.update()
+        self._terapkan()
 
-    def _lebar_tersedia(self, jarak_dari_pusat: float) -> float:
-        """
-        Lebar ruang kosong di dalam lingkaran pada jarak tertentu dari pusat.
-
-        Dipakai untuk memastikan teks tidak menyentuh busur lingkaran.
-        """
-        tebal = 13
-        margin = tebal // 2 + 3
-        jari = (self.ukuran / 2) - margin - tebal / 2
-        sisa = jari * jari - jarak_dari_pusat * jarak_dari_pusat
-        if sisa <= 0:
-            return 0.0
-        # 0,86 memberi jarak aman dari busur
-        return 2 * (sisa ** 0.5) * 0.86
-
-    def paintEvent(self, event):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
-        p.setRenderHint(QPainter.TextAntialiasing)
-        tebal = 13
-        margin = tebal // 2 + 3
-        rect = self.rect().adjusted(margin, margin, -margin, -margin)
-
-        # latar
-        p.setPen(QPen(QColor(C.NEUTRAL_BG), tebal, Qt.SolidLine, Qt.RoundCap))
-        p.drawArc(rect, 0, 360 * 16)
-
-        # Saat belum ada yang dapat dinilai, busurnya digambar putus putus
-        # dan tanpa warna penilaian. Lingkaran penuh berwarna akan terbaca
-        # sebagai hasil penilaian, padahal belum ada datanya.
+    def _terapkan(self):
         if self.belum_dinilai:
-            p.setPen(QPen(QColor(C.BORDER_STRONG), tebal, Qt.DashLine,
-                          Qt.RoundCap))
-            p.drawArc(rect, 0, 360 * 16)
-            self._gambar_teks(p, teks_angka="?")
-            return
-
-        # warna berdasarkan skor
-        if self.skor >= 70:
-            warna = QColor(C.SUCCESS)
-        elif self.skor >= 55:
-            warna = QColor(C.WARNING)
+            angka = "–"
+            warna = C.TEXT_MUTED
+            warna_bar = C.BORDER_STRONG
+            grade = "Belum ada data untuk dinilai"
+            hint = "Catat transaksi agar skor dapat dihitung"
         else:
-            warna = QColor(C.DANGER)
+            angka = str(self.skor)
+            if self.skor >= 70:
+                warna, warna_bar = C.SUCCESS, C.SUCCESS
+            elif self.skor >= 55:
+                warna, warna_bar = C.WARNING, C.WARNING
+            else:
+                warna, warna_bar = C.DANGER, C.DANGER
+            grade = self.label or "Dinilai"
+            if self.grade and self.grade != "N/A":
+                grade = f"Grade {self.grade} · {grade}"
+            hint = "Skor kesehatan keuangan"
 
-        p.setPen(QPen(warna, tebal, Qt.SolidLine, Qt.RoundCap))
-        p.drawArc(rect, 90 * 16, -int(360 * 16 * self.skor / 100))
-        self._gambar_teks(p, teks_angka=str(self.skor))
-
-    def _gambar_teks(self, p, teks_angka: str):
-        """Gambar angka dan label di tengah lingkaran."""
-        tengah = self.ukuran / 2
-
-        # Ukuran angka disesuaikan dengan ruang di dalam lingkaran.
-        ukuran_angka = max(15, int(self.ukuran * 0.21))
-        while ukuran_angka > 13:
-            f = QFont(theme.FONT_UI)
-            f.setPixelSize(ukuran_angka)
-            f.setBold(True)
-            lebar = QFontMetrics(f).horizontalAdvance(teks_angka)
-            if lebar <= self._lebar_tersedia(0):
-                break
-            ukuran_angka -= 1
-
-        ada_label = bool(self.label)
-        label_teks = self.label.upper()
-
-        # Label diletakkan di bawah angka. Jaraknya ditetapkan lebih dulu
-        # agar lebar yang tersedia pada posisi itu dapat dihitung.
-        jarak_label = 15 if ada_label else 0
-        ukuran_label = max(7, int(self.ukuran * 0.058))
-        lebar_label = 0
-        if ada_label:
-            while ukuran_label > 6:
-                f2 = QFont(theme.FONT_UI)
-                f2.setPixelSize(ukuran_label)
-                f2.setBold(True)
-                fm2 = QFontMetrics(f2)
-                lebar_label = fm2.horizontalAdvance(label_teks)
-                if lebar_label <= self._lebar_tersedia(jarak_label):
-                    break
-                ukuran_label -= 1
-
-        tinggi_angka = ukuran_angka
-        tinggi_label = ukuran_label if ada_label else 0
-        total = tinggi_angka + (jarak_label + tinggi_label if ada_label else 0)
-        atas_grup = tengah - total / 2
-
-        p.setPen(QColor(C.TEXT))
-        f = QFont(theme.FONT_UI)
-        f.setPixelSize(ukuran_angka)
-        f.setBold(True)
-        p.setFont(f)
-        p.drawText(QRectF(0, atas_grup, self.ukuran, tinggi_angka + 4),
-                   Qt.AlignCenter, teks_angka)
-
-        if ada_label:
-            f2 = QFont(theme.FONT_UI)
-            f2.setPixelSize(ukuran_label)
-            f2.setBold(True)
-            p.setFont(f2)
-            p.setPen(QColor(C.TEXT_MUTED))
-            y_label = atas_grup + tinggi_angka + jarak_label
-            p.drawText(QRectF(0, y_label, self.ukuran, tinggi_label + 3),
-                       Qt.AlignHCenter | Qt.AlignTop, label_teks)
-        p.end()
+        self.lbl_skor.setText(angka)
+        self.lbl_skor.setStyleSheet(
+            f"font-family: '{theme.FONT_SERIF}', Georgia, serif; "
+            f"font-size: 52px; font-weight: 600; color: {warna}; "
+            "background: transparent;")
+        self.lbl_grade.setText(grade.upper())
+        self.lbl_grade.setStyleSheet(
+            f"font-size: 10px; font-weight: 700; "
+            f"color: {warna}; letter-spacing: 0.3px; background: transparent;")
+        self.lbl_hint.setText(hint)
+        self.bar.setValue(0 if self.belum_dinilai else self.skor)
+        self.bar.setStyleSheet(
+            f"QProgressBar {{ background: {C.NEUTRAL_BG}; border: none; "
+            "border-radius: 2px; }"
+            f"QProgressBar::chunk {{ background: {warna_bar}; "
+            "border-radius: 2px; }")
 
 
 # ==========================================================================
@@ -1158,18 +1716,19 @@ class MiniStat(QWidget):
         self._label_penuh = label.upper()
         self._nilai_penuh = nilai
         self.lbl = QLabel(self._label_penuh)
-        self.lbl.setObjectName("KpiLabel")
+        self.lbl.setObjectName("LedgerLabel")
         self.lbl.setToolTip(label)
         self.lbl.setWordWrap(True)
         self.lbl.setMinimumWidth(0)
         lay.addWidget(self.lbl)
         self.v = QLabel(nilai)
-        self.v.setObjectName("KpiValue")
+        self.v.setObjectName("MiniAngka")
         self.v.setToolTip(nilai)
         self.v.setMinimumWidth(0)
         self.v.setStyleSheet(
-            f"font-family: {theme.FONT_ANGKA}; font-size: {theme.FS_H3}px; "
-            f"font-weight: 600; color: {warna or C.TEXT}; background: transparent;")
+            f"font-family: '{theme.FONT_SERIF}', Georgia, serif; "
+            f"font-size: 16px; font-weight: 600; color: {warna or C.TEXT}; "
+            "background: transparent;")
         lay.addWidget(self.v)
 
     def resizeEvent(self, event):
@@ -1186,8 +1745,9 @@ class MiniStat(QWidget):
         self.v.setText(nilai)
         if warna:
             self.v.setStyleSheet(
-                f"font-family: {theme.FONT_ANGKA}; font-size: {theme.FS_H3}px; "
-                f"font-weight: 600; color: {warna}; background: transparent;")
+                f"font-family: '{theme.FONT_SERIF}', Georgia, serif; "
+                f"font-size: 16px; font-weight: 600; color: {warna}; "
+                "background: transparent;")
 
     def set_teks_label(self, label: str):
         """Ganti teks label tanpa mengubah ukuran wadahnya."""
@@ -1218,11 +1778,24 @@ class PageHeader(QWidget):
     def __init__(self, judul: str, subjudul: str = "", parent=None):
         super().__init__(parent)
         self._aksi_terpisah = False
+        # Halaman dengan banyak tombol mengizinkan tombolnya turun ke baris
+        # kedua. Keputusan diambil dari lebar yang tersedia, bukan dipaksa:
+        # dashboard lapang tetap ringkas, sedangkan tabel dengan tombol
+        # panjang tidak mendesak judul keluar tepi.
+        self._aksi_boleh_terpisah = False
 
-        # Susunan menyamping: judul di kiri, tombol aksi di kanan.
-        self._luar = QHBoxLayout(self)
+        # Susunan luar selalu menurun. Baris judul dan tombol aksi berada di
+        # dalamnya, sehingga memindahkan tombol ke baris tersendiri cukup
+        # dengan memindahkan satu wadah. Mengganti layout induk saat berjalan
+        # membuat Qt menolak layout baru dan seluruh header menyusut menjadi
+        # tinggi nol, sehingga judul halaman hilang.
+        self._luar = QVBoxLayout(self)
         self._luar.setContentsMargins(0, 0, 0, 0)
-        self._luar.setSpacing(14)
+        self._luar.setSpacing(10)
+
+        # Baris utama: judul di kiri, tombol aksi di kanan.
+        self._baris = QHBoxLayout()
+        self._baris.setSpacing(14)
 
         self._kolom = QVBoxLayout()
         self._kolom.setSpacing(3)
@@ -1239,7 +1812,7 @@ class PageHeader(QWidget):
 
         self._teks = QWidget()
         self._teks.setLayout(self._kolom)
-        self._luar.addWidget(self._teks, 1)
+        self._baris.addWidget(self._teks, 1)
 
         # Wadah tombol aksi. Lebar minimumnya dijaga agar tombol tidak
         # dihimpit sampai teksnya terpotong.
@@ -1247,12 +1820,57 @@ class PageHeader(QWidget):
         self.aksi = QHBoxLayout(self._wadah_aksi)
         self.aksi.setContentsMargins(0, 0, 0, 0)
         self.aksi.setSpacing(8)
-        self._luar.addWidget(self._wadah_aksi, 0, Qt.AlignTop)
+        self._baris.addWidget(self._wadah_aksi, 0, Qt.AlignTop)
+        self._luar.addLayout(self._baris)
+
+        # Wadah baris kedua. Kosong dan tersembunyi selama tombol masih muat
+        # di samping judul; wadah tombol dipindahkan ke sini bila tidak.
+        self._wadah_baris_aksi = QWidget()
+        self._baris_aksi = QHBoxLayout(self._wadah_baris_aksi)
+        self._baris_aksi.setContentsMargins(0, 0, 0, 0)
+        self._baris_aksi.addStretch()
+        self._wadah_baris_aksi.hide()
+        self._luar.addWidget(self._wadah_baris_aksi)
 
     def tambah_aksi(self, tombol: QPushButton):
         self.aksi.addWidget(tombol)
         self._wadah_aksi.setMinimumWidth(self.aksi.sizeHint().width())
+        if self._aksi_boleh_terpisah:
+            self._atur_aksi(self.width())
         return tombol
+
+    def resizeEvent(self, peristiwa):
+        super().resizeEvent(peristiwa)
+        if self._aksi_boleh_terpisah:
+            self._atur_aksi(peristiwa.size().width())
+
+    def _atur_aksi(self, lebar: int):
+        """
+        Pilih posisi tombol aksi sesuai lebar header.
+
+        Tombol tetap sejajar judul bila masih menyisakan ruang yang cukup
+        untuk judul; bila tidak, tombol turun ke baris kedua. Perpindahan
+        hanya dilakukan saat posisinya memang berubah, supaya tata letak
+        tidak dihitung ulang tanpa henti.
+        """
+        # Ruang yang harus tetap tersedia untuk judul dan subjudul.
+        LEBAR_JUDUL = 340
+        perlu_inline = self._wadah_aksi.sizeHint().width() + LEBAR_JUDUL
+        pisah = self._aksi_boleh_terpisah and perlu_inline > lebar
+        if pisah == self._aksi_terpisah:
+            return
+
+        if pisah:
+            self._baris.removeWidget(self._wadah_aksi)
+            self._baris_aksi.addWidget(self._wadah_aksi)
+            self._wadah_baris_aksi.show()
+        else:
+            self._baris_aksi.removeWidget(self._wadah_aksi)
+            self._baris.addWidget(self._wadah_aksi, 0, Qt.AlignTop)
+            self._wadah_baris_aksi.hide()
+
+        self._aksi_terpisah = pisah
+        self.updateGeometry()
 
     def pasang_ekspor_cetak(self, halaman, judul: str = "", nama_tabel=None,
                             kumpulkan=None):
@@ -1292,20 +1910,59 @@ class PageHeader(QWidget):
                 return []
             return [(self._judul_ekspor, tabel_dari_widget(tabel))]
 
+        def nama_perusahaan() -> str:
+            # Kop cetak memuat nama perusahaan. Halaman tidak perlu
+            # mengirimkannya sendiri karena semua halaman memakai ctx yang
+            # sama.
+            ctx = getattr(halaman, "ctx", None)
+            cid = getattr(ctx, "company_id", None)
+            if not cid:
+                return ""
+            try:
+                from .. import services
+                comp = services.get_company(cid)
+                return (comp or {}).get("nama", "")
+            except Exception:
+                return ""
+
+        def penanda_dokumen() -> dict:
+            # Nama pengguna yang sedang masuk menjadi penanda tangan bawaan;
+            # pengaturan cetak tetap dapat menggantinya.
+            ctx = getattr(halaman, "ctx", None)
+            if ctx is None:
+                return {}
+            kota = ""
+            cid = getattr(ctx, "company_id", None)
+            if cid:
+                try:
+                    from .. import services
+                    kota = (services.get_company(cid) or {}).get("kota", "")
+                except Exception:
+                    kota = ""
+            return {
+                "nama": getattr(ctx, "full_name", "")
+                        or getattr(ctx, "username", ""),
+                "kota": kota,
+            }
+
         def lakukan_ekspor():
             data = ambil_data()
             if not data:
                 return
             sub = self.lbl_sub.text()
             ekspor_halaman(halaman, self._judul_ekspor, sub, data,
-                           nama_berkas=self._judul_ekspor)
+                           nama_berkas=self._judul_ekspor,
+                           perusahaan=nama_perusahaan(),
+                           penanda=penanda_dokumen())
 
         def lakukan_cetak():
             data = ambil_data()
             if not data:
                 return
             sub = self.lbl_sub.text()
-            cetak_halaman(halaman, self._judul_ekspor, sub, data)
+            cetak_halaman(halaman, self._judul_ekspor, sub, data,
+                          perusahaan=nama_perusahaan(),
+                          penanda=penanda_dokumen())
 
         # tombol() berada di bagian bawah berkas ini, jadi dipanggil
         # setelah modulnya selesai dimuat.
@@ -1374,6 +2031,12 @@ class PageHeader(QWidget):
         tersedia. Tanpa perhitungan ini, tata letak memakai tinggi satu baris
         dan baris terakhir subjudul terpotong.
         """
+        if self._aksi_terpisah:
+            sisa = max(120, lebar)
+            tinggi = self._tinggi_judul(sisa) + self._tinggi_sub(sisa) + 3
+            tinggi += self._luar.spacing() + self._wadah_aksi.sizeHint().height()
+            return tinggi
+
         sisa = max(120, lebar - self._wadah_aksi.sizeHint().width() - 20)
         tinggi = self._tinggi_judul(sisa)
         tinggi_sub = self._tinggi_sub(sisa)
@@ -1406,25 +2069,10 @@ class PageHeader(QWidget):
         menjadi vertikal: judul di atas, tombol aksi di baris berikutnya,
         rata kanan.
         """
-        if self._aksi_terpisah:
+        if self._aksi_boleh_terpisah:
             return
-        self._aksi_terpisah = True
-
-        # ganti susunan luar dari menyamping menjadi menurun
-        lama = self.layout()
-        lama.removeWidget(self._teks)
-        lama.removeWidget(self._wadah_aksi)
-
-        baru = QVBoxLayout(self)
-        baru.setContentsMargins(0, 0, 0, 0)
-        baru.setSpacing(10)
-        baru.addWidget(self._teks)
-
-        baris_aksi = QHBoxLayout()
-        baris_aksi.setContentsMargins(0, 0, 0, 0)
-        baris_aksi.addStretch()
-        baris_aksi.addWidget(self._wadah_aksi)
-        baru.addLayout(baris_aksi)
+        self._aksi_boleh_terpisah = True
+        self._atur_aksi(self.width())
 
     def set_subjudul(self, teks: str):
         self.lbl_sub.setText(teks)
@@ -1458,16 +2106,20 @@ def tombol(teks: str, gaya: str = "biasa", ikon: str = "") -> QPushButton:
         t.setObjectName("Ghost")
     t.setMinimumHeight(34)
 
-    warna_latar, warna_teks, warna_tepi = GAYA_TOMBOL.get(gaya, (None, None, None))
+    warna_latar, warna_teks, warna_tepi, warna_hover, warna_tekan = \
+        GAYA_TOMBOL.get(gaya, (None, None, None, None, None))
     if warna_latar:
-        aturan = (f"QPushButton {{ background: {warna_latar}; color: {warna_teks}; "
-                  f"border: 1px solid {warna_tepi}; border-radius: {theme.SUDUT_KONTROL}px; "
-                  f"padding: 7px 15px; font-size: {theme.FS_BODY}px; font-weight: 600; }}")
+        aturan = (
+            f"QPushButton {{ background: {warna_latar}; color: {warna_teks}; "
+            f"border: 1px solid {warna_tepi}; border-radius: {theme.SUDUT_KONTROL}px; "
+            f"padding: 7px 14px; font-size: {theme.FS_BODY}px; font-weight: 600; }}"
+            f"QPushButton:hover {{ background: {warna_hover}; }}"
+            f"QPushButton:pressed {{ background: {warna_tekan}; }}")
         t.setStyleSheet(aturan)
 
     if ikon:
-        warna = {"primary": icons.WARNA_TERANG, "danger": icons.WARNA_TERANG,
-                 "success": icons.WARNA_TERANG}.get(gaya, icons.WARNA_GELAP)
+        warna = {"primary": icons.WARNA_TERANG,
+                 "danger": icons.WARNA_TERANG}.get(gaya, icons.WARNA_GELAP)
         t.setIcon(icons.ikon(ikon, warna, 17))
         t.setIconSize(QSize(17, 17))
 
@@ -1542,13 +2194,24 @@ class AreaGulir(QScrollArea):
                 continue
             masih_dipakai.add(id(lbl))
 
-            # Lewati label yang lebarnya sama seperti saat terakhir diukur.
-            if catatan.get(id(lbl)) == lebar:
+            # Lewati label yang tidak berubah sejak pengukuran terakhir.
+            # Ukuran huruf dan panjang teks ikut diperiksa: keduanya dapat
+            # berubah tanpa mengubah lebar label, misalnya saat pengguna
+            # memilih ukuran teks yang lebih besar.
+            kunci = (lebar, lbl.font().pixelSize(), len(lbl.text()))
+            if catatan.get(id(lbl)) == kunci:
                 continue
 
             perlu = lbl.heightForWidth(lebar)
-            if perlu > 0 and lbl.minimumHeight() != perlu:
-                lbl.setMinimumHeight(perlu)
+            if perlu > 0:
+                if lbl.minimumHeight() != perlu:
+                    lbl.setMinimumHeight(perlu)
+                # Tinggi maksimum ikut dipatok. Qt menghitung ukuran saran
+                # label berbalut pada lebar bawaan yang sempit, sehingga
+                # tanpa batas atas tata letak menyisakan ruang kosong besar
+                # di dalam kartu.
+                if lbl.maximumHeight() != perlu:
+                    lbl.setMaximumHeight(perlu)
             catatan[id(lbl)] = lebar
 
             # Tinggi sudah dipatok, jadi Qt tidak perlu menghitungnya lagi
@@ -1593,7 +2256,30 @@ class LabelTinggiOtomatis(QLabel):
     sebenarnya, sehingga baris terakhirnya terpotong saat lebar label
     sempit. Kelas ini mengukur ulang tinggi teks memakai QTextDocument
     setiap kali lebarnya berubah, lalu menetapkan tinggi minimum tersebut.
+
+    Ukuran saran Qt untuk label berbalut tidak dapat dipakai: nilainya
+    dihitung pada lebar bawaan yang sempit, sehingga bisa tiga kali lebih
+    tinggi daripada kebutuhan pada lebar sebenarnya. Sisa ruang itu membuat
+    kartu tampak berongga. Karena itu sizeHint() memakai hasil pengukuran
+    sendiri setelah label pernah ditata.
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._tinggi_terukur = 0
+
+    def sizeHint(self):
+        ukuran = super().sizeHint()
+        if self.wordWrap() and self._tinggi_terukur > 0:
+            ukuran.setHeight(self._tinggi_terukur)
+        return ukuran
+
+    def setText(self, teks):
+        super().setText(teks)
+        # Teks baru belum diukur. Ukuran lama tidak boleh dipakai, karena
+        # dapat memotong kalimat yang lebih panjang.
+        self._tinggi_terukur = 0
+        self.updateGeometry()
 
     def resizeEvent(self, peristiwa):
         super().resizeEvent(peristiwa)
@@ -1619,6 +2305,9 @@ class LabelTinggiOtomatis(QLabel):
             doc.setPlainText(self.text())
         doc.setTextWidth(lebar)
         perlu = int(doc.size().height()) + 2
+        if self._tinggi_terukur != perlu:
+            self._tinggi_terukur = perlu
+            self.updateGeometry()
         if self.minimumHeight() != perlu:
             self.setMinimumHeight(perlu)
 
@@ -1654,6 +2343,22 @@ def label(teks: str, objek: str = "", wrap: bool = False, ukuran: int = None) ->
     l.setWordWrap(wrap)
     if ukuran:
         l.setStyleSheet(f"font-size: {ukuran}px; background: transparent;")
+    return l
+
+
+def label_ringkas(teks: str = "") -> QLabel:
+    """Label keterangan yang mengisi sisa baris dan rata kanan.
+
+    Dipakai untuk ringkasan seperti "25 invoice · total piutang ...".
+    Label ini diberi faktor regang 1 oleh pemanggil, sehingga memakai
+    seluruh ruang yang tersisa: tetap satu baris saat lapang, dan hanya
+    membungkus bila jendela benar-benar sempit.
+    """
+    l = QLabel(teks)
+    l.setObjectName("Muted")
+    l.setWordWrap(True)
+    l.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+    l.setMinimumWidth(0)
     return l
 
 
@@ -1702,6 +2407,20 @@ def set_combo_by_data(combo: QComboBox, data: str) -> bool:
     return False
 
 
+def set_combo_kandidat(combo: QComboBox, kandidat: list[str]) -> str:
+    """
+    Pilih kode akun pertama yang memang ada pada bagan akun perusahaan.
+
+    Kode akun bawaan berbeda antar bentuk badan usaha. Memilih satu kode
+    secara tetap membuat pilihan kosong atau salah pada bentuk lain, jadi
+    daftar kandidat dicoba berurutan dan pilihan yang berlaku dikembalikan.
+    """
+    for data in kandidat:
+        if set_combo_by_data(combo, data):
+            return data
+    return combo.currentData() or ""
+
+
 # ==========================================================================
 # PESAN KEPADA PENGGUNA
 # ==========================================================================
@@ -1717,27 +2436,25 @@ def belum_ada_perusahaan(parent=None, tindakan: str = "") -> None:
     Parameter tindakan diisi nama tindakan yang sedang dicoba, misalnya
     "menambah karyawan", supaya pesannya menyesuaikan keadaan.
     """
-    from PySide6.QtWidgets import QMessageBox
 
     awal = "Lengkapi dulu profil perusahaan."
     if tindakan:
         awal = f"Belum dapat {tindakan}, karena profil perusahaan belum ada."
 
-    QMessageBox.information(
-        parent, "Profil perusahaan belum ada",
-        f"{awal}\n\n"
-        "Langkah yang perlu dilakukan:\n"
-        "1. Buka menu Data Usaha, lalu pilih Data Perusahaan\n"
-        "2. Isi nama perusahaan dan bentuk badan usaha\n"
-        "3. Tekan tombol Buat Perusahaan\n\n"
-        "Setelah profil perusahaan dibuat, seluruh menu pembukuan "
-        "langsung dapat dipakai.")
+    popup.beri_tahu(parent,
+                    "Profil perusahaan belum ada",
+                    f"{awal}\n\n"
+                    "Langkah yang perlu dilakukan:\n"
+                    "1. Buka menu Data Usaha, lalu pilih Data Perusahaan\n"
+                    "2. Isi nama perusahaan dan bentuk badan usaha\n"
+                    "3. Tekan tombol Buat Perusahaan\n\n"
+                    "Setelah profil perusahaan dibuat, seluruh menu pembukuan "
+                    "langsung dapat dipakai.")
 
 
 def perlu_dipilih(parent=None, apa: str = "satu baris data") -> None:
     """Beri tahu pengguna bahwa belum ada baris yang dipilih."""
-    from PySide6.QtWidgets import QMessageBox
 
-    QMessageBox.information(
-        parent, "Belum ada yang dipilih",
-        f"Pilih dulu {apa} pada tabel, lalu ulangi tindakannya.")
+    popup.beri_tahu(parent,
+                    "Belum ada yang dipilih",
+                    f"Pilih dulu {apa} pada tabel, lalu ulangi tindakannya.")

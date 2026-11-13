@@ -11,10 +11,11 @@ Halaman pertama setelah login. Menampilkan:
 """
 from __future__ import annotations
 
+import math
 from datetime import datetime
 
 from PySide6.QtCore import Qt, Signal, QRectF
-from PySide6.QtGui import QPainter, QColor, QPen, QFont, QBrush, QLinearGradient
+from PySide6.QtGui import QPainter, QColor, QPen, QFont
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QFrame,
     QComboBox, QSizePolicy, QPushButton,
@@ -108,10 +109,10 @@ class BarChart(QWidget):
             p.end()
             return
 
-        # Margin diberi ruang lebih supaya label sumbu dan label nilai tidak
-        # berdesakan dengan bidang grafiknya.
-        margin_kiri, margin_kanan = 86, 24
-        margin_atas, margin_bawah = 42, 46
+        # Ruang atas tidak lagi dipakai label angka di atas batang, sehingga
+        # grafik terasa lebih lapang dan batangnya menjadi fokus utama.
+        margin_kiri, margin_kanan = 78, 20
+        margin_atas, margin_bawah = 22, 42
         lebar_grafik = w - margin_kiri - margin_kanan
         tinggi_grafik = h - margin_atas - margin_bawah
         if lebar_grafik <= 10 or tinggi_grafik <= 10:
@@ -123,152 +124,77 @@ class BarChart(QWidget):
                    default=0)
         if maks <= 0:
             maks = 1
-        maks_bulat = self._batas_atas(maks)
+        laba_min = min((d["laba_sebelum_pajak"] for d in self.data), default=0)
+        nilai_bawah, nilai_atas, garis = self._sumbu(maks, laba_min)
+        rentang_nilai = nilai_atas - nilai_bawah
+        dasar_nol = margin_atas + (nilai_atas / rentang_nilai) * tinggi_grafik
 
-        # grid horizontal bergaris putus agar tidak bersaing dengan batang
+        def posisi_y(nilai: float) -> float:
+            return margin_atas + ((nilai_atas - nilai) / rentang_nilai) * tinggi_grafik
+
+        # Garis bantu tipis dan rata, bukan garis putus-putus. Garis putus
+        # membuat bidang grafik tampak ramai dan bersaing dengan batang.
         p.setFont(QFont(theme.FONT_UI, 8))
-        for i in range(5):
-            y = margin_atas + tinggi_grafik * i / 4
-            pena = QPen(QColor(C.BORDER), 1, Qt.DashLine)
-            pena.setDashPattern([3, 4])
-            p.setPen(pena)
+        for nilai in garis:
+            y = posisi_y(nilai)
+            p.setPen(QPen(QColor(C.BORDER), 1))
             p.drawLine(int(margin_kiri), int(y), int(w - margin_kanan), int(y))
             p.setPen(QColor(C.TEXT_FAINT))
-            p.drawText(QRectF(0, y - 8, margin_kiri - 16, 16),
+            p.drawText(QRectF(0, y - 8, margin_kiri - 14, 16),
                        Qt.AlignRight | Qt.AlignVCenter,
-                       self._singkat(maks_bulat * (4 - i) / 4))
+                       self._singkat(nilai))
 
         n = len(self.data)
         lebar_grup = lebar_grafik / n
-        lebar_batang = max(5.0, min(16.0, lebar_grup * 0.28))
+        lebar_batang = max(4.0, min(12.0, lebar_grup * 0.24))
         celah = 3.0
+        self._geometri = {
+            "kiri": margin_kiri, "kanan": margin_kanan, "atas": margin_atas,
+            "dasar": dasar, "tinggi": tinggi_grafik, "lebar_grup": lebar_grup,
+        }
 
-        # garis tren laba sebelum pajak
+        # Sorotan bulan yang ditunjuk digambar sekali di belakang seluruh
+        # batang. Sebelumnya sorotan digambar per bulan dengan margin berbeda
+        # dari batangnya, sehingga kolom yang tersorot bergeser dari batang.
+        if 0 <= self._bulan_sorot < n:
+            kiri_sorot = margin_kiri + self._bulan_sorot * lebar_grup
+            p.setPen(Qt.NoPen)
+            p.setBrush(QColor(C.SURFACE_ALT))
+            p.drawRoundedRect(
+                QRectF(kiri_sorot + 2, margin_atas - 4,
+                       lebar_grup - 4, tinggi_grafik + 8), 4, 4)
+
+        # Garis laba digambar lebih dulu agar berada di belakang batang.
         titik_tren = []
         for i, d in enumerate(self.data):
             pusat = margin_kiri + i * lebar_grup + lebar_grup / 2
-            laba = d["laba_sebelum_pajak"]
-            y = dasar - (laba / maks_bulat) * tinggi_grafik
-            titik_tren.append((pusat, y))
+            titik_tren.append((pusat, posisi_y(d["laba_sebelum_pajak"])))
 
-        # garis tren laba digambar lebih dulu agar berada di belakang batang
-        # dan tidak menyentuh label nilainya
         if len(titik_tren) > 1:
-            pena = QPen(QColor(C.POSITIF), 2)
+            pena = QPen(QColor(C.POSITIF), 1.8)
             pena.setCapStyle(Qt.RoundCap)
+            pena.setJoinStyle(Qt.RoundJoin)
             p.setPen(pena)
             p.setBrush(Qt.NoBrush)
             for (x1, y1), (x2, y2) in zip(titik_tren, titik_tren[1:]):
                 p.drawLine(int(x1), int(y1), int(x2), int(y2))
-            p.setBrush(QColor(C.POSITIF))
-            p.setPen(Qt.NoPen)
-            for x, y in titik_tren:
-                p.drawEllipse(QRectF(x - 2.5, y - 2.5, 5, 5))
-
-            # Laba negatif ditandai angkanya supaya besar kerugian terbaca,
-            # bukan hanya terlihat dari garis yang turun di bawah nol.
-            p.setFont(QFont(theme.FONT_UI, 7))
-            fm_tren = p.fontMetrics()
-            for i, (x, y) in enumerate(titik_tren):
-                laba = self.data[i]["laba_sebelum_pajak"]
-                if laba >= 0:
-                    continue
-                teks = self._nilai_batang(abs(laba))
-                lebar_teks = fm_tren.horizontalAdvance(teks) + 6
-                p.setPen(QColor(C.NEGATIF))
-                p.drawText(QRectF(x - lebar_teks / 2, y + 6, lebar_teks, 12),
-                           Qt.AlignCenter, teks)
 
         for i, d in enumerate(self.data):
             pusat = margin_kiri + i * lebar_grup + lebar_grup / 2
             x0 = pusat - lebar_batang - celah / 2
             sorot = i == self._bulan_sorot
 
-            if sorot:
-                p.setPen(Qt.NoPen)
-                p.setBrush(QColor(C.SURFACE_ALT))
-                p.drawRoundedRect(
-                    QRectF(margin_kiri + i * lebar_grup + 2, margin_atas - 6,
-                           lebar_grup - 4, tinggi_grafik + 10), 6, 6)
-
-            h1 = (d["pendapatan"] / maks_bulat) * tinggi_grafik
-            grad1 = QLinearGradient(0, dasar - h1, 0, dasar)
-            grad1.setColorAt(0, QColor(C.PRIMARY))
-            grad1.setColorAt(1, QColor(C.PRIMARY_LIGHT))
-            p.setBrush(QBrush(grad1))
+            h1 = (d["pendapatan"] / rentang_nilai) * tinggi_grafik
             p.setPen(Qt.NoPen)
-            p.drawRoundedRect(QRectF(x0, dasar - h1, lebar_batang, h1), 3, 3)
+            p.setBrush(QColor(C.PRIMARY))
+            p.drawRoundedRect(QRectF(x0, dasar_nol - h1, lebar_batang, h1),
+                              2, 2)
 
             beban = d["beban"] + d["hpp"]
-            h2 = (beban / maks_bulat) * tinggi_grafik
-            grad2 = QLinearGradient(0, dasar - h2, 0, dasar)
-            grad2.setColorAt(0, QColor(C.WARNING))
-            grad2.setColorAt(1, QColor("#E8C9A0"))
-            p.setBrush(QBrush(grad2))
-            p.drawRoundedRect(QRectF(x0 + lebar_batang + celah, dasar - h2,
-                                     lebar_batang, h2), 3, 3)
-
-            # Nilai di atas tiap batang dengan jarak tetap dari puncaknya,
-            # sehingga tidak menempel pada batang. Bila kedua label akan
-            # beririsan karena batangnya berdekatan, salah satunya dinaikkan.
-            p.setFont(QFont(theme.FONT_UI, 7))
-            fm = p.fontMetrics()
-            tengah1 = x0 + lebar_batang / 2
-            tengah2 = x0 + lebar_batang * 1.5 + celah
-            t1 = self._nilai_batang(d["pendapatan"])
-            t2 = self._nilai_batang(beban)
-            l1 = fm.horizontalAdvance(t1) + 8
-            l2 = fm.horizontalAdvance(t2) + 8
-
-            ada1 = h1 >= 18
-            ada2 = h2 >= 18
-            # Label nilai disembunyikan bila kolomnya terlalu sempit untuk
-            # memuatnya. Pada layar sempit, label nilai antar bulan akan
-            # bertumpuk dan angkanya justru tidak terbaca. Angka yang sama
-            # tetap dapat dibaca dari keterangan di atas grafik.
-            if lebar_grup < l1 + 6:
-                ada1 = False
-            if lebar_grup < l2 + 6:
-                ada2 = False
-
-            jarak_label = 8          # jarak label ke puncak batang
-            tinggi_label = 13
-            berdekatan = (ada1 and ada2
-                          and abs(tengah1 - tengah2) < (l1 + l2) / 2)
-
-            batas_atas_teks = margin_atas - 14
-
-            if ada1:
-                y1 = dasar - h1 - jarak_label - tinggi_label
-                if berdekatan:
-                    y1 -= tinggi_label + 1
-                y1 = max(y1, batas_atas_teks)
-                x1 = min(max(tengah1 - l1 / 2, 2.0), w - l1 - 2)
-                p.setPen(QColor(C.PRIMARY))
-                p.drawText(QRectF(x1, y1, l1, tinggi_label), Qt.AlignCenter, t1)
-
-            if ada2:
-                y2 = dasar - h2 - jarak_label - tinggi_label
-                y2 = max(y2, batas_atas_teks)
-                x2 = min(max(tengah2 - l2 / 2, 2.0), w - l2 - 2)
-                # Bila label beban beririsan mendatar dengan label pendapatan,
-                # geser ke bawah sampai benar-benar tidak bertumpuk. Pergeseran
-                # sebelumnya hanya sebesar tinggi label, sehingga masih
-                # menyisakan tumpang tindih beberapa piksel.
-                if ada1 and not (x2 + l2 <= x1 or x1 + l1 <= x2):
-                    batas_bawah = dasar - tinggi_label - 2
-                    if abs(y2 - y1) < tinggi_label + 2:
-                        y2 = min(y1 + tinggi_label + 3, batas_bawah)
-                    # Bila masih bertumpuk karena ruang bawah tidak cukup,
-                    # geser mendatar ke sisi yang masih lapang.
-                    if abs(y2 - y1) < tinggi_label + 2:
-                        geser = x1 + l1 - x2 + 2
-                        if x2 + geser + l2 <= w - 2:
-                            x2 += geser
-                        elif x1 - l2 - 2 >= 2:
-                            x2 = x1 - l2 - 2
-                p.setPen(QColor(C.WARNING))
-                p.drawText(QRectF(x2, y2, l2, tinggi_label), Qt.AlignCenter, t2)
+            h2 = (beban / rentang_nilai) * tinggi_grafik
+            p.setBrush(QColor(C.ACCENT))
+            p.drawRoundedRect(QRectF(x0 + lebar_batang + celah,
+                                     dasar_nol - h2, lebar_batang, h2), 2, 2)
 
             p.setPen(QColor(C.TEXT) if sorot else (
                 QColor(C.TEXT_FAINT) if (d["pendapatan"] == 0 and beban == 0)
@@ -294,80 +220,37 @@ class BarChart(QWidget):
                                 margin_atas, dasar))
 
         p.setPen(QPen(QColor(C.BORDER_STRONG), 1))
-        p.drawLine(int(margin_kiri), int(dasar), int(w - margin_kanan), int(dasar))
+        p.drawLine(int(margin_kiri), int(dasar_nol),
+                   int(w - margin_kanan), int(dasar_nol))
 
         if 0 <= self._bulan_sorot < n:
-            self._gambar_penunjuk(p, w, margin_atas, dasar, tinggi_grafik)
+            self._gambar_penunjuk(p, posisi_y)
         p.end()
 
-    def _gambar_penunjuk(self, p, lebar, atas, dasar, tinggi_grafik):
+    def _gambar_penunjuk(self, p, posisi_y):
         """
-        Penunjuk bulan terpilih: sorotan kolom dan label nama bulan.
+        Penanda bulan terpilih: garis tegak tipis dan titik pada garis laba.
 
-        Angka rinciannya tidak digambar di dalam bidang grafik supaya tidak
-        menutupi batang; pemanggil menampilkannya di panel bawah grafik lewat
-        bulan_terpilih().
+        Angka rincian bulan ditampilkan di panel bawah grafik lewat
+        bulan_terpilih(); menuliskannya di dalam bidang grafik hanya akan
+        menutupi batang dan membuat tampilan ramai.
         """
-        d = self.data[self._bulan_sorot]
-        n = max(1, len(self.data))
-        lebar_grafik = lebar - 70 - 18
-        lebar_grup = lebar_grafik / n
-        kiri = 70 + self._bulan_sorot * lebar_grup
+        g = self._geometri
+        x = (g["kiri"] + self._bulan_sorot * g["lebar_grup"]
+             + g["lebar_grup"] / 2)
+        p.setPen(QPen(QColor(C.BORDER_STRONG), 1))
+        p.drawLine(int(x), int(g["atas"] - 2), int(x), int(g["dasar"]))
 
-        p.setPen(Qt.NoPen)
-        p.setBrush(QColor(C.SURFACE_ALT))
-        p.drawRoundedRect(QRectF(kiri + 2, atas - 8, lebar_grup - 4,
-                                 tinggi_grafik + 12), 6, 6)
-
-        beban = d["beban"] + d["hpp"]
-        puncak = max(d["pendapatan"], beban)
-        maks_bulat = self._batas_atas(
-            max(max(q["pendapatan"], q["beban"] + q["hpp"]) for q in self.data))
-        p.setPen(QPen(QColor(C.PRIMARY), 1, Qt.DotLine))
-        p.drawLine(int(kiri), int(atas - 8), int(kiri + lebar_grup),
-                   int(atas - 8))
-
-        # penanda nilai di puncak batang bulan terpilih
-        if puncak > 0:
-            y = dasar - (puncak / maks_bulat) * tinggi_grafik
-            teks = self._singkat(puncak)
-            p.setFont(QFont(theme.FONT_UI, 8, QFont.Bold))
-            fm = p.fontMetrics()
-            lebar_teks = fm.horizontalAdvance(teks) + 14
-            x = max(6.0, min(kiri + lebar_grup / 2 - lebar_teks / 2,
-                             lebar - lebar_teks - 6))
-            p.setPen(Qt.NoPen)
-            p.setBrush(QColor(C.PRIMARY))
-            p.drawRoundedRect(QRectF(x, y - 20, lebar_teks, 17), 8, 8)
-            p.setPen(QColor("#FFFFFF"))
-            p.drawText(QRectF(x, y - 20, lebar_teks, 17),
-                       Qt.AlignCenter, teks)
+        y = posisi_y(self.data[self._bulan_sorot]["laba_sebelum_pajak"])
+        p.setPen(QPen(QColor(C.SURFACE), 2))
+        p.setBrush(QColor(C.POSITIF))
+        p.drawEllipse(QRectF(x - 3.5, y - 3.5, 7, 7))
 
     def bulan_terpilih(self) -> dict | None:
         """Data bulan yang sedang ditunjuk, atau None bila tidak ada."""
         if 0 <= self._bulan_sorot < len(self.data):
             return self.data[self._bulan_sorot]
         return None
-
-    @staticmethod
-    def _nilai_batang(v: float) -> str:
-        """
-        Angka ringkas untuk label di atas batang.
-
-        Satuannya sudah tercantum pada sumbu Y, jadi label cukup memuat
-        angkanya saja. Label yang pendek tidak menutupi batang di sebelahnya
-        dan tidak berdesakan saat batangnya berdekatan.
-        """
-        v = float(v)
-        if v >= 1_000_000_000:
-            return f"{v / 1_000_000_000:.1f}M".replace(".", ",")
-        if v >= 1_000_000:
-            angka = v / 1_000_000
-            return (f"{angka:.0f}" if angka >= 10
-                    else f"{angka:.1f}".replace(".", ","))
-        if v >= 1_000:
-            return f"{v / 1_000:.0f}rb"
-        return f"{v:.0f}"
 
     @staticmethod
     def _batas_atas(maks: float) -> float:
@@ -388,8 +271,31 @@ class BarChart(QWidget):
         return 10.0 * pangkat
 
     @staticmethod
+    def _sumbu(maks: float, laba_min: float) -> tuple[float, float, list[float]]:
+        """
+        Batas sumbu Y beserta nilai garis bantunya.
+
+        Saat ada bulan merugi, garis nol tidak lagi berada di dasar grafik:
+        sumbu turun sampai kerugian terdalam agar garis laba tetap terlihat.
+        Kedua ujung dibulatkan ke kelipatan langkah yang sama sehingga garis
+        nol selalu mendapat label dan angkanya mudah dibaca.
+        """
+        atas = BarChart._batas_atas(max(maks, 0.0))
+        if laba_min >= 0:
+            return 0.0, atas, [atas * i / 4 for i in range(5)]
+
+        bawah_awal = -BarChart._batas_atas(-laba_min)
+        langkah = BarChart._batas_atas((atas - bawah_awal) / 4)
+        atas = math.ceil(atas / langkah) * langkah
+        bawah = -math.ceil(-bawah_awal / langkah) * langkah
+        jumlah = int(round((atas - bawah) / langkah))
+        return bawah, atas, [bawah + i * langkah for i in range(jumlah + 1)]
+
+    @staticmethod
     def _singkat(v: float) -> str:
         v = float(v)
+        if v < 0:
+            return "-" + BarChart._singkat(-v)
         if v >= 1_000_000_000:
             return f"{v / 1_000_000_000:.1f} M".replace(".", ",")
         if v >= 1_000_000:
@@ -486,6 +392,9 @@ class DashboardPage(QWidget):
     # ------------------------------------------------------------------
     def muat(self):
         """Bangun ulang seluruh isi dashboard."""
+        self._grid_panel = None
+        self._panel_kesehatan_w = None
+        self._panel_grafik_w = None
         self._bersihkan()
         cid = self.ctx.company_id
         tahun = self.ctx.tahun
@@ -504,7 +413,7 @@ class DashboardPage(QWidget):
             f"· Tahun pajak {tahun}")
 
         # ============================================================
-        # 1. KPI UTAMA — paling atas, angka yang dicari pertama
+        # 1. PITA KINERJA — satu lembar ringkasan, bukan deretan kartu
         # ============================================================
         try:
             kpi = services.kpi_dashboard(cid, tahun)
@@ -512,20 +421,10 @@ class DashboardPage(QWidget):
             kpi = None
 
         if kpi:
-            self.isi_lay.addWidget(self._panel_kpi(kpi, comp, tahun))
+            self.isi_lay.addWidget(self._panel_kinerja(kpi, comp, tahun))
 
         # ============================================================
-        # 1b. PANDUAN LANGKAH AWAL
-        #     Saat pembukuan masih kosong, seluruh kartu menampilkan nol.
-        #     Angka nol tidak memberi tahu apa yang harus dilakukan, jadi
-        #     panduan ini ditampilkan hanya pada keadaan itu.
-        # ============================================================
-        if kpi and kpi.get("jumlah_jurnal_total", 0) == 0:
-            self.isi_lay.addWidget(self._panel_mulai(comp))
-
-        # ============================================================
-        # 2. SKOR KESEHATAN + GRAFIK — berdampingan agar keduanya
-        #    terlihat tanpa menggulir.
+        # 2. PENILAIAN + GRAFIK — berdampingan pada jendela lapang
         # ============================================================
         try:
             analisis = services.analisis(cid, tahun)
@@ -535,66 +434,71 @@ class DashboardPage(QWidget):
                 f"Analisis tidak dapat dijalankan: {e}", "danger",
                 "Terjadi kesalahan"))
 
+        # Panduan langkah awal hanya berguna saat belum ada jurnal sama
+        # sekali. Jumlah jurnal ada di statistik analisis, bukan di KPI.
+        if kpi and (analisis is None
+                    or analisis.statistik.get("jumlah_jurnal_total", 0) == 0):
+            self.isi_lay.addWidget(self._panel_mulai(comp))
+
         # Dua panel diletakkan berdampingan pada jendela lebar, dan bertumpuk
-        # pada jendela sempit. Pemilihan susunan dilakukan otomatis memakai
-        # grid: bila lebar kurang dari 1100 piksel, kedua panel ditumpuk
-        # supaya tidak ada yang terpotong. Ini menghindari pembagian ruang
-        # yang dipaksakan, yang membuat salah satu panel terlalu sempit.
+        # pada jendela sempit. Susunan diatur ulang setiap kali ukuran
+        # jendela berubah; tanpa itu panel kiri menyempit sampai teksnya
+        # hanya tersisa beberapa kata per baris.
         from PySide6.QtWidgets import QGridLayout
         baris = QWidget()
-        baris.setStyleSheet("background: transparent;")
+        # Latar transparan dikunci ke wadah ini saja. Tanpa kunci, aturan itu
+        # menular ke kartu di dalamnya dan menghapus latar putih kartu.
+        theme.latar(baris, "background: transparent;")
         grid = QGridLayout(baris)
         grid.setContentsMargins(0, 0, 0, 0)
         grid.setSpacing(14)
 
         if analisis is not None:
             panel_kesehatan = self._panel_kesehatan(analisis, comp)
-            panel_kesehatan.setMinimumWidth(380)
+            panel_kesehatan.setMinimumWidth(0)
             grid.addWidget(panel_kesehatan, 0, 0)
+            self._panel_kesehatan_w = panel_kesehatan
 
         try:
             panel_grafik = self._panel_grafik(cid, tahun)
-            panel_grafik.setMinimumWidth(360)
-            grid.addWidget(panel_grafik, 0, 1)
+            panel_grafik.setMinimumWidth(0)
+            if analisis is not None:
+                grid.addWidget(panel_grafik, 0, 1)
+            else:
+                grid.addWidget(panel_grafik, 0, 0, 1, 2)
+            self._panel_grafik_w = panel_grafik
         except Exception:
             pass
 
         grid.setColumnStretch(0, 6)
         grid.setColumnStretch(1, 5)
-        # Kolom kedua turun ke baris berikutnya saat jendela menyempit.
-        grid.setColumnMinimumWidth(0, 380)
-        grid.setColumnMinimumWidth(1, 360)
+        # Tanpa lebar minimum kolom: kartu menyusut mengikuti jendela dan
+        # teksnya membungkus. Lebar minimum di sini dulu mendorong kolom
+        # kanan keluar tepi pada jendela 1180 piksel.
         self._grid_panel = grid
 
         if grid.count():
             self.isi_lay.addWidget(baris)
+            self._susun_panel()
 
         # ============================================================
-        # 3. TENGGAT PAJAK
+        # 3. TENGGAT PAJAK & KONTRAK — satu agenda, dua kolom
         # ============================================================
         try:
-            self.isi_lay.addWidget(self._panel_deadline(cid))
+            agenda = self._panel_agenda(cid)
+            if agenda is not None:
+                self.isi_lay.addWidget(agenda)
         except Exception:
             pass
 
         # ============================================================
-        # 4. KONTRAK PERLU PERHATIAN
-        # ============================================================
-        try:
-            panel_kontrak = self._panel_kontrak(cid)
-            if panel_kontrak is not None:
-                self.isi_lay.addWidget(panel_kontrak)
-        except Exception:
-            pass
-
-        # ============================================================
-        # 5. TEMUAN ANALISIS LENGKAP
+        # 4. TEMUAN ANALISIS
         # ============================================================
         if analisis is not None and analisis.temuan:
             self.isi_lay.addWidget(self._panel_temuan(analisis))
 
         # ============================================================
-        # 6. PROYEKSI
+        # 5. PROYEKSI
         # ============================================================
         try:
             self.isi_lay.addWidget(self._panel_proyeksi(cid, tahun))
@@ -616,6 +520,52 @@ class DashboardPage(QWidget):
                 wdg.setParent(None)
                 wdg.deleteLater()
 
+    def _susun_panel(self):
+        """Tumpuk grafik di bawah kesehatan saat lebar halaman terbatas."""
+        grid = getattr(self, "_grid_panel", None)
+        grafik = getattr(self, "_panel_grafik_w", None)
+        kesehatan = getattr(self, "_panel_kesehatan_w", None)
+        if grid is None or grafik is None or kesehatan is None:
+            return
+
+        def posisi(widget):
+            indeks = grid.indexOf(widget)
+            return grid.getItemPosition(indeks) if indeks >= 0 else None
+
+        pos_k = posisi(kesehatan)
+        pos_g = posisi(grafik)
+        # Ambang memakai lebar halaman, termasuk tepi 26 piksel di kedua
+        # sisi. Di bawah 1000 piksel, dua kolom hanya menyisakan sekitar
+        # 400 piksel per panel: teks penilaian menjadi terlalu sempit dan
+        # grafiknya kehilangan ruang untuk dua belas bulan. Pada keadaan
+        # itu grafik ditumpuk di bawah penilaian.
+        sempit = self.width() < 1000
+        if sempit:
+            if pos_k and pos_k[3] == 2 and pos_g and pos_g[0] == 1:
+                return
+            if pos_g:
+                grid.removeWidget(grafik)
+            if pos_k:
+                grid.removeWidget(kesehatan)
+                grid.addWidget(kesehatan, 0, 0, 1, 2)
+            grid.addWidget(grafik, 1, 0, 1, 2)
+            grid.setColumnStretch(1, 0)
+        else:
+            if (pos_k and pos_k[3] == 1 and pos_g
+                    and pos_g[0] == 0 and pos_g[1] == 1):
+                return
+            if pos_g:
+                grid.removeWidget(grafik)
+            if pos_k:
+                grid.removeWidget(kesehatan)
+                grid.addWidget(kesehatan, 0, 0)
+            grid.addWidget(grafik, 0, 1)
+            grid.setColumnStretch(1, 5)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._susun_panel()
+
     # ==================================================================
     # PANEL: KESEHATAN KEUANGAN
     # ==================================================================
@@ -627,120 +577,97 @@ class DashboardPage(QWidget):
 
         # --- bagian atas: skor + ringkasan
         atas = QWidget()
-        atas.setStyleSheet("background: transparent;")
+        theme.latar(atas, "background: transparent;")
         al = QHBoxLayout(atas)
-        al.setContentsMargins(24, 22, 28, 20)
-        al.setSpacing(28)
+        al.setContentsMargins(24, 22, 26, 20)
+        al.setSpacing(26)
 
-        gauge = w.SkorGauge(ukuran=158)
-        # Bila pembukuan masih kosong, lingkaran tidak menampilkan angka.
+        gauge = w.SkorGauge(ukuran=150)
+        # Bila pembukuan masih kosong, skor tidak ditampilkan sebagai angka.
         belum_dinilai = analisis.grade == "N/A"
         gauge.set_skor(analisis.skor, analisis.grade_label,
-                       belum_dinilai=belum_dinilai)
-        al.addWidget(gauge, 0, Qt.AlignVCenter)
+                       belum_dinilai=belum_dinilai, grade=analisis.grade)
+        al.addWidget(gauge, 0, Qt.AlignTop)
 
         kanan = QVBoxLayout()
-        kanan.setSpacing(11)
+        kanan.setSpacing(5)
 
-        judul_baris = QHBoxLayout()
-        judul_baris.setSpacing(12)
+        kicker = QLabel("PENILAIAN")
+        kicker.setObjectName("Kicker")
+        kanan.addWidget(kicker)
+
         j = QLabel("Kesehatan Keuangan")
-        j.setStyleSheet("font-size: 19px; font-weight: 700; background: transparent;")
+        j.setObjectName("SectionTitle")
         # Judul boleh membungkus menjadi dua baris. Dengan penskalaan tampilan
         # Windows, lebar teks dapat membesar sementara ruang panel tetap, dan
-        # tanpa pembungkusan tulisannya terpotong. Membungkus dua baris tetap
-        # terbaca utuh dan tidak mengubah susunan panel.
+        # tanpa pembungkusan tulisannya terpotong.
         j.setWordWrap(True)
         j.setMinimumWidth(0)
-        judul_baris.addWidget(j)
-        judul_baris.addStretch()
-        kanan.addLayout(judul_baris)
-
-        # Badge hanya ditampilkan bila panel cukup lebar untuk memuatnya
-        # bersama judul. Pada jendela sempit, badge disembunyikan supaya
-        # judulnya tetap terbaca utuh. Keterangan grade sudah tercantum pada
-        # kalimat ringkasan di bawahnya, sehingga tidak ada informasi hilang.
-        #
-        # Saat pembukuan masih kosong, badge diberi warna netral. Warna
-        # peringatan akan terbaca sebagai penilaian buruk, padahal yang
-        # terjadi adalah belum ada yang dapat dinilai.
-        if belum_dinilai:
-            badge_warna, badge_bg = C.TEXT_MUTED, C.NEUTRAL_BG
-        else:
-            badge_warna, badge_bg = theme.STATUS_COLORS.get(
-                "baik" if analisis.skor >= 70 else
-                ("peringatan" if analisis.skor >= 55 else "kritis"),
-                (C.TEXT_MUTED, C.NEUTRAL_BG))
-        teks_badge = f"GRADE {analisis.grade} · {analisis.grade_label.upper()}"
-        bdg = QLabel(teks_badge)
-        theme.latar(bdg, f"background: {badge_bg}; color: {badge_warna}; border-radius: 9px; "
-            f"padding: 4px 12px; font-size: {theme.FS_TINY}px; font-weight: 800;")
-        bdg.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
-        bdg.setMinimumWidth(
-            bdg.fontMetrics().horizontalAdvance(teks_badge) + 26)
-        bdg.setVisible(self.width() >= 520)
-
-        baris_badge = QHBoxLayout()
-        baris_badge.addWidget(bdg)
-        baris_badge.addStretch()
-        kanan.addLayout(baris_badge)
-        kanan.addSpacing(6)
+        kanan.addWidget(j)
+        kanan.addSpacing(3)
 
         ringkasan = w.LabelTinggiOtomatis(w.rata_kanan_kiri(analisis.ringkasan))
         ringkasan.setTextFormat(Qt.RichText)
         ringkasan.setWordWrap(True)
         ringkasan.setStyleSheet(
-            f"font-size: {theme.FS_BODY}px; color: {C.TEXT}; background: transparent; "
-            "line-height: 168%;")
+            f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
+            "background: transparent; line-height: 168%;")
         ringkasan.setTextInteractionFlags(Qt.TextSelectableByMouse)
         kanan.addWidget(ringkasan)
-        kanan.addSpacing(4)
+        kanan.addSpacing(9)
 
-        # penghitung temuan
-        hitung = QHBoxLayout()
-        hitung.setSpacing(9)
-        for jumlah, label, tingkat in [
-            (analisis.jumlah_kritis, "Kritis", "kritis"),
-            (analisis.jumlah_peringatan, "Perhatian", "peringatan"),
-            (analisis.jumlah_saran, "Saran", "saran"),
-            (analisis.jumlah_baik, "Baik", "baik"),
-        ]:
-            warna, bg = theme.STATUS_COLORS[tingkat]
-            chip = QLabel(f"<b style='font-size:15px'>{jumlah}</b>"
-                          f"<span style='font-size:9px'> {label}</span>")
-            chip.setTextFormat(Qt.RichText)
-            chip.setAlignment(Qt.AlignCenter)
-            theme.latar(chip, f"background: {bg}; color: {warna}; border-radius: 8px; "
-                "padding: 5px 9px;")
-            # Chip dibiarkan menyusut mengikuti ruang yang tersedia, tetapi
-            # tidak lebih kecil dari ukuran isinya. Ukuran minimum dipakai
-            # sebagai batas bawah, dan lebarnya dibatasi pada ukuran saran
-            # supaya keempat chip tidak saling menimpa saat ruang sempit.
-            chip.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
-            chip.setMinimumWidth(0)
-            hitung.addWidget(chip, 1)
-        kanan.addLayout(hitung)
+        # Penghitung temuan ditulis sebagai satu kalimat berwarna, bukan
+        # deretan keping pastel. Keping warna membuat penilaian terbaca
+        # seperti lencana permainan; titik warna dan angka tebal sudah cukup
+        # membedakan tingkat tanpa mengalihkan perhatian dari skor.
+        bagian = []
+        for jumlah, label, tingkat in (
+                (analisis.jumlah_kritis, "kritis", "kritis"),
+                (analisis.jumlah_peringatan, "perhatian", "peringatan"),
+                (analisis.jumlah_saran, "saran", "saran"),
+                (analisis.jumlah_baik, "baik", "baik")):
+            if jumlah:
+                warna, _bg = theme.STATUS_COLORS[tingkat]
+                bagian.append(
+                    f"<span style='color:{warna};'>●</span>&nbsp;"
+                    f"<b>{jumlah}</b>&nbsp;{label}")
+        if bagian:
+            teks_hitung = "&nbsp;&nbsp;&nbsp;&nbsp;".join(bagian)
+            warna_hitung = C.TEXT_MUTED
+        else:
+            teks_hitung = (
+                f"<span style='color:{C.SUCCESS};'>●</span>&nbsp;"
+                "Tidak ada temuan · semua pemeriksaan terlewati")
+            warna_hitung = C.SUCCESS
+        hitung = QLabel(teks_hitung)
+        hitung.setTextFormat(Qt.RichText)
+        hitung.setWordWrap(True)
+        hitung.setStyleSheet(
+            f"font-size: {theme.FS_TINY}px; color: {warna_hitung}; "
+            "background: transparent;")
+        kanan.addWidget(hitung)
         al.addLayout(kanan, 1)
         lay.addWidget(atas)
 
         # --- bagian bawah: tombol tindakan
         bawah = QWidget()
-        theme.latar(bawah, f"background: {C.SURFACE_ALT}; border-top: 1px solid {C.BORDER}; "
-            "border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;")
+        theme.latar(bawah, f"background: {C.SURFACE_ALT}; "
+                          f"border-top: 1px solid {C.BORDER}; "
+                          "border-bottom-left-radius: 2px; "
+                          "border-bottom-right-radius: 2px;")
         bl = QHBoxLayout(bawah)
-        bl.setContentsMargins(24, 13, 28, 13)
+        bl.setContentsMargins(24, 12, 26, 12)
         bl.setSpacing(12)
 
         pesan = QLabel(
-            "Analisis ini memeriksa 30+ aspek: keseimbangan jurnal, likuiditas, "
-            "profitabilitas, solvabilitas, kepatuhan pajak, dan kualitas data."
-        )
-        pesan.setStyleSheet(f"font-size: {theme.FS_TINY}px; color: {C.TEXT_MUTED}; "
+            "Rincian lengkap: keseimbangan jurnal, likuiditas, profitabilitas, "
+            "solvabilitas, dan kepatuhan pajak.")
+        pesan.setStyleSheet(f"font-size: {theme.FS_TINY}px; color: {C.TEXT_FAINT}; "
                             "background: transparent;")
         pesan.setWordWrap(True)
         bl.addWidget(pesan, 1)
 
-        btn = w.tombol("Lihat Rincian Analisis", gaya="primary")
+        btn = w.tombol("Buka Rincian", gaya="primary")
         btn.clicked.connect(lambda: self.pindah_halaman.emit("analisis"))
         bl.addWidget(btn)
         lay.addWidget(bawah)
@@ -759,7 +686,7 @@ class DashboardPage(QWidget):
         keadaan itu, dan hilang sendiri begitu ada transaksi pertama.
         """
         wadah = QWidget()
-        wadah.setStyleSheet("background: transparent;")
+        theme.latar(wadah, "background: transparent;")
         lay = QVBoxLayout(wadah)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
@@ -768,19 +695,14 @@ class DashboardPage(QWidget):
         isi = kartu.body()
         isi.setSpacing(14)
 
-        kepala = QHBoxLayout()
-        kepala.setSpacing(10)
-        ikon = QLabel()
-        ikon.setPixmap(icons.pixmap("bantuan", C.PRIMARY, 20))
-        ikon.setFixedSize(20, 20)
-        ikon.setStyleSheet("background: transparent;")
-        kepala.addWidget(ikon)
+        kicker = QLabel("LANGKAH AWAL")
+        kicker.setObjectName("Kicker")
+        isi.addWidget(kicker)
 
-        judul = QLabel("Langkah pertama menyiapkan pembukuan")
+        judul = QLabel("Menyiapkan pembukuan pertama")
         judul.setObjectName("SectionTitle")
         judul.setWordWrap(True)
-        kepala.addWidget(judul, 1)
-        isi.addLayout(kepala)
+        isi.addWidget(judul)
 
         nama = comp.get("nama") if isinstance(comp, dict) else None
         keterangan = QLabel(
@@ -814,18 +736,18 @@ class DashboardPage(QWidget):
 
         for nomor, judul_langkah, penjelasan in langkah:
             b = QHBoxLayout()
-            b.setSpacing(11)
+            b.setSpacing(13)
 
             lencana = QLabel(nomor)
-            lencana.setFixedSize(24, 24)
-            lencana.setAlignment(Qt.AlignCenter)
-            # Gaya ditulis lewat theme.latar() supaya hanya berlaku pada
-            # label ini, tidak menular ke widget di dalamnya.
-            theme.latar(
-                lencana,
-                f"background: {C.PRIMARY_SOFT}; color: {C.PRIMARY_DARK}; "
-                f"border-radius: 12px; font-size: {theme.FS_SMALL}px; "
-                f"font-weight: 700;")
+            lencana.setFixedWidth(26)
+            lencana.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+            # Nomor ditulis sebagai angka serif tembaga, bukan keping
+            # lingkaran. Bentuk ini menyatu dengan tipografi laporan dan
+            # tidak menambah bentuk dekoratif baru pada halaman.
+            lencana.setStyleSheet(
+                f"font-family: '{theme.FONT_SERIF}', Georgia, serif; "
+                f"font-size: 17px; font-weight: 600; color: {C.ACCENT_DARK}; "
+                "background: transparent; padding-top: 1px;")
 
             teks = QVBoxLayout()
             teks.setSpacing(2)
@@ -854,14 +776,15 @@ class DashboardPage(QWidget):
         tombol_baris = QHBoxLayout()
         tombol_baris.setSpacing(10)
 
-        for teks_tombol, kode_halaman, keterangan_tombol in (
+        for i, (teks_tombol, kode_halaman, keterangan_tombol, gaya) in enumerate((
             ("Catat Penjualan", "penjualan",
-             "Buka halaman penjualan untuk mencatat transaksi pertama"),
+             "Buka halaman penjualan untuk mencatat transaksi pertama",
+             "primary"),
             ("Lihat Bagan Akun", "coa",
-             "Periksa akun yang sudah disiapkan otomatis"),
-        ):
-            t = QPushButton(teks_tombol)
-            t.setCursor(Qt.PointingHandCursor)
+             "Periksa akun yang sudah disiapkan otomatis", "ghost"),
+        )):
+            t = w.tombol(teks_tombol, gaya=gaya,
+                         ikon="tambah" if i == 0 else "")
             t.setToolTip(keterangan_tombol)
             t.clicked.connect(
                 lambda _=False, k=kode_halaman: self.pindah_halaman.emit(k))
@@ -874,214 +797,340 @@ class DashboardPage(QWidget):
         return wadah
 
     # ==================================================================
-    # PANEL: KPI
+    # PANEL: PITA KINERJA
     # ==================================================================
-    def _panel_kpi(self, kpi, comp, tahun) -> QWidget:
+    def _panel_kinerja(self, kpi, comp, tahun) -> QWidget:
+        """
+        Satu lembar ringkasan kinerja: omzet sebagai angka pokok, laba dan
+        kas sebagai angka pendamping, lalu kewajiban pokok pada kaki pita.
+
+        Seluruh angka berada dalam satu bidang putih dengan garis rambut
+        pemisah, bukan enam kartu sejajar. Bidang tunggal membuat mata
+        membaca urutan yang sama seperti laporan keuangan: pendapatan lebih
+        dulu, laba dan kas berikutnya, lalu posisi neraca.
+        """
         wadah = QWidget()
-        wadah.setStyleSheet("background: transparent;")
-        grid = QGridLayout(wadah)
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setSpacing(14)
-        # Tiga kartu dalam satu baris. Setiap kolom diberi bobot sama dan
-        # boleh menyusut, sehingga isinya tidak pernah melebihi lebar jendela.
-        # Tanpa ini, ukuran minimum kartu membuat baris melebar keluar tepi
-        # dan kartu ketiga terpotong pada layar 1366 piksel.
-        for kolom in range(3):
-            grid.setColumnStretch(kolom, 1)
-            grid.setColumnMinimumWidth(kolom, 0)
+        theme.latar(wadah, "background: transparent;")
+        luar = QVBoxLayout(wadah)
+        luar.setContentsMargins(0, 0, 0, 0)
+        luar.setSpacing(12)
+
+        kartu = w.Card()
+        lay = kartu.ganti_isi(QVBoxLayout())
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(0)
 
         omzet = kpi["omzet"]
-        pct_pkp = omzet / config.THRESHOLD_PKP * 100
-        warna_omzet = C.DANGER if pct_pkp >= 100 else (
-            C.WARNING if pct_pkp >= 80 else C.TEXT)
+        pct_pkp = (omzet / config.THRESHOLD_PKP * 100
+                   if config.THRESHOLD_PKP else 0.0)
+        if pct_pkp >= 100:
+            warna_omzet = C.DANGER
+            ket_omzet = (
+                f"Telah melewati batas wajib PKP Rp4,8 M. Pengusaha wajib "
+                "dikukuhkan sebagai PKP dan memungut PPN.")
+        elif pct_pkp >= 80:
+            warna_omzet = C.WARNING
+            ket_omzet = (
+                f"{theme.persen(pct_pkp / 100, 1)} dari batas wajib PKP "
+                "Rp4,8 M. Mendekati batas; siapkan administrasi PKP.")
+        else:
+            warna_omzet = C.TEXT
+            ket_omzet = (
+                f"{theme.persen(pct_pkp / 100, 1)} dari batas wajib PKP "
+                "Rp4,8 M")
 
-        tiles = [
-            ("Omzet / Peredaran Bruto", theme.money(omzet),
-             f"{theme.persen(pct_pkp / 100, 1)} dari batas wajib PKP Rp4,8 M", warna_omzet, "laporan"),
-            ("Laba Bersih", theme.money(kpi["laba_bersih"]),
-             f"Margin {theme.persen(kpi['margin_bersih'])}",
-             C.POSITIF if kpi["laba_bersih"] >= 0 else C.NEGATIF, "uang"),
-            ("Kas & Bank", theme.money(kpi["kas"]),
-             "Saldo likuid saat ini", C.TEXT, "bank"),
-            ("Total Aset", theme.money(kpi["total_aset"]),
-             f"Liabilitas {theme.money(kpi['total_liabilitas'])}", C.TEXT, "perusahaan"),
+        # ------------------------------------------------------ angka utama
+        atas = QWidget()
+        theme.latar(atas, "background: transparent;")
+        al = QHBoxLayout(atas)
+        al.setContentsMargins(24, 22, 24, 20)
+        al.setSpacing(26)
+
+        kiri = QVBoxLayout()
+        kiri.setSpacing(8)
+        kiri.addWidget(w.AngkaBuku(
+            "Omzet / Peredaran Bruto", theme.money(omzet),
+            ukuran=38, warna=warna_omzet))
+
+        meter = w.MeterBatas()
+        meter.set_nilai(min(pct_pkp, 100.0),
+                        warna_omzet if pct_pkp >= 80 else C.ACCENT)
+        kiri.addWidget(meter)
+
+        ket = QLabel(ket_omzet)
+        ket.setWordWrap(True)
+        ket.setStyleSheet(
+            f"font-size: {theme.FS_TINY}px; color: {warna_omzet}; "
+            "background: transparent;")
+        kiri.addWidget(ket)
+
+        status_pkp = kpi.get("status_pkp") or {}
+        if status_pkp.get("status"):
+            warna_status = {"danger": C.DANGER,
+                            "warning": C.WARNING}.get(status_pkp.get("level"),
+                                                      C.TEXT_FAINT)
+            lbl_status = QLabel(f"Status PKP · {status_pkp['status']}")
+            lbl_status.setStyleSheet(
+                f"font-size: {theme.FS_TINY}px; color: {warna_status}; "
+                "background: transparent;")
+            kiri.addWidget(lbl_status)
+        kiri.addStretch()
+        al.addLayout(kiri, 7)
+
+        garis_tegak = QFrame()
+        garis_tegak.setFixedWidth(1)
+        garis_tegak.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+        theme.latar(garis_tegak, f"background: {C.BORDER}; border: none;")
+        al.addWidget(garis_tegak)
+
+        kanan = QVBoxLayout()
+        kanan.setSpacing(9)
+        kanan.addWidget(w.AngkaBuku(
+            "Laba Bersih", theme.money(kpi["laba_bersih"]),
+            f"Margin {theme.persen(kpi['margin_bersih'])}",
+            warna=C.POSITIF if kpi["laba_bersih"] >= 0 else C.NEGATIF,
+            ukuran=25))
+
+        garis_mendatar = QFrame()
+        garis_mendatar.setFixedHeight(1)
+        theme.latar(garis_mendatar, f"background: {C.BORDER}; border: none;")
+        kanan.addWidget(garis_mendatar)
+
+        kanan.addWidget(w.AngkaBuku(
+            "Kas & Bank", theme.money(kpi["kas"]),
+            "Saldo defisit · periksa arus kas"
+            if kpi["kas"] < 0 else "Saldo likuid saat ini",
+            warna=C.NEGATIF if kpi["kas"] < 0 else C.TEXT,
+            ukuran=25))
+        kanan.addStretch()
+        al.addLayout(kanan, 4)
+        lay.addWidget(atas)
+
+        # ------------------------------------------------------ kaki pita
+        kaki = QWidget()
+        theme.latar(kaki, f"background: {C.SURFACE_ALT}; "
+                         f"border-top: 1px solid {C.BORDER}; "
+                         "border-bottom-left-radius: 2px; "
+                         "border-bottom-right-radius: 2px;")
+        kl = QHBoxLayout(kaki)
+        kl.setContentsMargins(24, 15, 24, 16)
+        kl.setSpacing(20)
+
+        posisi = [
+            ("Total Aset", theme.money(kpi["total_aset"]), "", C.TEXT),
+            ("Total Liabilitas", theme.money(kpi["total_liabilitas"]), "", C.TEXT),
+            ("Total Ekuitas", theme.money(kpi["total_ekuitas"]), "", C.TEXT),
             ("PPh Terutang (estimasi)", theme.money(kpi["pph_terutang"]),
-             kpi["pph_skema"], C.PRIMARY, "pajak"),
-            ("Ekuitas", theme.money(kpi["total_ekuitas"]),
-             f"ROE {theme.persen(kpi['laba_bersih'] / kpi['total_ekuitas'] if kpi['total_ekuitas'] else 0)}",
-             C.TEXT, "penjualan"),
+             kpi["pph_skema"].split(" - ")[0], C.TEXT),
         ]
-        for i, (label, nilai, hint, warna, ikon) in enumerate(tiles):
-            grid.addWidget(w.KpiTile(label, nilai, hint, warna, ikon),
-                           i // 3, i % 3)
+        for i, (label, nilai, hint, warna) in enumerate(posisi):
+            if i:
+                pemisah = QFrame()
+                pemisah.setFixedWidth(1)
+                theme.latar(pemisah, f"background: {C.BORDER}; border: none;")
+                kl.addWidget(pemisah)
+            kl.addWidget(w.AngkaBuku(label, nilai, hint, warna, ukuran=20), 1)
+        lay.addWidget(kaki)
+        luar.addWidget(kartu)
 
-        # Data untuk tombol Ekspor dan Cetak. Seluruh isinya sudah tampil
-        # sebagai kartu di atas, jadi tidak perlu widget tambahan; yang
-        # disimpan hanya barisnya, dan angka tetap berupa angka supaya
-        # dapat dijumlahkan di Excel.
-        self._ringkasan_ekspor = [
-            ("Dashboard", [
-                ["Ringkasan", "Nilai", "Keterangan"],
-                ["Perusahaan", comp["nama"], f"Tahun pajak {tahun}"],
-                *[[label, _angka_dari(nilai), hint]
-                  for label, nilai, hint, _w, _i in tiles],
-            ])
-        ]
-
-        # peringatan integritas data
+        # ------------------------------------------------------ integritas
         if abs(kpi["selisih_jurnal"]) > 0.5 or abs(kpi["selisih_neraca"]) >= 1:
             pesan = []
             if abs(kpi["selisih_jurnal"]) > 0.5:
-                pesan.append(f"jurnal tidak seimbang {theme.money(kpi['selisih_jurnal'])}")
+                pesan.append(
+                    f"jurnal tidak seimbang {theme.money(kpi['selisih_jurnal'])}")
             if abs(kpi["selisih_neraca"]) >= 1:
-                pesan.append(f"neraca berselisih {theme.money(kpi['selisih_neraca'])}")
-            grid.addWidget(w.InfoBanner(
+                pesan.append(
+                    f"neraca berselisih {theme.money(kpi['selisih_neraca'])}")
+            luar.addWidget(w.InfoBanner(
                 "Terdapat ketidakseimbangan: " + " dan ".join(pesan) +
                 ". Perbaiki sebelum mempercayai angka di atas.",
-                "danger", "Integritas data bermasalah"), 2, 0, 1, 3)
+                "danger", "Integritas data bermasalah"))
 
+        # Data untuk tombol Ekspor dan Cetak.
+        baris_ekspor = [
+            ["Ringkasan", "Nilai", "Keterangan"],
+            ["Perusahaan", comp["nama"], f"Tahun pajak {tahun}"],
+            ["Omzet / Peredaran Bruto", _angka_dari(theme.money(omzet)),
+             ket_omzet],
+            ["Laba Bersih", _angka_dari(theme.money(kpi["laba_bersih"])),
+             f"Margin {theme.persen(kpi['margin_bersih'])}"],
+            ["Kas & Bank", _angka_dari(theme.money(kpi["kas"])),
+             "Saldo defisit" if kpi["kas"] < 0 else "Saldo likuid"],
+            ["Total Aset", _angka_dari(theme.money(kpi["total_aset"])), ""],
+            ["Total Liabilitas",
+             _angka_dari(theme.money(kpi["total_liabilitas"])), ""],
+            ["Total Ekuitas",
+             _angka_dari(theme.money(kpi["total_ekuitas"])), ""],
+            ["PPh Terutang (estimasi)",
+             _angka_dari(theme.money(kpi["pph_terutang"])), kpi["pph_skema"]],
+        ]
+        self._ringkasan_ekspor = [("Dashboard", baris_ekspor)]
         return wadah
 
     # ==================================================================
-    # PANEL: TENGGAT PAJAK
+    # PANEL: AGENDA (TENGGAT PAJAK & KONTRAK)
     # ==================================================================
-    def _panel_kontrak(self, cid: int) -> QWidget:
-        """Kontrak yang segera berakhir atau sudah melewati tenggatnya."""
-        from ... import kontrak as kt
-        perhatian = kt.yang_perlu_perhatian(cid)
-        if not perhatian:
+    def _panel_agenda(self, cid: int) -> QWidget:
+        """
+        Tenggat pajak dan kontrak yang perlu perhatian dalam satu agenda.
+
+        Keduanya dulu berupa dua kartu terpisah dengan keping warna yang
+        sama, sehingga tampak seperti dua daftar yang saling bersaing.
+        Digabung, keduanya menjadi satu daftar tindakan yang dibaca dari
+        atas ke bawah: apa yang harus dikerjakan, kapan, dan seberapa dekat.
+        """
+        try:
+            daftar_pajak = services.deadline_pajak(cid) or []
+        except Exception:
+            daftar_pajak = []
+        try:
+            from ... import kontrak as kt
+            daftar_kontrak = kt.yang_perlu_perhatian(cid) or []
+        except Exception:
+            daftar_kontrak = []
+
+        if not daftar_pajak and not daftar_kontrak:
             return None
 
         kartu = w.Card()
         lay = kartu.body()
-        lay.setSpacing(12)
+        lay.setSpacing(14)
 
         kepala = QHBoxLayout()
-        j = QLabel("Kontrak Perlu Perhatian")
+        kepala.setSpacing(12)
+        kolom_judul = QVBoxLayout()
+        kolom_judul.setSpacing(3)
+        j = QLabel("Agenda Terdekat")
         j.setObjectName("SectionTitle")
-        kepala.addWidget(j)
-        kepala.addStretch()
-        b = w.tombol("Buka Kontrak", gaya="ghost")
-        b.clicked.connect(lambda: self.pindah_halaman.emit("kontrak"))
-        kepala.addWidget(b)
+        kolom_judul.addWidget(j)
+        sub = QLabel("Tenggat pajak dan kontrak yang perlu ditindaklanjuti.")
+        sub.setStyleSheet(
+            f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
+            "background: transparent;")
+        sub.setWordWrap(True)
+        kolom_judul.addWidget(sub)
+        kepala.addLayout(kolom_judul, 1)
         lay.addLayout(kepala)
 
-        for k in perhatian[:3]:
-            baris = QFrame()
-            warna = C.DANGER if k["kondisi"] == "Sudah Berakhir" else C.WARNING
-            bg = C.DANGER_BG if k["kondisi"] == "Sudah Berakhir" else C.WARNING_BG
-            theme.latar(baris, f"background: {C.SURFACE_ALT}; "
-                f"border: 1px solid {C.BORDER}; border-radius: 7px;")
-            bl = QHBoxLayout(baris)
-            bl.setContentsMargins(14, 9, 14, 9)
-            bl.setSpacing(13)
+        kolom = QHBoxLayout()
+        kolom.setSpacing(26)
 
-            sisa = k.get("sisa_hari")
-            if sisa is None:
-                teks_hari = "Tanpa batas"
-            elif sisa < 0:
-                teks_hari = f"Lewat {abs(sisa)} hari"
-            else:
-                teks_hari = f"{sisa} hari lagi"
-            kotak = QLabel(teks_hari)
-            theme.latar(kotak, f"background: {bg}; color: {warna}; "
-                f"border-radius: 6px; padding: 5px 11px; "
-                f"font-size: {theme.FS_TINY}px; font-weight: 700;")
-            kotak.setMinimumWidth(118)
-            kotak.setAlignment(Qt.AlignCenter)
-            bl.addWidget(kotak)
+        def buat_kolom(judul, baris_list, kode_halaman, teks_tombol):
+            wadah_kolom = QWidget()
+            theme.latar(wadah_kolom, "background: transparent;")
+            kl = QVBoxLayout(wadah_kolom)
+            kl.setContentsMargins(0, 0, 0, 0)
+            kl.setSpacing(0)
 
-            kolom = QVBoxLayout()
-            kolom.setSpacing(2)
-            n = QLabel(f"{k['nomor']} · {k['judul']}")
-            n.setStyleSheet(f"font-weight: 600; font-size: {theme.FS_BODY}px; "
-                            "background: transparent;")
-            n.setWordWrap(True)
-            kolom.addWidget(n)
-            ket = QLabel(
-                f"{k['mitra'] or 'Tanpa mitra'} · berakhir "
-                f"{theme.tanggal_id(k['tanggal_akhir']) if k['tanggal_akhir'] else '-'}")
-            ket.setStyleSheet(f"font-size: {theme.FS_TINY}px; "
-                              f"color: {C.TEXT_MUTED}; background: transparent;")
-            ket.setWordWrap(True)
-            kolom.addWidget(ket)
-            bl.addLayout(kolom, 1)
-            lay.addWidget(baris)
+            judul_kolom = QLabel(judul.upper())
+            judul_kolom.setStyleSheet(
+                f"font-size: 10px; font-weight: 700; color: {C.TEXT_FAINT}; "
+                "letter-spacing: 1.1px; background: transparent;")
+            kl.addWidget(judul_kolom)
+            kl.addSpacing(4)
 
-        sisa = len(perhatian) - 3
-        if sisa > 0:
-            b2 = w.tombol(f"Lihat {sisa} kontrak lainnya", gaya="ghost")
-            b2.clicked.connect(lambda: self.pindah_halaman.emit("kontrak"))
-            lay.addWidget(b2, 0, Qt.AlignLeft)
-        return kartu
+            for baris in baris_list:
+                nama, rincian, hitung, warna = baris
+                blok = QWidget()
+                theme.latar(blok, "background: transparent;")
+                bl = QVBoxLayout(blok)
+                bl.setContentsMargins(0, 8, 0, 8)
+                bl.setSpacing(2)
 
-    # ==================================================================
-    # PANEL: TENGGAT PAJAK
-    # ==================================================================
-    def _panel_deadline(self, cid: int) -> QWidget:
-        kartu = w.Card()
-        lay = kartu.body()
-        lay.setSpacing(13)
+                atas = QHBoxLayout()
+                atas.setSpacing(10)
+                n = QLabel(nama)
+                n.setStyleSheet(
+                    f"font-size: {theme.FS_BODY}px; font-weight: 600; "
+                    f"color: {C.TEXT}; background: transparent;")
+                n.setWordWrap(True)
+                n.setMinimumWidth(0)
+                atas.addWidget(n, 1)
+                h = QLabel(hitung)
+                h.setStyleSheet(
+                    f"font-size: {theme.FS_TINY}px; font-weight: 700; "
+                    f"color: {warna}; background: transparent;")
+                h.setAlignment(Qt.AlignRight | Qt.AlignTop)
+                atas.addWidget(h, 0)
+                bl.addLayout(atas)
 
-        kepala = QHBoxLayout()
-        j = QLabel("Tenggat Pajak Terdekat")
-        j.setObjectName("SectionTitle")
-        kepala.addWidget(j)
-        kepala.addStretch()
-        b = w.tombol("Lihat Checklist Kepatuhan", gaya="ghost")
-        b.clicked.connect(lambda: self.pindah_halaman.emit("checklist"))
-        kepala.addWidget(b)
-        lay.addLayout(kepala)
+                r = QLabel(rincian)
+                r.setStyleSheet(
+                    f"font-size: {theme.FS_TINY}px; color: {C.TEXT_MUTED}; "
+                    "background: transparent;")
+                r.setWordWrap(True)
+                bl.addWidget(r)
 
-        daftar = services.deadline_pajak(cid)
-        if not daftar:
-            lay.addWidget(w.label("Tidak ada tenggat terdekat.", objek="Muted"))
-            return kartu
+                garis = QFrame()
+                garis.setFixedHeight(1)
+                theme.latar(garis, f"background: {C.BORDER}; border: none;")
+                bl.addSpacing(3)
+                bl.addWidget(garis)
+                kl.addWidget(blok)
 
-        for d in daftar[:3]:
-            baris = QFrame()
-            theme.latar(baris, f"background: {C.SURFACE_ALT}; border: 1px solid {C.BORDER}; "
-                "border-radius: 7px;")
-            bl = QHBoxLayout(baris)
-            bl.setContentsMargins(14, 9, 14, 9)
-            bl.setSpacing(13)
+            kl.addSpacing(9)
+            b = w.tombol(teks_tombol, gaya="ghost")
+            b.clicked.connect(
+                lambda _=False, k=kode_halaman: self.pindah_halaman.emit(k))
+            kl.addWidget(b, 0, Qt.AlignLeft)
+            kl.addStretch()
+            return wadah_kolom
 
-            hari = d["hari_tersisa"]
-            if hari < 0:
-                warna, bg, teks_hari = C.DANGER, C.DANGER_BG, f"Lewat {abs(hari)} hari"
-            elif hari <= 7:
-                warna, bg, teks_hari = C.WARNING, C.WARNING_BG, f"{hari} hari lagi"
-            else:
-                warna, bg, teks_hari = C.SUCCESS, C.SUCCESS_BG, f"{hari} hari lagi"
+        if daftar_pajak:
+            baris_pajak = []
+            for d in daftar_pajak[:3]:
+                hari = d["hari_tersisa"]
+                if hari < 0:
+                    warna, hitung = C.DANGER, f"Lewat {abs(hari)} hari"
+                elif hari <= 7:
+                    warna, hitung = C.WARNING, f"{hari} hari lagi"
+                else:
+                    warna, hitung = C.SUCCESS, f"{hari} hari lagi"
+                rincian = (f"Masa {d['masa']} · jatuh tempo "
+                           f"{theme.tanggal_id(d['tenggat'])}")
+                baris_pajak.append((d["nama"], rincian, hitung, warna))
+            kolom.addWidget(buat_kolom(
+                "Tenggat pajak", baris_pajak, "checklist",
+                "Checklist Kepatuhan"), 1)
 
-            kotak = QLabel(teks_hari)
-            theme.latar(kotak, f"background: {bg}; color: {warna}; border-radius: 6px; "
-                f"padding: 5px 11px; font-size: {theme.FS_TINY}px; font-weight: 700;")
-            kotak.setMinimumWidth(118)
-            kotak.setAlignment(Qt.AlignCenter)
-            bl.addWidget(kotak)
+        if daftar_pajak and daftar_kontrak:
+            pemisah = QFrame()
+            pemisah.setFixedWidth(1)
+            theme.latar(pemisah, f"background: {C.BORDER}; border: none;")
+            kolom.addWidget(pemisah)
 
-            kolom = QVBoxLayout()
-            kolom.setSpacing(2)
-            n = QLabel(d["nama"])
-            n.setStyleSheet(f"font-weight: 600; font-size: {theme.FS_BODY}px; "
-                            "background: transparent;")
-            kolom.addWidget(n)
-            ket = QLabel(f"Masa {d['masa']} · jatuh tempo {theme.tanggal_id(d['tenggat'])} "
-                         f"· {d['sanksi'][:70]}")
-            ket.setStyleSheet(f"font-size: {theme.FS_TINY}px; color: {C.TEXT_MUTED}; "
-                              "background: transparent;")
-            ket.setWordWrap(True)
-            kolom.addWidget(ket)
-            bl.addLayout(kolom, 1)
-            lay.addWidget(baris)
+        if daftar_kontrak:
+            baris_kontrak = []
+            for k in daftar_kontrak[:3]:
+                sisa = k.get("sisa_hari")
+                if sisa is None:
+                    warna, hitung = C.TEXT_MUTED, "Tanpa batas"
+                elif sisa < 0:
+                    warna, hitung = C.DANGER, f"Lewat {abs(sisa)} hari"
+                elif sisa <= 30:
+                    warna, hitung = C.WARNING, f"{sisa} hari lagi"
+                else:
+                    warna, hitung = C.SUCCESS, f"{sisa} hari lagi"
+                rincian = (
+                    f"{k['mitra'] or 'Tanpa mitra'} · berakhir "
+                    f"{theme.tanggal_id(k['tanggal_akhir']) if k['tanggal_akhir'] else '-'}")
+                baris_kontrak.append((k["judul"], rincian, hitung, warna))
+            kolom.addWidget(buat_kolom(
+                "Kontrak", baris_kontrak, "kontrak", "Daftar Kontrak"), 1)
 
-        sisa = len(daftar) - 3
-        if sisa > 0:
-            b2 = w.tombol(f"Lihat {sisa} tenggat lainnya", gaya="ghost")
-            b2.clicked.connect(lambda: self.pindah_halaman.emit("checklist"))
-            lay.addWidget(b2, 0, Qt.AlignLeft)
+        lay.addLayout(kolom)
 
+        sisa_pajak = len(daftar_pajak) - 3
+        sisa_kontrak = len(daftar_kontrak) - 3
+        catatan = []
+        if sisa_pajak > 0:
+            catatan.append(f"{sisa_pajak} tenggat pajak lain")
+        if sisa_kontrak > 0:
+            catatan.append(f"{sisa_kontrak} kontrak lain")
+        if catatan:
+            lay.addWidget(w.label("Belum ditampilkan: " + " dan ".join(catatan) +
+                                  ".", objek="Faint"))
         return kartu
 
     # ==================================================================
@@ -1089,25 +1138,34 @@ class DashboardPage(QWidget):
     # ==================================================================
     def _panel_grafik(self, cid: int, tahun: int) -> QWidget:
         kartu = w.Card()
-        lay = kartu.body()
+        lay = kartu.ganti_isi(QVBoxLayout())
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(0)
 
-        kepala = QHBoxLayout()
-        kepala.setSpacing(14)
+        kepala = QWidget()
+        theme.latar(kepala, "background: transparent;")
+        kl = QVBoxLayout(kepala)
+        kl.setContentsMargins(22, 18, 22, 8)
+        kl.setSpacing(4)
+
+        kicker = QLabel("PENDAPATAN · BEBAN · LABA")
+        kicker.setObjectName("Kicker")
+        kl.addWidget(kicker)
+
         j = QLabel(f"Kinerja Bulanan {tahun}")
         j.setObjectName("SectionTitle")
+        j.setWordWrap(True)
         j.setMinimumWidth(0)
-        kepala.addWidget(j)
-        kepala.addStretch()
+        kl.addWidget(j)
 
         # Legenda diletakkan pada barisnya sendiri di bawah judul. Bila
         # ditempatkan sebaris dengan judul, ruang yang tersisa tidak cukup
-        # pada layar 1366 piksel dan label terakhir terpotong. Menaruhnya
-        # terpisah membuat seluruh label selalu terbaca utuh.
+        # pada layar 1366 piksel dan label terakhir terpotong.
         legenda = QHBoxLayout()
         legenda.setSpacing(14)
         for bentuk, warna, teks in [
                 ("kotak", C.PRIMARY, "Pendapatan"),
-                ("kotak", C.WARNING, "HPP + Beban"),
+                ("kotak", C.ACCENT, "HPP + Beban"),
                 ("garis", C.POSITIF, "Laba sebelum pajak")]:
             item = QHBoxLayout()
             item.setSpacing(6)
@@ -1116,11 +1174,11 @@ class DashboardPage(QWidget):
                 titik.setFixedSize(11, 11)
                 theme.latar(titik, f"background: {warna}; border-radius: 2px;")
             else:
-                # penanda garis tren: batang tipis ditengah label
+                # penanda garis tren: batang tipis di tengah label
                 titik.setFixedSize(15, 11)
                 theme.latar(titik, f"background: {warna}; border-radius: 1px;")
                 titik.setFixedHeight(3)
-            item.addWidget(titik)
+            item.addWidget(titik, 0, Qt.AlignVCenter)
             t = QLabel(teks)
             t.setStyleSheet(f"font-size: {theme.FS_TINY}px; color: {C.TEXT_MUTED}; "
                             "background: transparent;")
@@ -1128,28 +1186,37 @@ class DashboardPage(QWidget):
             item.addWidget(t)
             legenda.addLayout(item)
         legenda.addStretch()
-
-        lay.addLayout(kepala)
-        lay.addSpacing(6)
-        lay.addLayout(legenda)
+        kl.addSpacing(5)
+        kl.addLayout(legenda)
+        lay.addWidget(kepala)
 
         data = acc.ringkasan_bulanan(cid, tahun)
         chart = BarChart()
         chart.set_data(data)
-        lay.addWidget(chart)
+        bungkus_grafik = QWidget()
+        theme.latar(bungkus_grafik, "background: transparent;")
+        bl = QVBoxLayout(bungkus_grafik)
+        bl.setContentsMargins(12, 2, 12, 4)
+        bl.addWidget(chart)
+        lay.addWidget(bungkus_grafik)
 
         # Baris keterangan: menampilkan angka bulan yang sedang ditunjuk,
         # dan kembali ke total setahun saat kursor keluar dari grafik.
-        keterangan = QHBoxLayout()
-        keterangan.setSpacing(26)
+        kaki = QWidget()
+        theme.latar(kaki, f"background: {C.SURFACE_ALT}; "
+                         f"border-top: 1px solid {C.BORDER}; "
+                         "border-bottom-left-radius: 2px; "
+                         "border-bottom-right-radius: 2px;")
+        fl = QHBoxLayout(kaki)
+        fl.setContentsMargins(22, 12, 22, 13)
+        fl.setSpacing(26)
 
         stat_pendapatan = w.MiniStat("Total Pendapatan", theme.money(0))
         stat_beban = w.MiniStat("Total Beban", theme.money(0))
         stat_laba = w.MiniStat("Laba Sebelum Pajak", theme.money(0))
         for s in (stat_pendapatan, stat_beban, stat_laba):
-            keterangan.addWidget(s)
-        keterangan.addStretch()
-        lay.addLayout(keterangan)
+            fl.addWidget(s, 1)
+        lay.addWidget(kaki)
 
         total = {
             "pendapatan": sum(d["pendapatan"] for d in data),
@@ -1197,14 +1264,20 @@ class DashboardPage(QWidget):
     def _panel_temuan(self, analisis) -> QWidget:
         kartu = w.Card()
         lay = kartu.body()
-        lay.setSpacing(12)
+        lay.setSpacing(10)
+
+        kicker = QLabel("TEMUAN")
+        kicker.setObjectName("Kicker")
+        lay.addWidget(kicker)
 
         kepala = QHBoxLayout()
-        j = QLabel("Temuan & Rekomendasi")
+        kepala.setSpacing(12)
+        j = QLabel("Yang Perlu Ditindaklanjuti")
         j.setObjectName("SectionTitle")
-        kepala.addWidget(j)
-        kepala.addStretch()
-        b = w.tombol("Buka Halaman Analisis", gaya="ghost")
+        j.setWordWrap(True)
+        j.setMinimumWidth(0)
+        kepala.addWidget(j, 1)
+        b = w.tombol("Semua Temuan", gaya="ghost")
         b.clicked.connect(lambda: self.pindah_halaman.emit("analisis"))
         kepala.addWidget(b)
         lay.addLayout(kepala)
@@ -1217,7 +1290,9 @@ class DashboardPage(QWidget):
 
         tampil = penting[:2]
         for t in tampil:
-            lay.addWidget(w.TemuanCard(t, ringkas=True))
+            # Tanpa kotak dan bayangan: kartu temuan dibaca sebagai bagian
+            # dari satu daftar, bukan dua kotak terpisah di dalam kotak.
+            lay.addWidget(w.TemuanCard(t, ringkas=True, datar=True))
 
         sisa = len(analisis.temuan) - len(tampil)
         if sisa > 0:
@@ -1234,8 +1309,13 @@ class DashboardPage(QWidget):
         kartu = w.Card()
         lay = kartu.body()
 
-        j = QLabel("Proyeksi Berdasarkan Kinerja Saat Ini")
+        kicker = QLabel("PROYEKSI")
+        kicker.setObjectName("Kicker")
+        lay.addWidget(kicker)
+
+        j = QLabel("Perkiraan Berdasarkan Kinerja Saat Ini")
         j.setObjectName("SectionTitle")
+        j.setWordWrap(True)
         lay.addWidget(j)
 
         if p["bulan_data"] == 0 or p["rata_pendapatan_bulanan"] == 0:
@@ -1244,10 +1324,9 @@ class DashboardPage(QWidget):
                 "bulan agar proyeksi bermakna.", objek="Muted", wrap=True))
             return kartu
 
-        # grid 2x2 agar setiap label dan angka punya ruang cukup
         grid = QGridLayout()
-        grid.setHorizontalSpacing(30)
-        grid.setVerticalSpacing(14)
+        grid.setHorizontalSpacing(26)
+        grid.setVerticalSpacing(16)
         stat = [
             ("Rata-rata Pendapatan per Bulan",
              theme.money(p["rata_pendapatan_bulanan"]), None),
@@ -1261,9 +1340,8 @@ class DashboardPage(QWidget):
              C.POSITIF if p["proyeksi_laba_tahun"] >= 0 else C.NEGATIF),
         ]
         for i, (label, nilai, warna) in enumerate(stat):
-            kotak = w.MiniStat(label, nilai, warna)
-            kotak.setMinimumWidth(230)
-            grid.addWidget(kotak, i // 2, i % 2)
+            grid.addWidget(w.AngkaBuku(label, nilai, warna=warna, ukuran=22),
+                           i // 2, i % 2)
         grid.setColumnStretch(0, 1)
         grid.setColumnStretch(1, 1)
         lay.addLayout(grid)
@@ -1283,35 +1361,55 @@ class DashboardPage(QWidget):
 
     # ==================================================================
     def _tampilkan_tanpa_perusahaan(self):
-        kartu = w.Card(padding=40)
+        wadah = QWidget()
+        theme.latar(wadah, "background: transparent;")
+        luar = QHBoxLayout(wadah)
+        luar.setContentsMargins(0, 10, 0, 10)
+        luar.addStretch(1)
+
+        kartu = w.Card(padding=38)
+        kartu.setMaximumWidth(620)
         lay = kartu.body()
-        lay.setSpacing(14)
+        lay.setSpacing(10)
         lay.setAlignment(Qt.AlignCenter)
 
         ikon = QLabel()
-        ikon.setPixmap(icons.pixmap("perusahaan", icons.WARNA_MUTED, 56))
+        ikon.setPixmap(icons.pixmap("perusahaan", C.ACCENT, 26))
         ikon.setAlignment(Qt.AlignCenter)
         ikon.setStyleSheet("background: transparent;")
         lay.addWidget(ikon)
+        lay.addSpacing(4)
 
-        j = QLabel("Belum ada data perusahaan")
+        kicker = QLabel("MULAI DARI SINI")
+        kicker.setObjectName("Kicker")
+        kicker.setAlignment(Qt.AlignCenter)
+        lay.addWidget(kicker)
+
+        j = QLabel("Belum ada perusahaan")
         j.setAlignment(Qt.AlignCenter)
-        j.setStyleSheet("font-size: 20px; font-weight: 700; background: transparent;")
+        j.setStyleSheet(
+            f"font-family: '{theme.FONT_SERIF}', Georgia, serif; "
+            "font-size: 28px; font-weight: 600; background: transparent;")
         lay.addWidget(j)
 
         ket = QLabel(
-            "Langkah pertama adalah membuat profil perusahaan. Setelah itu aplikasi "
-            "otomatis menyiapkan bagan akun (chart of accounts) sesuai bentuk badan "
-            "usaha yang Anda pilih."
+            "Langkah pertama adalah membuat profil perusahaan. Setelah itu "
+            "aplikasi menyiapkan bagan akun (chart of accounts) sesuai bentuk "
+            "badan usaha yang Anda pilih, lalu Anda dapat langsung mencatat "
+            "transaksi pertama."
         )
         ket.setAlignment(Qt.AlignCenter)
         ket.setWordWrap(True)
-        ket.setStyleSheet(f"font-size: {theme.FS_BODY}px; color: {C.TEXT_MUTED}; "
-                          "background: transparent;")
+        ket.setStyleSheet(f"font-size: {theme.FS_SMALL}px; color: {C.TEXT_MUTED}; "
+                          "background: transparent; line-height: 160%;")
         lay.addWidget(ket)
+        lay.addSpacing(8)
 
-        b = w.tombol("Buat Profil Perusahaan", gaya="primary")
-        b.setMinimumHeight(42)
+        b = w.tombol("Buat Profil Perusahaan", gaya="primary", ikon="tambah")
+        b.setMinimumHeight(38)
         b.clicked.connect(lambda: self.pindah_halaman.emit("perusahaan"))
         lay.addWidget(b, 0, Qt.AlignCenter)
-        self.isi_lay.addWidget(kartu)
+
+        luar.addWidget(kartu)
+        luar.addStretch(1)
+        self.isi_lay.addWidget(wadah)
