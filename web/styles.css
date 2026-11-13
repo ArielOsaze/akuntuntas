@@ -991,57 +991,66 @@ a { color: var(--aksen-tua); }
     background: var(--kartu);
 }
 
+.banding-kepala-teks {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: var(--r3) var(--r7);
+    align-items: end;
+    padding: var(--r6) var(--r6) var(--r3);
+}
+
+.banding-eyebrow {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--aksen);
+    margin-bottom: var(--r2);
+}
+
 .banding-judul {
-    font-size: 24px;
-    line-height: 1.25;
-    padding: var(--r6) var(--r6) var(--r2);
+    font-size: 27px;
+    line-height: 1.2;
     color: var(--tinta);
+    text-wrap: balance;
 }
 
 .banding-ket {
-    padding: 0 var(--r6) var(--r5);
     color: var(--teks-abu);
-    font-size: 14.5px;
+    font-size: 14px;
     line-height: 1.65;
-    max-width: 760px;
+    max-width: 440px;
+    justify-self: end;
 }
 
 .banding-legenda {
     display: flex;
     flex-wrap: wrap;
+    justify-content: flex-end;
     gap: var(--r2) var(--r5);
     padding: 0 var(--r6) var(--r5);
-    font-size: 12.5px;
+    font-size: 12px;
     color: var(--teks-abu);
 }
 
 .banding-legenda > span { display: inline-flex; align-items: center; gap: 6px; }
 
-.legenda-penanda {
-    width: 3px;
-    height: 16px;
-    background: var(--aksen);
-    display: inline-block;
-    border-radius: 1px;
-}
-
-.legenda-penanda.nilai { background: var(--hijau); }
-
 .banding-kisi { border-top: 1px solid var(--garis); }
 
 .banding-kepala {
     display: grid;
-    grid-template-columns: 1.6fr 1fr 1fr;
-    background: var(--krem);
-    border-bottom: 1px solid var(--garis);
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1fr);
+    background: #FBF8F3;
+    border-bottom: 1px solid var(--garis-kuat);
 }
 
 .banding-kepala > div { padding: var(--r4) var(--r5); }
 
 .kepala-fitur {
-    font-size: 11.5px;
+    font-size: 10.5px;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--teks-abu);
     display: flex;
@@ -1054,17 +1063,27 @@ a { color: var(--aksen-tua); }
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1px;
+    justify-content: flex-end;
+    gap: 2px;
 }
 
-.kepala-paket.unggulan { background: rgba(160, 98, 45, 0.06); }
+.kepala-paket.unggulan { background: rgba(160, 98, 45, 0.055); }
 
-.paket-nama { font-size: 15px; font-weight: 600; color: var(--tinta); }
+.paket-nama {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teks-abu);
+}
+
 .kepala-paket.unggulan .paket-nama { color: var(--aksen-tua); }
 
 .paket-harga {
     font-family: var(--serif);
-    font-size: 17px;
+    font-size: 21px;
+    line-height: 1.2;
+    font-weight: 600;
     color: var(--tinta);
     font-variant-numeric: tabular-nums;
 }
@@ -1073,69 +1092,79 @@ a { color: var(--aksen-tua); }
 
 .paket-pita {
     display: inline-block;
-    background: var(--tinta);
-    color: var(--kertas);
-    font-size: 9.5px;
-    font-weight: 600;
+    background: transparent;
+    color: var(--aksen-tua);
+    border: 1px solid rgba(160, 98, 45, 0.35);
+    font-size: 9px;
+    font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    padding: 2px 7px;
-    border-radius: 2px;
-    margin-bottom: 3px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 5px;
 }
 
 .banding-kelompok {
-    padding: 9px var(--r5);
-    background: #F5F5F5;
-    border-bottom: 1px solid var(--garis);
-    font-size: 11px;
+    padding: var(--r5) var(--r5) var(--r2);
+    background: var(--kartu);
+    border-bottom: 1px solid var(--garis-tipis);
+    font-size: 10.5px;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--teks-abu);
+    color: var(--aksen);
 }
 
 .banding-fitur {
     display: grid;
-    grid-template-columns: 1.6fr 1fr 1fr;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1fr);
     border-bottom: 1px solid var(--garis-tipis);
     transition: background 0.12s;
 }
 
-.banding-fitur:last-child { border-bottom: none; }
-.banding-fitur:hover { background: #FBF7EF; }
+.banding-fitur:hover { background: #FDFBF8; }
 
 .banding-nama {
-    padding: 13px var(--r5);
+    padding: 14px var(--r5);
     font-size: 14px;
     line-height: 1.5;
     color: var(--teks);
     display: flex;
     align-items: center;
-    gap: var(--r2);
+    flex-wrap: wrap;
+    gap: 4px 10px;
     min-width: 0;
 }
 
 .banding-label {
-    display: none;
-    font-size: 9.5px;
+    display: inline-block;
+    font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    padding: 2px 6px;
-    border-radius: 2px;
+    padding: 3px 8px;
+    border-radius: 999px;
     white-space: nowrap;
+    background: rgba(160, 98, 45, 0.08);
+    color: var(--aksen-tua);
 }
 
-.banding-fitur-eksklusif .banding-nama { box-shadow: inset 3px 0 0 var(--aksen); }
-.banding-fitur-beda-nilai .banding-nama { box-shadow: inset 3px 0 0 var(--hijau); }
+.banding-fitur-eksklusif .banding-label {
+    background: rgba(160, 98, 45, 0.08);
+    color: var(--aksen-tua);
+}
+
+.banding-fitur-beda-nilai .banding-label {
+    background: rgba(47, 97, 73, 0.08);
+    color: var(--hijau);
+}
 
 .banding-nilai {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 7px;
-    padding: 11px var(--r4);
+    padding: 12px var(--r4);
     border-left: 1px solid var(--garis-tipis);
     font-size: 13.5px;
     color: var(--teks);
@@ -1147,14 +1176,7 @@ a { color: var(--aksen-tua); }
 .banding-nilai strong { font-weight: 600; font-variant-numeric: tabular-nums; }
 .banding-nilai.unggulan strong { color: var(--aksen-tua); }
 
-.nilai-paket {
-    display: none;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--teks-abu);
-}
+.nilai-paket { display: none; }
 
 .nilai-isi {
     display: inline-flex;
@@ -1169,30 +1191,21 @@ a { color: var(--aksen-tua); }
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    font-size: 11px;
+    font-size: 15px;
     font-weight: 700;
     line-height: 1;
     flex-shrink: 0;
 }
 
 .banding-kisi .tanda.ada,
-.banding-legenda .ada-tanda {
-    background: rgba(47, 97, 73, 0.12);
-    color: var(--hijau);
-}
+.banding-legenda .ada-tanda { color: var(--hijau); }
 
 .banding-kisi .tanda.tidak,
-.banding-legenda .tidak-tanda {
-    background: rgba(85, 96, 94, 0.1);
-    color: var(--teks-abu);
-}
+.banding-legenda .tidak-tanda { color: #8A9693; font-size: 13px; }
 
 .nilai-teks { display: none; }
 
-.banding-pilih { background: var(--krem); border-bottom: none; }
+.banding-pilih { background: #FBF8F3; border-bottom: none; }
 
 .banding-pilih .banding-nama {
     font-family: var(--serif);
@@ -1201,14 +1214,14 @@ a { color: var(--aksen-tua); }
     color: var(--tinta);
 }
 
-.banding-pilih .banding-nilai { padding: var(--r3) var(--r4); }
+.banding-pilih .banding-nilai { padding: var(--r4); }
 
 .tombol-pilih {
     display: inline-block;
     background: transparent;
     border: 1px solid var(--tinta);
     color: var(--tinta);
-    padding: 8px 18px;
+    padding: 9px 20px;
     border-radius: 4px;
     font-size: 13px;
     font-weight: 600;
@@ -1226,13 +1239,83 @@ a { color: var(--aksen-tua); }
 
 .tombol-pilih.unggulan:hover { background: var(--aksen-tua); border-color: var(--aksen-tua); }
 
+/* Fitur yang sama di kedua paket */
+.banding-sama {
+    border-top: 1px solid var(--garis);
+    padding: var(--r6);
+    background: var(--kartu);
+}
+
+.banding-sama-kepala {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--r5);
+    margin-bottom: var(--r5);
+}
+
+.banding-sama-kepala h4 {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--tinta);
+}
+
+.banding-sama-kepala p {
+    font-size: 13.5px;
+    color: var(--teks-abu);
+    max-width: 430px;
+    text-align: right;
+}
+
+.banding-sama-kisi {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--r3) var(--r8);
+    align-items: start;
+}
+
+.banding-sama-kolom { display: grid; gap: var(--r5); }
+
+.banding-sama-grup h5 {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--teks-abu);
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--garis-tipis);
+    margin-bottom: 10px;
+}
+
+.banding-sama-grup ul { list-style: none; display: grid; gap: 7px; }
+
+.banding-sama-grup li {
+    position: relative;
+    padding-left: 19px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--teks);
+}
+
+.banding-sama-grup li::before {
+    content: "\2713";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--hijau);
+    font-size: 12px;
+    font-weight: 700;
+}
+
 .banding-catatan {
     font-size: 13px;
     line-height: 1.7;
     color: var(--teks-abu);
     padding: var(--r4) var(--r6);
     border-top: 1px solid var(--garis);
-    background: var(--kartu);
+    background: #FBF8F3;
 }
 
 .banding-catatan a { color: var(--aksen-tua); }
@@ -1594,8 +1677,7 @@ a { color: var(--aksen-tua); }
     .kartu-harga { padding: var(--r5); }
     .harga { font-size: 34px; }
     .label-unggulan { left: var(--r5); }
-    .banding-judul { padding: var(--r5) var(--r5) var(--r2); font-size: 21px; }
-    .banding-ket, .banding-legenda { padding-left: var(--r5); padding-right: var(--r5); }
+    .banding-judul { font-size: 23px; }
     .banding-catatan { padding: var(--r4) var(--r5); }
     .ajakan { padding: var(--r7) 0; }
     .ajakan h2 { font-size: 30px; }
@@ -1608,67 +1690,85 @@ a { color: var(--aksen-tua); }
     .tanya .jawab { padding-right: 0; }
 }
 
-/* Perbandingan menjadi kartu per fitur pada layar sempit. */
+/* Perbandingan menjadi lembar spesifikasi pada layar sempit. */
 @media (max-width: 760px) {
+    .banding-kepala-teks {
+        grid-template-columns: 1fr;
+        align-items: start;
+        gap: var(--r2);
+        padding: var(--r5) var(--r5) var(--r4);
+    }
+
+    .banding-ket { justify-self: start; max-width: none; }
+
+    .banding-legenda {
+        justify-content: flex-start;
+        padding: 0 var(--r5) var(--r4);
+    }
+
     .banding-kepala { display: none; }
 
     .banding-fitur {
         grid-template-columns: 1fr;
-        padding: 14px 18px;
-        gap: 8px;
+        padding: 16px 18px 18px;
     }
 
+    .banding-fitur:hover { background: transparent; }
+
     .banding-nama {
-        padding: 0;
+        padding: 0 0 10px;
         font-size: 14.5px;
         font-weight: 600;
         align-items: flex-start;
-        box-shadow: none !important;
-    }
-
-    .banding-fitur-eksklusif .banding-nama {
-        border-left: 3px solid var(--aksen);
-        padding-left: 11px;
-    }
-
-    .banding-fitur-beda-nilai .banding-nama {
-        border-left: 3px solid var(--hijau);
-        padding-left: 11px;
-    }
-
-    .banding-label {
-        display: inline-block;
-        background: rgba(160, 98, 45, 0.1);
-        color: var(--aksen-tua);
-    }
-
-    .banding-fitur-beda-nilai .banding-label {
-        background: rgba(47, 97, 73, 0.1);
-        color: var(--hijau);
+        gap: 6px 8px;
     }
 
     .banding-nilai {
-        padding: 9px 12px;
+        padding: 8px 0;
         border-left: none;
         border-top: 1px solid var(--garis-tipis);
-        justify-content: flex-start;
+        display: grid;
+        grid-template-columns: 82px minmax(0, 1fr);
+        gap: 10px;
+        justify-items: start;
         text-align: left;
-        background: var(--krem);
-        border-radius: 4px;
+        font-size: 13.5px;
     }
 
-    .banding-nilai.unggulan {
-        background: rgba(160, 98, 45, 0.08);
-        border: 1px solid rgba(160, 98, 45, 0.18);
+    .banding-nilai.unggulan { background: transparent; }
+
+    /* Fitur khusus Enterprise cukup satu baris; judul kelompok sudah
+       menerangkan bahwa paket Standar tidak memilikinya. */
+    .banding-fitur-eksklusif .banding-nilai:not(.unggulan) { display: none; }
+
+    .nilai-paket {
+        display: block;
+        font-size: 9.5px;
+        letter-spacing: 0.1em;
+        padding-top: 2px;
     }
 
-    .nilai-paket { display: block; flex: 0 0 auto; }
-    .nilai-teks { display: inline; }
+    .nilai-isi { justify-content: flex-start; }
+    .nilai-teks { display: none; }
 
-    .banding-pilih { background: var(--kartu); }
-    .banding-pilih .banding-nama { padding-left: 0; border-left: none; }
-    .banding-pilih .banding-nilai { justify-content: center; }
+    .banding-pilih { background: var(--kartu); border-bottom: none; }
+    .banding-pilih .banding-nama { padding-bottom: var(--r3); }
+    .banding-pilih .banding-nilai { grid-template-columns: 1fr; padding: 8px 0; }
+    .banding-pilih .nilai-paket { display: none; }
     .banding-pilih .tombol-pilih { width: 100%; text-align: center; }
+
+    .banding-sama { padding: var(--r5); }
+
+    .banding-sama-kepala {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--r2);
+        margin-bottom: var(--r4);
+    }
+
+    .banding-sama-kepala p { text-align: left; }
+
+    .banding-sama-kisi { grid-template-columns: 1fr; gap: var(--r5); }
 }
 
 @media (max-width: 400px) {
@@ -1678,7 +1778,7 @@ a { color: var(--aksen-tua); }
     .hero h1 { font-size: 30px; }
     .bagian-kepala h2 { font-size: 26px; }
     .harga { font-size: 30px; }
-    .banding-fitur { padding: 12px 14px; }
+    .banding-fitur { padding: 14px 14px 16px; }
     .banding-nilai { font-size: 13px; }
 }
 

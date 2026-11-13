@@ -171,12 +171,13 @@ def main() -> int:
           jumlah_nilai == 4, f"jumlah: {jumlah_nilai}")
     p.cek("CSS penanda eksklusif ada", "banding-fitur-eksklusif" in css)
     p.cek("CSS penanda beda nilai ada", "banding-fitur-beda-nilai" in css)
-    p.cek("tiap baris berbeda punya label keterangan",
-          html.count("banding-label") == 10,
+    p.cek("baris dengan nilai berbeda punya label",
+          html.count("banding-label") == 5,
           f"jumlah label: {html.count('banding-label')}")
-    p.cek("legenda menerangkan kedua penanda",
-          "legenda-penanda eksklusif" in html
-          and "legenda-penanda nilai" in html)
+    p.cek("tiap baris berbeda menyebut alasannya",
+          "Hanya Enterprise" in html and "Batasannya berbeda" in html)
+    p.cek("fitur bersama dirangkum terpisah",
+          "Termasuk di kedua paket" in html and "banding-sama" in html)
 
     # Kepala tabel melekat saat digulir.
     p.cek("kepala perbandingan memuat nama paket",
