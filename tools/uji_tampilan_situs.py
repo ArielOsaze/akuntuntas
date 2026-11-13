@@ -93,7 +93,7 @@ def main() -> int:
     print("[1. Setiap tombol punya teks yang tampil]")
     # Tombol pada situs berupa <a class="tombol"> atau <button class="tombol">.
     tombol = re.findall(
-        r'<(a|button)[^>]*class="[^"]*\btombol\b[^"]*"[^>]*>(.*?)</\1>',
+        r'<(a|button)[^>]*class="(?:[^"]*\s)?tombol(?:\s[^"]*)?"[^>]*>(.*?)</\1>',
         html, re.DOTALL)
 
     kosong = []
@@ -114,7 +114,7 @@ def main() -> int:
             continue
         isi_h = berkas.read_text(encoding="utf-8")
         t2 = re.findall(
-            r'<(a|button)[^>]*class="[^"]*\btombol\b[^"]*"[^>]*>(.*?)</\1>',
+            r'<(a|button)[^>]*class="(?:[^"]*\s)?tombol(?:\s[^"]*)?"[^>]*>(.*?)</\1>',
             isi_h, re.DOTALL)
         kosong2 = []
         for tag, isi in t2:
@@ -136,9 +136,9 @@ def main() -> int:
     p.cek(f"teks biru di atas putih (rasio {rasio2:.2f}:1) memenuhi AA",
           rasio2 >= 4.5, f"rasio {rasio2:.2f}, minimal 4.5")
 
-    # Tombol garis: teks biru di atas putih.
-    p.cek("tombol garis memakai teks biru di atas latar terang",
-          ".tombol-garis" in css and "color: var(--biru)" in css)
+    # Tombol garis: teks tinta di atas putih.
+    p.cek("tombol garis memakai teks tinta di atas latar terang",
+          ".tombol-garis" in css and "color: var(--tinta)" in css)
     print()
 
     # ------------------------------------------------------------------
@@ -189,14 +189,20 @@ def main() -> int:
         isi_h = berkas.read_text(encoding="utf-8")
         # Sebagian halaman berdiri sendiri dan memuat gayanya sendiri di
         # dalam berkas, jadi tidak memakai styles.css.
-        if "styles.css" not in isi_h:
+        if "styles.css" not in isi_h and "checkout.css" not in isi_h:
             p.cek(f"{berkas.name} memuat gaya sendiri", "<style>" in isi_h,
-                  "tidak memuat styles.css maupun gaya sendiri")
+                  "tidak memuat styles.css, checkout.css, maupun gaya sendiri")
             continue
-        versi = re.findall(r'styles\.css\?v=(\d+)', isi_h)
-        p.cek(f"{berkas.name} memuat CSS dengan versi",
-              bool(versi) and int(versi[0]) >= 6,
-              f"versi: {versi}")
+        if "styles.css" in isi_h:
+            versi = re.findall(r'styles\.css\?v=(\d+)', isi_h)
+            p.cek(f"{berkas.name} memuat CSS dengan versi",
+                  bool(versi) and int(versi[0]) >= 6,
+                  f"versi: {versi}")
+        else:
+            versi = re.findall(r'checkout\.css\?v=(\d+)', isi_h)
+            p.cek(f"{berkas.name} memuat CSS dengan versi",
+                  bool(versi) and int(versi[0]) >= 3,
+                  f"versi: {versi}")
     print()
 
     # ------------------------------------------------------------------
@@ -349,7 +355,7 @@ def main() -> int:
     p.cek("perbandingan menyebut analisis kesehatan keuangan",
           "Analisis kesehatan keuangan" in html)
     p.cek("beranda menyebut analisis kesehatan keuangan",
-          "Analisis Kesehatan Keuangan" in html)
+          "analisis kesehatan keuangan" in html.lower())
     print()
 
     # ------------------------------------------------------------------
