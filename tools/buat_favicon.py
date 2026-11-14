@@ -1,12 +1,13 @@
 """
-Buat favicon.ico dan logo-32.png dari logo.
+Buat favicon.ico, logo-32.png, dan logo-64.png dari logo.
 
 Favicon dibutuhkan agar logo muncul di tab peramban dan pada hasil
 pencarian Google. Berkas .ico memuat beberapa ukuran sekaligus, supaya
 tampil tajam baik di tab kecil maupun pada pintasan layar utama.
 
-Sudut favicon dibuat membulat agar tidak tampil sebagai kotak putih
-kaku di antara tab peramban. Isi dan warna logo tidak diubah.
+Sudut logo dibuat membulat agar tidak tampil sebagai kotak putih kaku
+di antara tab peramban maupun di atas latar gelap. Isi dan warna logo
+tidak diubah.
 
 Cara pakai:
     python tools/buat_favicon.py
@@ -26,7 +27,7 @@ UKURAN = [16, 24, 32, 48, 64, 128, 256]
 
 # Jari-jari sudut sebagai bagian dari sisi gambar, dan lipatan
 # penggambaran agar tepi lengkung tetap halus di ukuran kecil.
-RASIO_SUDUT = 0.30
+RASIO_SUDUT = 0.35
 SKALA_ANTIALIAS = 4
 
 
@@ -63,11 +64,14 @@ def main() -> int:
     logo32 = WEB / "logo-32.png"
     bulat.resize((32, 32), Image.LANCZOS).save(logo32, optimize=True)
 
+    logo64 = WEB / "logo-64.png"
+    bulat.resize((64, 64), Image.LANCZOS).save(logo64, optimize=True)
+
     print("=" * 70)
     print("  FAVICON")
     print("=" * 70)
     print()
-    print(f"  berkas : {favicon.name}, {logo32.name}")
+    print(f"  berkas : {favicon.name}, {logo32.name}, {logo64.name}")
     print(f"  ukuran : {', '.join(str(u) for u in UKURAN)} piksel")
     print(f"  bobot  : {favicon.stat().st_size / 1024:.1f} KB")
     print()

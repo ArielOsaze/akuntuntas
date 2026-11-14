@@ -58,7 +58,8 @@ HALAMAN = {
 # Halaman yang tidak perlu didata mesin pencari.
 TANPA_INDEKS = ("selesai.html", "batal.html", "admin.html", "kwitansi.html")
 
-FAVICON = """<link rel="icon" href="logo-32.png" type="image/png">
+FAVICON = """<link rel="icon" href="favicon.ico?v=3" sizes="any">
+<link rel="icon" href="logo-32.png?v=3" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="logo-128.png">
 <link rel="manifest" href="manifest.json">"""
 
@@ -119,6 +120,13 @@ DATA_STRUKTUR = """<script type="application/ld+json">
       "@type": "Offer",
       "name": "Paket Enterprise",
       "price": "5499000",
+      "priceCurrency": "IDR",
+      "availability": "https://schema.org/InStock"
+    },
+    {
+      "@type": "Offer",
+      "name": "Paket Custom",
+      "price": "9499000",
       "priceCurrency": "IDR",
       "availability": "https://schema.org/InStock"
     }
