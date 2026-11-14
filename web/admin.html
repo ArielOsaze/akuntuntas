@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#F6F3EE">
 <title>Dashboard Admin AkunTuntas</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="favicon.ico" sizes="any">
@@ -414,77 +415,675 @@
 
     @keyframes adminPutar { to { transform: rotate(360deg); } }
 
-    @media (max-width: 860px) {
+    /* ============================================================ tema panel */
+    :root {
+        --adm-latar: #F6F3EE;
+        --adm-kartu: #FFFFFF;
+        --adm-tinta: #1B2426;
+        --adm-teks: #2E3739;
+        --adm-redup: #6C7270;
+        --adm-garis: #E3DDD3;
+        --adm-garis-lembut: #EEE9E1;
+        --adm-aksen: #A0622D;
+        --adm-aksen-tua: #7C4A1E;
+        --adm-aksen-lembut: #F3E9DD;
+        --adm-hijau: #2F6149;
+        --adm-merah: #8C3A2B;
+        --adm-kuning: #8A5B1E;
+        --adm-bayang: 0 1px 2px rgba(27, 36, 38, 0.04),
+                      0 14px 34px rgba(27, 36, 38, 0.045);
+    }
+
+    body { background: var(--adm-latar); }
+
+    /* ------------------------------------------------------------ login */
+    .admin-auth {
+        width: 100%;
+        min-height: 100vh;
+        background: var(--adm-latar);
+    }
+
+    .admin-auth-kisi {
+        display: grid;
+        width: 100%;
+        grid-template-columns: minmax(0, 1.08fr) minmax(380px, 0.92fr);
+        min-height: 100vh;
+    }
+
+    .admin-auth-hero {
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 48px;
+        padding: clamp(28px, 5vw, 64px);
+        background: #18201F;
+        color: #F2ECE3;
+    }
+
+    .admin-auth-hero::after {
+        content: "";
+        position: absolute;
+        right: -150px;
+        bottom: -190px;
+        width: 380px;
+        height: 380px;
+        border: 1px solid rgba(224, 179, 134, 0.24);
+        border-radius: 50%;
+        box-shadow: 0 0 0 44px rgba(224, 179, 134, 0.045),
+                    0 0 0 88px rgba(224, 179, 134, 0.03);
+        pointer-events: none;
+    }
+
+    .admin-auth-logo {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 11px;
+    }
+
+    .admin-auth-logo img {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: #FFFFFF;
+        padding: 3px;
+    }
+
+    .admin-auth-logo strong {
+        display: block;
+        font-size: 16.5px;
+        line-height: 1.2;
+    }
+
+    .admin-auth-logo small {
+        display: block;
+        margin-top: 2px;
+        color: #A9A39A;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+    }
+
+    .admin-auth-isi {
+        position: relative;
+        z-index: 1;
+        max-width: 470px;
+    }
+
+    .admin-eyebrow {
+        margin-bottom: 14px;
+        color: var(--adm-aksen);
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+    }
+
+    .admin-auth-hero .admin-eyebrow { color: #D7A676; }
+
+    .admin-auth-isi h1 {
+        margin-bottom: 18px;
+        color: #FCF8F1;
+        font-family: var(--serif);
+        font-size: clamp(34px, 4vw, 48px);
+        font-weight: 600;
+        line-height: 1.08;
+        letter-spacing: -0.025em;
+    }
+
+    .admin-auth-isi p {
+        max-width: 380px;
+        color: #C9C3B9;
+        font-size: 15px;
+        line-height: 1.7;
+    }
+
+    .admin-auth-poin {
+        display: grid;
+        gap: 10px;
+        margin-top: 26px;
+        color: #D9D3C9;
+        font-size: 14px;
+        list-style: none;
+    }
+
+    .admin-auth-poin li {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+    }
+
+    .admin-auth-poin li::before {
+        content: "\2713";
+        color: #D7A676;
+        font-weight: 700;
+    }
+
+    .admin-auth-kembali {
+        position: relative;
+        z-index: 1;
+        align-self: flex-start;
+        color: #D7A676;
+        font-size: 13.5px;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .admin-auth-kembali:hover { color: #F4C79B; }
+
+    .admin-auth-kartu {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(28px, 5vw, 64px);
+        background: #FCFBF8;
+    }
+
+    .admin-auth-kartu-isi {
+        width: 100%;
+        max-width: 390px;
+    }
+
+    .admin-auth-kartu-isi h2 {
+        margin-bottom: 8px;
+        font-family: var(--serif);
+        font-size: 30px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+    }
+
+    .admin-auth-kartu-isi > p:not(.admin-eyebrow):not(.admin-auth-kaki) {
+        margin-bottom: 24px;
+        color: var(--adm-redup);
+        font-size: 14px;
+        line-height: 1.65;
+    }
+
+    .admin-auth .admin-bidang { margin-bottom: 16px; }
+    .admin-auth .admin-bidang label {
+        color: var(--adm-tinta);
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .admin-petunjuk {
+        color: var(--adm-redup);
+        font-weight: 400;
+    }
+
+    .admin-auth-kaki {
+        margin-top: 20px;
+        color: var(--adm-redup);
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .admin-auth-kaki a {
+        color: var(--adm-aksen-tua);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .admin-auth-kaki a:hover { text-decoration: underline; }
+
+    .admin-auth-sederhana {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 28px;
+        background:
+            radial-gradient(circle at 18% 16%, rgba(160, 98, 45, 0.08), transparent 42%),
+            var(--adm-latar);
+    }
+
+    .admin-auth-sederhana .admin-auth-kartu {
+        width: min(460px, 100%);
+        padding: 34px;
+        border: 1px solid var(--adm-garis);
+        border-radius: 14px;
+        background: var(--adm-kartu);
+        box-shadow: var(--adm-bayang);
+    }
+
+    .admin-auth-sederhana .admin-auth-kartu-isi { max-width: none; }
+
+    /* ------------------------------------------------------------ rangka */
+    .admin-badan { background: var(--adm-latar); }
+
+    .admin-samping {
+        width: 252px;
+        background: #18201F;
+        color: #D6D0C6;
+        border-right: 1px solid #2A3230;
+    }
+
+    .admin-merek {
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 16px;
+        letter-spacing: -0.01em;
+    }
+
+    .admin-merek img {
+        width: 30px;
+        height: 30px;
+        border-radius: 7px;
+    }
+
+    .admin-menu { padding: 14px 12px; }
+
+    .admin-menu button {
+        padding: 10px 12px;
+        border-radius: 7px;
+        color: #C8C2B8;
+        font-size: 14px;
+    }
+
+    .admin-menu button:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: #F4EEE5;
+    }
+
+    .admin-menu button.aktif {
+        background: rgba(160, 98, 45, 0.2);
+        box-shadow: inset 2px 0 0 var(--adm-aksen);
+        color: #FFF8EE;
+        font-weight: 600;
+    }
+
+    .admin-menu button.aktif svg { stroke: #E0B386; }
+
+    .admin-kaki {
+        padding: 14px 18px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        color: #7E857F;
+        font-size: 12px;
+        letter-spacing: 0.02em;
+    }
+
+    .admin-atas {
+        padding: 16px 28px;
+        background: rgba(255, 255, 255, 0.94);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--adm-garis);
+    }
+
+    .admin-atas h1 {
+        font-family: var(--serif);
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+    }
+
+    .admin-siapa {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--adm-redup);
+        font-size: 13px;
+    }
+
+    .admin-siapa::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--adm-hijau);
+        box-shadow: 0 0 0 3px rgba(47, 97, 73, 0.12);
+    }
+
+    .admin-isi {
+        width: 100%;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 28px 30px 72px;
+    }
+
+    /* ------------------------------------------------------------ angka */
+    .admin-angka-kisi {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .admin-angka {
+        padding: 18px;
+        border: 1px solid var(--adm-garis);
+        border-radius: 10px;
+        background: var(--adm-kartu);
+        box-shadow: var(--adm-bayang);
+    }
+
+    .admin-angka small {
+        margin-bottom: 10px;
+        color: var(--adm-redup);
+        font-size: 12.5px;
+        letter-spacing: 0.01em;
+    }
+
+    .admin-angka strong {
+        color: var(--adm-tinta);
+        font-size: 27px;
+        line-height: 1.1;
+        letter-spacing: -0.035em;
+    }
+
+    .admin-angka.tegas {
+        border-color: #E5D5C3;
+        background: #FBF7F1;
+    }
+
+    .admin-angka.tegas strong { color: var(--adm-aksen-tua); }
+    .admin-angka.hijau strong { color: var(--adm-hijau); }
+
+    /* ------------------------------------------------------------ panel */
+    .admin-panel {
+        margin-bottom: 22px;
+        border: 1px solid var(--adm-garis);
+        border-radius: 10px;
+        background: var(--adm-kartu);
+        box-shadow: var(--adm-bayang);
+    }
+
+    .admin-panel-kepala {
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--adm-garis-lembut);
+    }
+
+    .admin-panel-kepala h2 {
+        color: var(--adm-tinta);
+        font-family: var(--serif);
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .admin-panel-isi { padding: 20px; }
+
+    .admin-tabel { font-size: 13px; }
+
+    .admin-tabel th {
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--adm-garis);
+        background: #FAF8F4;
+        color: #6B716E;
+        font-size: 11px;
+        letter-spacing: 0.07em;
+    }
+
+    .admin-tabel td {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--adm-garis-lembut);
+        color: var(--adm-teks);
+    }
+
+    .admin-tabel tr:hover td { background: #FCFAF7; }
+
+    .admin-tabel .kunci {
+        color: var(--adm-aksen-tua);
+        font-family: ui-monospace, SFMono-Regular, Consolas, "Courier New", monospace;
+        font-size: 12.5px;
+        letter-spacing: 0.2px;
+    }
+
+    .admin-pil {
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+
+    .admin-pil.aktif, .admin-pil.dibayar { background: #EAF2ED; color: #2F6149; }
+    .admin-pil.menunggu { background: #FAF0DE; color: #8A5B1E; }
+    .admin-pil.ditangguhkan { background: #F7EBDD; color: #9A5A1E; }
+    .admin-pil.dicabut, .admin-pil.dibatalkan { background: #F6E7E3; color: #8C3A2B; }
+    .admin-pil.mati { background: #F0EEE9; color: #6C7270; }
+
+    .admin-tombol {
+        padding: 11px 18px;
+        border-radius: 7px;
+        background: var(--adm-aksen);
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .admin-tombol:hover { background: var(--adm-aksen-tua); }
+    .admin-tombol:disabled { background: #B9AFA1; }
+
+    .admin-tombol.garis {
+        border: 1px solid var(--adm-garis);
+        background: #FFFFFF;
+        color: var(--adm-tinta);
+    }
+
+    .admin-tombol.garis:hover {
+        border-color: #CFC5B7;
+        background: #FAF8F4;
+    }
+
+    .admin-tombol.bahaya { background: var(--adm-merah); }
+    .admin-tombol.bahaya:hover { background: #742D20; }
+
+    .admin-input, .admin-pilih, .admin-cari input {
+        border: 1px solid #DCD4C8;
+        border-radius: 7px;
+        background: #FFFFFF;
+        color: var(--adm-tinta);
+    }
+
+    .admin-input:focus, .admin-pilih:focus, .admin-cari input:focus {
+        outline: none;
+        border-color: var(--adm-aksen);
+        box-shadow: 0 0 0 3px rgba(160, 98, 45, 0.14);
+    }
+
+    .admin-pesan { border-radius: 8px; }
+
+    .admin-pesan.galat {
+        border-color: #E7C2B9;
+        background: #FBF0ED;
+        color: #7C3022;
+    }
+
+    .admin-pesan.sukses {
+        border-color: #BFD6C8;
+        background: #EDF4EF;
+        color: var(--adm-hijau);
+    }
+
+    .admin-pesan.info {
+        border-color: #E0CFBA;
+        background: #F7F2EA;
+        color: #6F4A25;
+    }
+
+    .admin-hasil-kunci {
+        border: 1px solid #C7D8CC;
+        border-radius: 9px;
+        background: #F1F6F2;
+    }
+
+    .admin-hasil-kunci p { color: var(--adm-hijau); }
+
+    .admin-hasil-kunci div {
+        border: 1px solid #C7D8CC;
+        border-radius: 7px;
+        color: var(--adm-tinta);
+        font-family: ui-monospace, SFMono-Regular, Consolas, "Courier New", monospace;
+    }
+
+    .admin-kosong { color: var(--adm-redup); }
+
+    .admin-muat {
+        border-color: var(--adm-aksen);
+        border-top-color: transparent;
+    }
+
+    @media (max-width: 1120px) {
+        .admin-angka-kisi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 900px) {
         .admin-badan { flex-direction: column; }
-        .admin-samping { width: 100%; height: auto; position: static; }
-        .admin-menu { display: flex; overflow-x: auto; gap: 5px; }
-        .admin-menu button { width: auto; white-space: nowrap; margin-bottom: 0; }
-        .admin-isi { padding: 18px 16px 50px; }
-        .admin-atas { padding: 14px 16px; }
+        .admin-samping {
+            width: 100%;
+            height: auto;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+        .admin-merek { padding: 12px 16px; }
+        .admin-merek img { width: 26px; height: 26px; }
+        .admin-menu {
+            display: flex;
+            overflow-x: auto;
+            gap: 4px;
+            padding: 0 10px 9px;
+            scrollbar-width: none;
+        }
+        .admin-menu::-webkit-scrollbar { display: none; }
+        .admin-menu button {
+            width: auto;
+            margin: 0;
+            padding: 8px 11px;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .admin-menu button.aktif { box-shadow: inset 0 -2px 0 var(--adm-aksen); }
+        .admin-kaki { display: none; }
+        .admin-atas { position: static; padding: 12px 16px; }
+        .admin-atas h1 { font-size: 19px; }
+        .admin-isi { padding: 18px 16px 56px; }
+    }
+
+    @media (max-width: 860px) {
+        .admin-auth-kisi { grid-template-columns: 1fr; }
+        .admin-auth-hero {
+            min-height: 0;
+            gap: 26px;
+            padding: 24px 22px 26px;
+        }
+        .admin-auth-isi h1 { font-size: 30px; }
+        .admin-auth-isi p, .admin-auth-poin { display: none; }
+        .admin-auth-kartu {
+            align-items: flex-start;
+            padding: 28px 22px 40px;
+        }
+        .admin-auth-kartu-isi { max-width: 460px; margin: 0 auto; }
+        .admin-auth-sederhana { padding: 18px; }
+    }
+
+    @media (max-width: 520px) {
+        .admin-angka-kisi { gap: 10px; }
+        .admin-angka { padding: 14px; }
+        .admin-angka strong { font-size: 22px; }
+        .admin-angka small { font-size: 11.5px; }
+        .admin-panel-kepala { padding: 14px; }
+        .admin-panel-kepala h2 { font-size: 17px; }
+        .admin-panel-isi { padding: 16px; }
+        .admin-cari { width: 100%; }
+        .admin-cari input { width: 100%; min-width: 0; }
+        .admin-tabel { min-width: 640px; }
+        .admin-siapa { display: none; }
+        .admin-auth-kartu { padding: 24px 18px 34px; }
+        .admin-auth-sederhana .admin-auth-kartu { padding: 26px 20px; }
     }
 </style>
 </head>
 <body>
 
 <!-- ==================================================== masuk -->
-<div id="layar-masuk" style="display: none;">
-    <div class="admin-masuk">
-        <img src="logo.png" alt="">
-        <h1>Dashboard Admin</h1>
-        <p>Kelola lisensi, pantau pemakaian, dan lihat pembelian AkunTuntas.</p>
+<div id="layar-masuk" class="admin-auth" style="display: none;">
+    <div class="admin-auth-kisi">
+        <aside class="admin-auth-hero">
+            <div class="admin-auth-logo">
+                <img src="logo.png" alt="">
+                <div>
+                    <strong>AkunTuntas</strong>
+                    <small>Panel pengelola</small>
+                </div>
+            </div>
 
-        <div class="admin-pesan" id="pesan-masuk"></div>
+            <div class="admin-auth-isi">
+                <p class="admin-eyebrow">Dashboard Admin</p>
+                <h1>Lisensi rapi.<br>Pelanggan tenang.</h1>
+                <p>Kelola lisensi, pantau aktivasi perangkat, dan tindak lanjuti pesanan dari satu tempat.</p>
+                <ul class="admin-auth-poin">
+                    <li>Pantau perangkat yang aktif</li>
+                    <li>Terbitkan dan cabut lisensi</li>
+                    <li>Baca pesan pelanggan</li>
+                </ul>
+            </div>
 
-        <div class="admin-bidang">
-            <label for="masuk-email">Email</label>
-            <input class="admin-input" id="masuk-email" type="email" placeholder="akuntuntas@gmail.com" autocomplete="username">
-        </div>
+            <a class="admin-auth-kembali" href="index.html">&larr; Kembali ke situs</a>
+        </aside>
 
-        <div class="admin-bidang">
-            <label for="masuk-sandi">Kata sandi</label>
-            <input class="admin-input" id="masuk-sandi" type="password" placeholder="Kata sandi dashboard" autocomplete="current-password">
-        </div>
+        <section class="admin-auth-kartu">
+            <div class="admin-auth-kartu-isi">
+                <p class="admin-eyebrow">Masuk</p>
+                <h2>Dashboard Admin</h2>
+                <p>Gunakan email pengelola dan kata sandi dashboard.</p>
 
-        <button class="admin-tombol penuh" id="tombol-masuk" type="button">Masuk</button>
+                <div class="admin-pesan" id="pesan-masuk"></div>
 
-        <p style="margin-top: 18px; font-size: 13px;">
-            Belum mengatur kata sandi? <a href="#" id="ke-daftar" style="color: #1B4F8A; font-weight: 600;">Buat kata sandi</a>
-        </p>
+                <div class="admin-bidang">
+                    <label for="masuk-email">Email</label>
+                    <input class="admin-input" id="masuk-email" type="email" placeholder="akuntuntas@gmail.com" autocomplete="username">
+                </div>
+
+                <div class="admin-bidang">
+                    <label for="masuk-sandi">Kata sandi</label>
+                    <input class="admin-input" id="masuk-sandi" type="password" placeholder="Kata sandi dashboard" autocomplete="current-password">
+                </div>
+
+                <button class="admin-tombol penuh" id="tombol-masuk" type="button">Masuk</button>
+
+                <p class="admin-auth-kaki">
+                    Belum mengatur kata sandi? <a href="#" id="ke-daftar">Buat kata sandi</a>
+                </p>
+            </div>
+        </section>
     </div>
 </div>
 
 <!-- ==================================================== daftar sandi -->
-<div id="layar-daftar" style="display: none;">
-    <div class="admin-masuk">
-        <img src="logo.png" alt="">
-        <h1>Buat Kata Sandi</h1>
-        <p>
-            Langkah ini hanya sekali. Setelah kata sandi dibuat, halaman ini
-            tidak dapat dipakai lagi.
-        </p>
+<div id="layar-daftar" class="admin-auth admin-auth-sederhana" style="display: none;">
+    <div class="admin-auth-kartu">
+        <div class="admin-auth-kartu-isi">
+            <p class="admin-eyebrow">Penyiapan awal</p>
+            <h2>Buat Kata Sandi</h2>
+            <p>
+                Langkah ini hanya sekali. Setelah kata sandi dibuat, halaman ini
+                tidak dapat dipakai lagi.
+            </p>
 
-        <div class="admin-pesan" id="pesan-daftar"></div>
+            <div class="admin-pesan" id="pesan-daftar"></div>
 
-        <div class="admin-bidang">
-            <label for="daftar-email">Email pengelola</label>
-            <input class="admin-input" id="daftar-email" type="email" value="akuntuntas@gmail.com">
+            <div class="admin-bidang">
+                <label for="daftar-email">Email pengelola</label>
+                <input class="admin-input" id="daftar-email" type="email" value="akuntuntas@gmail.com">
+            </div>
+
+            <div class="admin-bidang">
+                <label for="daftar-sandi">Kata sandi baru <span class="admin-petunjuk">(minimal 10 huruf)</span></label>
+                <input class="admin-input" id="daftar-sandi" type="password" placeholder="Kata sandi yang kuat">
+            </div>
+
+            <div class="admin-bidang">
+                <label for="daftar-ulang">Ulangi kata sandi</label>
+                <input class="admin-input" id="daftar-ulang" type="password" placeholder="Ketik ulang kata sandi">
+            </div>
+
+            <button class="admin-tombol penuh" id="tombol-daftar" type="button">Simpan Kata Sandi</button>
+
+            <p class="admin-auth-kaki">
+                <a href="#" id="ke-masuk">Kembali ke halaman masuk</a>
+            </p>
         </div>
-
-        <div class="admin-bidang">
-            <label for="daftar-sandi">Kata sandi baru <span style="color: #5A6B7D; font-weight: 400;">(minimal 10 huruf)</span></label>
-            <input class="admin-input" id="daftar-sandi" type="password" placeholder="Kata sandi yang kuat">
-        </div>
-
-        <div class="admin-bidang">
-            <label for="daftar-ulang">Ulangi kata sandi</label>
-            <input class="admin-input" id="daftar-ulang" type="password" placeholder="Ketik ulang kata sandi">
-        </div>
-
-        <button class="admin-tombol penuh" id="tombol-daftar" type="button">Simpan Kata Sandi</button>
-
-        <p style="margin-top: 18px; font-size: 13px;">
-            <a href="#" id="ke-masuk" style="color: #1B4F8A; font-weight: 600;">Kembali ke halaman masuk</a>
-        </p>
     </div>
 </div>
 
@@ -595,8 +1194,8 @@
 
     // ------------------------------------------------------------ masuk
     function tampilkanLayar(nama) {
-        layarMasuk.style.display = nama === "masuk" ? "block" : "none";
-        layarDaftar.style.display = nama === "daftar" ? "block" : "none";
+        layarMasuk.style.display = nama === "masuk" ? "flex" : "none";
+        layarDaftar.style.display = nama === "daftar" ? "flex" : "none";
         layarAdmin.style.display = nama === "admin" ? "flex" : "none";
     }
 
@@ -635,7 +1234,7 @@
                 mulaiAdmin();
             })
             .catch(function () {
-                pesan(kotak, "Tidak dapat menghubungi server. Periksa sambungan internet.", "galat");
+                pesan(kotak, "Server lisensi sedang tidak dapat dihubungi. Coba beberapa saat lagi.", "galat");
             })
             .finally(function () {
                 tombol.disabled = false;
@@ -676,7 +1275,7 @@
                 setTimeout(function () { tampilkanLayar("masuk"); }, 1200);
             })
             .catch(function () {
-                pesan(kotak, "Tidak dapat menghubungi server.", "galat");
+                pesan(kotak, "Server lisensi sedang tidak dapat dihubungi. Coba beberapa saat lagi.", "galat");
             })
             .finally(function () {
                 tombol.disabled = false;
@@ -763,7 +1362,7 @@
 
             var html = '<div class="admin-panel"><div class="admin-panel-kepala">' +
                 '<h2>Pesan Masuk</h2>' +
-                '<span style="color:#7E8FA3;font-size:13.5px;">' +
+                '<span style="color:var(--adm-redup);font-size:13.5px;">' +
                 daftar.length + ' pesan' +
                 (belumDibaca ? ', ' + belumDibaca + ' belum dibaca' : '') +
                 '</span></div>';
@@ -893,7 +1492,7 @@
                         : '<button class="admin-tombol garis kecil" data-aktifkan="' + aman(l.kunci) + '" type="button">Aktifkan</button>';
                     html += '<tr><td class="kunci">' + aman(l.kunci) + '</td>' +
                         '<td>' + aman(l.product_code) + '</td>' +
-                        '<td>' + aman(l.pemilik_nama || "-") + '<br><span style="color:#7E8FA3;font-size:12.5px;">' + aman(l.pemilik_email || "") + '</span></td>' +
+                        '<td>' + aman(l.pemilik_nama || "-") + '<br><span style="color:var(--adm-redup);font-size:12.5px;">' + aman(l.pemilik_email || "") + '</span></td>' +
                         '<td class="kanan">' + (l.perangkat_terpakai || 0) + '</td>' +
                         '<td><span class="admin-pil ' + kelas + '">' + aman(l.status) + '</span></td>' +
                         '<td>' + tanggal(l.diterbitkan_pada) + '</td>' +
@@ -1076,7 +1675,7 @@
                 daftar.forEach(function (p) {
                     var kelas = p.status === "dibayar" ? "dibayar" : (p.status === "dibatalkan" ? "dibatalkan" : "menunggu");
                     html += '<tr><td class="kunci">' + aman(p.order_code) + '</td>' +
-                        '<td>' + aman(p.nama_pembeli) + '<br><span style="color:#7E8FA3;font-size:12.5px;">' + aman(p.email_pembeli || "") + '</span></td>' +
+                        '<td>' + aman(p.nama_pembeli) + '<br><span style="color:var(--adm-redup);font-size:12.5px;">' + aman(p.email_pembeli || "") + '</span></td>' +
                         '<td>' + aman(p.product_code) + '</td>' +
                         '<td class="kanan">' + rupiah(p.jumlah) + '</td>' +
                         '<td><span class="admin-pil ' + kelas + '">' + aman(p.status) + '</span></td>' +
@@ -1167,7 +1766,7 @@
     function muatSandi() {
         isi.innerHTML = '<div class="admin-panel" style="max-width:520px;"><div class="admin-panel-kepala"><h2>Ganti Kata Sandi</h2></div>' +
             '<div class="admin-panel-isi">' +
-            '<p style="font-size:14px;color:#5A6B7D;line-height:1.6;margin-bottom:18px;">' +
+            '<p style="font-size:14px;color:var(--adm-redup);line-height:1.6;margin-bottom:18px;">' +
             'Setelah diganti, seluruh sesi lain langsung diputus dan harus masuk ulang.</p>' +
             '<div id="hasil-sandi"></div>' +
             '<div style="margin-bottom:15px;"><label style="display:block;font-size:13.5px;font-weight:600;margin-bottom:6px;">Kata sandi baru</label>' +
